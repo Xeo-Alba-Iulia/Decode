@@ -8,8 +8,13 @@
 // please think carefully as to whether such customizations are really necessary
 // before doing so.
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // Custom definitions may go here
+plugins {
+    id 'org.jetbrains.kotlin.android' version '2.2.20'
+}
+
 
 // Include common definitions from above.
 apply from: '../build.common.gradle'
@@ -17,6 +22,16 @@ apply from: '../build.dependencies.gradle'
 
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
+
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_1_8
+        }
+        compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_1_8
+            targetCompatibility = JavaVersion.VERSION_1_8
+        }
+    }
 
     packagingOptions {
         jniLibs.useLegacyPackaging true
