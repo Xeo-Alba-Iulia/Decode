@@ -6,20 +6,21 @@ import com.qualcomm.robotcore.hardware.Servo
 
 @TeleOp
 class BasicOpMode : OpMode() {
-    private lateinit var pendulServo1: Servo
-    private lateinit var pendulServo2: Servo
+    lateinit var pendul: Pendul
 
     override fun init() {
         telemetry.addLine("Hello, FTC!")
         telemetry.update()
-        pendulServo1 = hardwareMap.servo["pendulServo1"]
-        pendulServo2 = hardwareMap.servo["pendulServo2"]
+        pendul = Pendul(hardwareMap)
+        pendul.setPosition(0.5)
     }
 
     override fun loop() {
         telemetry.addLine("Running...")
         telemetry.update()
-        pendulServo1.position = 0.5
-        pendulServo2.position = 0.5
+        val delta = gamepad1.right_trigger - gamepad1.left_trigger
+        if (delta != 0.0f) {
+            pendul.setPosition(pendul.getPosition() + delta * 0.1)
+        }
     }
 }
