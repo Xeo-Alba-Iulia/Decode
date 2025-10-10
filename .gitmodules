@@ -1,0 +1,3 @@
+[submodule "PedroPathingDSL"]
+	path = PedroPathingDSL
+	url = https://github.com/Xeo-Alba-Iulia/PedroPathingDSL.git
