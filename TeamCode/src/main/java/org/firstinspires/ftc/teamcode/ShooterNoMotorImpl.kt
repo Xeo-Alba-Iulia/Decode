@@ -9,7 +9,8 @@ class ShooterNoMotorImpl(hardwareMap: HardwareMap) : Shooter {
     override var shooterSpeed: Double = 0.0
         set(_) = TODO("Not yet implemented")
 
-    private val hoodServo = hardwareMap.servo["hood"]
+    private val hoodServo =
+        hardwareMap.servo["hood"] ?: error("Nu s-a găsit servo-ul capacului de la shooter, vezi configurația")
 
     override var hood by hoodServo::position
     override var isRunning = false
