@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode
 
 import com.qualcomm.robotcore.hardware.HardwareMap
+import com.qualcomm.robotcore.hardware.Servo
 
 class ShooterNoMotorImpl(hardwareMap: HardwareMap) : Shooter {
     override var angleDegrees: Double = 0.0
@@ -9,8 +10,7 @@ class ShooterNoMotorImpl(hardwareMap: HardwareMap) : Shooter {
     override var shooterSpeed: Double = 0.0
         set(_) = TODO("Not yet implemented")
 
-    private val hoodServo =
-        hardwareMap.servo["hood"] ?: error("Nu s-a găsit servo-ul capacului de la shooter, vezi configurația")
+    private val hoodServo: Servo = hardwareMap.servo["hood"]
 
     override var hood by hoodServo::position
     override var isRunning = false
