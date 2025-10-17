@@ -53,13 +53,15 @@ android {
 }
 
 repositories {
-    maven {
-        url = "https://repo.dairy.foundation/releases"
-    }
+    maven { url = "https://repo.dairy.foundation/releases" }
+    maven { url = "https://mymaven.bylazar.com/releases" }
 }
 
 dependencies {
     implementation project(':FtcRobotController')
+    implementation project(':PedroPathingDSL')
+    implementation 'com.pedropathing:ftc:2.0.3'
+    implementation 'com.pedropathing:telemetry:1.0.0'
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
 }
