@@ -25,6 +25,7 @@ buildscript {
 
 plugins {
     id 'org.jetbrains.kotlin.android' version '2.2.20'
+    id 'dev.zacsweers.metro' version '0.7.0'
 }
 
 // Include common definitions from above.
@@ -37,11 +38,11 @@ android {
 
     kotlin {
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_1_8
+            jvmTarget = JvmTarget.JVM_11
         }
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_1_8
-            targetCompatibility = JavaVersion.VERSION_1_8
+            targetCompatibility = JavaVersion.VERSION_11
         }
     }
 

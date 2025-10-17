@@ -1,16 +1,19 @@
 package org.firstinspires.ftc.teamcode
 
-import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
+import dev.zacsweers.metro.SingleIn
+import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
-class ShooterNoMotorImpl(hardwareMap: HardwareMap) : Shooter {
+@SingleIn(OpModeScope::class)
+@Inject
+class ShooterNoMotorImpl(@param:Named("ShooterHoodServo") private val hoodServo: Servo) : Shooter {
     override var angleDegrees: Double = 0.0
         set(_) {}
 
     override var shooterSpeed: Double = 0.0
         set(_) {}
-
-    private val hoodServo: Servo = hardwareMap.servo["hood"]
 
     override var hood by hoodServo::position
     override var isRunning = false
