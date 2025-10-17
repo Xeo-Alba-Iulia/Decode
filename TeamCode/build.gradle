@@ -39,6 +39,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
+            freeCompilerArgs = ["-XXLanguage:+PropertyParamAnnotationDefaultTargetMode"]
         }
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_1_8

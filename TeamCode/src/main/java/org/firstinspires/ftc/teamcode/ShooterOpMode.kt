@@ -4,15 +4,15 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import dev.zacsweers.metro.createGraphFactory
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
+import org.firstinspires.ftc.teamcode.shooter.Shooter
 
-@TeleOp
-class ShooterOpMode : OpMode() {
+@TeleOp(group = "Shooter")
+open class ShooterOpMode : OpMode() {
     lateinit var shooter: Shooter
 
-    lateinit var appGraph: OpModeGraph
+    open val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
 
     override fun init() {
-        appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
         shooter = appGraph.shooter
         shooter.hood = 0.5
     }
@@ -24,13 +24,13 @@ class ShooterOpMode : OpMode() {
         if (gamepad1.b) {
             shooter.isRunning = false
         }
-        if (gamepad1.y) shooter.shooterSpeed += 0.01
-        if (gamepad1.x) shooter.shooterSpeed -= 0.01
+        if (gamepad1.y) shooter.shooterSpeed += 0.001
+        if (gamepad1.x) shooter.shooterSpeed -= 0.001
         if (gamepad1.dpad_up) {
-            shooter.hood += 0.0003
+            shooter.hood += 0.001
         }
         if (gamepad1.dpad_down) {
-            shooter.hood -= 0.0003
+            shooter.hood -= 0.001
         }
 
         this.telemetry.addLine(shooter.toString())

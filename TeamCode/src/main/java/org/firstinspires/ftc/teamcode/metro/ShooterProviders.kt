@@ -6,8 +6,8 @@ import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
-import org.firstinspires.ftc.teamcode.Shooter
-import org.firstinspires.ftc.teamcode.ShooterNoMotorImpl
+import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterNoMotorImpl
 
 @ContributesTo(OpModeScope::class)
 interface ShooterProviders {

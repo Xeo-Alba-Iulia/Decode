@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import org.firstinspires.ftc.teamcode.Shooter
+import org.firstinspires.ftc.teamcode.shooter.Shooter
 
 @DependencyGraph(OpModeScope::class)
 interface OpModeGraph {

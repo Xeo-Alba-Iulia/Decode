@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode
+package org.firstinspires.ftc.teamcode.shooter
 
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.Inject
@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @SingleIn(OpModeScope::class)
 @Inject
-class ShooterNoMotorImpl(@param:Named("ShooterHoodServo") private val hoodServo: Servo) : Shooter {
+open class ShooterNoMotorImpl(@Named("ShooterHoodServo") private val hoodServo: Servo) : Shooter {
     override var angleDegrees: Double = 0.0
         set(_) {}
 
