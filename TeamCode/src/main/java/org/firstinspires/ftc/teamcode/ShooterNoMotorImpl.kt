@@ -5,18 +5,18 @@ import com.qualcomm.robotcore.hardware.Servo
 
 class ShooterNoMotorImpl(hardwareMap: HardwareMap) : Shooter {
     override var angleDegrees: Double = 0.0
-        set(_) = TODO("Not yet implemented")
+        set(_) {}
 
     override var shooterSpeed: Double = 0.0
-        set(_) = TODO("Not yet implemented")
+        set(_) {}
 
     private val hoodServo: Servo = hardwareMap.servo["hood"]
 
     override var hood by hoodServo::position
     override var isRunning = false
-        set(_) = TODO("Not yet implemented")
+        set(_) {}
 
-    override val isAtTarget = true
+    override val isAtTarget = false
 
-    override fun toString() = "Shooter(hood=$hood, isRunning=$isRunning, isAtTarget=$isAtTarget)"
+    override fun toString() = "ShooterNoMotorImpl(hood=$hood)"
 }
