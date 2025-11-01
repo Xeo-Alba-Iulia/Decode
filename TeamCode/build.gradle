@@ -24,8 +24,8 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.android' version '2.2.20'
-    id 'dev.zacsweers.metro' version '0.7.0'
+    id 'org.jetbrains.kotlin.android' version '2.2.21'
+    id 'dev.zacsweers.metro' version '0.7.2'
 }
 
 // Include common definitions from above.
