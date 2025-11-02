@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.HardwareMap
@@ -13,6 +14,7 @@ import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.ShooterNoDirectionImpl
 
 @TeleOp(group = "Shooter")
+@Disabled
 class ShooterMotorOpMode : ShooterOpMode() {
     override val appGraph =
         createDynamicGraphFactory<OpModeGraph.Factory>(FakeShooterBindings).create(this)
