@@ -5,8 +5,10 @@ import kotlin.reflect.KProperty
 
 class ConstrainedDouble(
     val range: ClosedFloatingPointRange<Double>,
-    var value: Double = 0.0
+    defaultValue: Double = 0.0
 ) : ReadWriteProperty<Any?, Double> {
+
+    private var value = defaultValue.coerceIn(range)
 
     override fun getValue(thisRef: Any?, property: KProperty<*>) = value
 
