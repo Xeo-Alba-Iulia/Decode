@@ -16,7 +16,6 @@ import com.pedropathing.util.PoseHistory
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import dev.zacsweers.metro.Inject
-import dev.zacsweers.metro.Provider
 import dev.zacsweers.metro.createGraphFactory
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
@@ -41,7 +40,7 @@ import kotlin.math.pow
 @TeleOp(name = "Tuning", group = "Pedro Pathing")
 class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Supplier<OpMode?>?>? ->
     s!!.folder("Localization") { l ->
-        l.add("Localization Test", ::localizationOpMode)
+        l.add("Localization Test") { localizationOpMode.value }
         l.add("Forward Tuner", ::ForwardTuner)
         l.add("Lateral Tuner", ::LateralTuner)
         l.add("Turn Tuner", ::TurnTuner)
@@ -64,34 +63,36 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Suppl
         p.add("Circle", Supplier { Circle() })
     }
 }) {
+    val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
 
     init {
-        createGraphFactory<OpModeGraph.Factory>().create(this).inject(this)
+        appGraph.inject(this)
     }
 
     @Inject
-    lateinit var followerProvider: Provider<Follower>
+    lateinit var followerLazy: Lazy<Follower>
 
     @Inject
-    lateinit var fullTelemetry: Provider<Telemetry>
+    lateinit var telemetryLazy: Lazy<Telemetry>
 
     @Inject
     private lateinit var localizationOpMode: Lazy<LocalizationTest>
 
+    @Suppress("RedundantCompanionReference")
     public override fun onSelect() {
-        follower = followerProvider()
-        Companion.localizationOpMode = localizationOpMode.value
+        follower = followerLazy.value
+        Companion.localizationOpMode = localizationOpMode
 
-        follower!!.setStartingPose(Pose())
+        follower.setStartingPose(Pose())
 
-        poseHistory = follower!!.poseHistory
+        poseHistory = follower.poseHistory
 
-        telemetryA = fullTelemetry()
+        telemetryA = telemetryLazy.value
 
         FtcDashboard.getInstance().updateConfig()
     }
 
-    public override fun onLog(lines: MutableList<String?>) {}
+    public override fun onLog(lines: List<String>) {}
 
     companion object {
         lateinit var follower: Follower
@@ -100,7 +101,7 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Suppl
 
         lateinit var telemetryA: Telemetry
 
-        lateinit var localizationOpMode: OpMode
+        lateinit var localizationOpMode: Lazy<OpMode>
 
         var changes = ArrayList<String>()
 
@@ -108,7 +109,7 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Suppl
 
         fun drawOnlyCurrent() {
             try {
-                drawRobot(follower!!.pose)
+                drawRobot(follower.pose)
                 sendPacket()
             } catch (e: Exception) {
                 throw RuntimeException("Drawing failed $e")
@@ -116,13 +117,13 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Suppl
         }
 
         fun draw() {
-            drawDebug(follower!!)
+            drawDebug(follower)
         }
 
         /** This creates a full stop of the robot by setting the drive motors to run at 0 power.  */
         fun stopRobot() {
-            follower!!.startTeleopDrive(true)
-            follower!!.setTeleOpDrive(0.0, 0.0, 0.0)
+            follower.startTeleopDrive(true)
+            follower.setTeleOpDrive(0.0, 0.0, 0.0)
         }
     }
 }
@@ -136,17 +137,11 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Suppl
  * @author Baron Henderson - 20077 The Indubitables
  * @version 1.0, 5/6/2024
  */
-@Config
 @Inject
 internal class LocalizationTest(
     private val follower: Lazy<Follower>,
     @Suppress("PROPERTY_HIDES_JAVA_FIELD") private val telemetry: Telemetry
 ) : OpMode() {
-
-    companion object {
-        lateinit var follower: Follower
-    }
-
     override fun init() {}
 
     /** This initializes the PoseUpdater, the mecanum drive motors, and the Panels telemetry.  */
@@ -161,7 +156,6 @@ internal class LocalizationTest(
 
     override fun start() {
         follower.value.startTeleopDrive()
-        Companion.follower = this.follower.value
     }
 
     /**
@@ -200,7 +194,7 @@ internal class LocalizationTest(
 @Inject
 internal class ForwardTuner : OpMode() {
     override fun init() {
-        follower!!.update()
+        follower.update()
         drawOnlyCurrent()
     }
 
@@ -976,8 +970,10 @@ internal class DriveTuner : OpMode() {
 internal class Line : OpMode() {
     private var forward = true
 
-    private var forwards: Path? = null
-    private var backwards: Path? = null
+    private val forwards =
+        Path(BezierLine(Pose(), Pose(DISTANCE, 0.0))).also { it.setConstantHeadingInterpolation(0.0) }
+    private val backwards =
+        Path(BezierLine(Pose(DISTANCE, 0.0), Pose())).also { it.setConstantHeadingInterpolation(0.0) }
 
     override fun init() {}
 
@@ -987,31 +983,27 @@ internal class Line : OpMode() {
         telemetryA.addLine("The robot will go forward and backward continuously along the path while correcting.")
         telemetryA.addLine("You can adjust the PIDF values to tune the robot's drive PIDF(s).")
         telemetryA.update()
-        follower!!.update()
+        follower.update()
         drawOnlyCurrent()
     }
 
     override fun start() {
-        follower!!.activateAllPIDFs()
-        forwards = Path(BezierLine(Pose(0.0, 0.0), Pose(DISTANCE, 0.0)))
-        forwards!!.setConstantHeadingInterpolation(0.0)
-        backwards = Path(BezierLine(Pose(DISTANCE, 0.0), Pose(0.0, 0.0)))
-        backwards!!.setConstantHeadingInterpolation(0.0)
-        follower!!.followPath(forwards)
+        follower.activateAllPIDFs()
+        follower.followPath(forwards)
     }
 
     /** This runs the OpMode, updating the Follower as well as printing out the debug statements to the Telemetry  */
     override fun loop() {
-        follower!!.update()
+        follower.update()
         draw()
 
-        if (!follower!!.isBusy()) {
+        if (!follower.isBusy()) {
             if (forward) {
                 forward = false
-                follower!!.followPath(backwards)
+                follower.followPath(backwards)
             } else {
                 forward = true
-                follower!!.followPath(forwards)
+                follower.followPath(forwards)
             }
         }
 
@@ -1020,6 +1012,7 @@ internal class Line : OpMode() {
     }
 
     companion object {
+        @JvmField
         var DISTANCE: Double = 40.0
     }
 }

@@ -7,10 +7,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D
 
 class SensorOdometry(hardwareMap: HardwareMap) {
-    val sensor: GoBildaPinpointDriver = hardwareMap.get(GoBildaPinpointDriver::class.java, "pinpoint")
-
-    init {
-        sensor.apply {
+    val sensor: GoBildaPinpointDriver =
+        hardwareMap.get(GoBildaPinpointDriver::class.java, "pinpoint").apply {
             setEncoderDirections(
                 GoBildaPinpointDriver.EncoderDirection.FORWARD,
                 GoBildaPinpointDriver.EncoderDirection.FORWARD
@@ -19,7 +17,6 @@ class SensorOdometry(hardwareMap: HardwareMap) {
             setOffsets(18.0, 0.0, DistanceUnit.CM)
             resetPosAndIMU()
         }
-    }
 
     fun update() = sensor.update()
 
