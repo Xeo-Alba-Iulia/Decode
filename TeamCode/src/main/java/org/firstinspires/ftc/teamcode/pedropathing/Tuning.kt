@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.pedropathing
 
 import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.config.Config
+import com.acmerobotics.dashboard.config.ValueProvider
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.BezierCurve
 import com.pedropathing.geometry.BezierLine
@@ -142,6 +143,8 @@ internal class LocalizationTest(
     private val follower: Lazy<Follower>,
     @Suppress("PROPERTY_HIDES_JAVA_FIELD") private val telemetry: Telemetry
 ) : OpMode() {
+    private var multiplier = 1.0
+
     override fun init() {}
 
     /** This initializes the PoseUpdater, the mecanum drive motors, and the Panels telemetry.  */
@@ -156,6 +159,15 @@ internal class LocalizationTest(
 
     override fun start() {
         follower.value.startTeleopDrive()
+        FtcDashboard.getInstance().run {
+            addConfigVariable("Localization", "MULTIPLIER", object : ValueProvider<Double> {
+                override fun get() = multiplier
+                override fun set(value: Double) {
+                    multiplier = value
+                }
+            })
+            updateConfig()
+        }
     }
 
     /**
@@ -164,8 +176,8 @@ internal class LocalizationTest(
      */
     override fun loop() {
         follower.value.setTeleOpDrive(
-            -gamepad1.left_stick_y.toDouble(),
-            -gamepad1.left_stick_x.toDouble(),
+            -gamepad1.left_stick_y.toDouble() * multiplier,
+            -gamepad1.left_stick_x.toDouble() * multiplier,
             -gamepad1.right_stick_x.toDouble(),
         )
         follower.value.update()

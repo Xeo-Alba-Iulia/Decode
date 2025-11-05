@@ -1,3 +1,4 @@
+@file:JvmName("Constants")
 @file:Config
 package org.firstinspires.ftc.teamcode.pedropathing
 
@@ -13,6 +14,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 @JvmField
 var followerConstants: FollowerConstants = FollowerConstants()
 
+@JvmField
 var pathConstraints: PathConstraints = PathConstraints(0.99, 100.0, 1.0, 1.0)
 
 @JvmField
