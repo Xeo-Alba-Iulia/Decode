@@ -7,31 +7,41 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 class Sorter(map: HardwareMap) {
     companion object {
         @JvmField
-        var SERVO_POSITIONS = doubleArrayOf(0.2, 0.5, 0.8)
+        var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)
+
+        @JvmField
+        var SHOOTER_POSITIONS = doubleArrayOf(0.593, 0.991, 0.231)
     }
 
     private val servo = map.servo["sorter"]
     private val ballArray = booleanArrayOf(false, false, false)
+    private var currentIndex = 0
 
     fun getBall() {
-        for((i, hasBall) in ballArray.withIndex()) {
+        for ((i, hasBall) in ballArray.withIndex().reversed()) {
             if (hasBall) {
-                servo.position = SERVO_POSITIONS[i]
+                servo.position = SHOOTER_POSITIONS[i]
                 ballArray[i] = false
+                currentIndex = i
                 return
             }
         }
-        error("No balls to get")
+        throw EmptySorter()
     }
 
     fun intakeBall(): Int {
         for ((i, hasBall) in ballArray.withIndex()) {
             if (!hasBall) {
-                servo.position = SERVO_POSITIONS[i]
+                servo.position = INTAKE_POSITIONS[i]
                 ballArray[i] = true
+                currentIndex = i
                 return i
             }
         }
-        error("No space for more balls")
+        throw FullSorter()
+    }
+
+    fun resetPosition() {
+        servo.position = INTAKE_POSITIONS[currentIndex]
     }
 }
