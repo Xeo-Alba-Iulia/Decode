@@ -1,47 +1,18 @@
 package org.firstinspires.ftc.teamcode.sorter
 
-import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.robotcore.hardware.HardwareMap
+interface Sorter {
+    /**
+     * Intakes an artefact
+     *
+     * @return `true` if there is space for an artefact, otherwise `false`
+     */
+    fun intake(type: ArtefactType): Boolean
 
-@Config
-class Sorter(map: HardwareMap) {
-    companion object {
-        @JvmField
-        var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)
-
-        @JvmField
-        var SHOOTER_POSITIONS = doubleArrayOf(0.593, 0.991, 0.231)
-    }
-
-    private val servo = map.servo["sorter"]
-    private val ballArray = booleanArrayOf(false, false, false)
-    private var currentIndex = 0
-
-    fun getBall() {
-        for ((i, hasBall) in ballArray.withIndex().reversed()) {
-            if (hasBall) {
-                servo.position = SHOOTER_POSITIONS[i]
-                ballArray[i] = false
-                currentIndex = i
-                return
-            }
-        }
-        throw EmptySorter()
-    }
-
-    fun intakeBall(): Int {
-        for ((i, hasBall) in ballArray.withIndex()) {
-            if (!hasBall) {
-                servo.position = INTAKE_POSITIONS[i]
-                ballArray[i] = true
-                currentIndex = i
-                return i
-            }
-        }
-        throw FullSorter()
-    }
-
-    fun resetPosition() {
-        servo.position = INTAKE_POSITIONS[currentIndex]
-    }
+    /**
+     * Gets an artefact ready to be picked up by the shooter
+     *
+     * @param type Specifies the type of artefact. If null, it picks up the first available artefact.
+     * @return `true` if the shooter has a ball of the desired type (or any ball if [type] is null), `false` otherwise.
+     */
+    operator fun get(type: ArtefactType? = null): Boolean
 }
