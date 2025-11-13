@@ -25,7 +25,7 @@ buildscript {
 
 plugins {
     id 'org.jetbrains.kotlin.android' version '2.2.21'
-    id 'dev.zacsweers.metro' version '0.7.2'
+    id 'dev.zacsweers.metro' version '0.7.5'
 }
 
 // Include common definitions from above.
@@ -59,10 +59,14 @@ repositories {
     mavenLocal()
 }
 
+metro {
+    contributesAsInject = true
+}
+
 dependencies {
     implementation project(':FtcRobotController')
     implementation project(':PedroPathingDSL')
-    implementation 'com.pedropathing:ftc:2.0.3'
+    implementation 'com.pedropathing:ftc:2.0.4'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
     implementation("com.acmerobotics.slothboard:dashboard:SNAPSHOT-71e3edb")
