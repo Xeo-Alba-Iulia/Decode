@@ -14,5 +14,5 @@ interface Sorter {
      * @param type Specifies the type of artefact. If null, it picks up the first available artefact.
      * @return `true` if the shooter has a ball of the desired type (or any ball if [type] is null), `false` otherwise.
      */
-    operator fun get(type: ArtefactType? = null): Boolean
+    fun shoot(type: ArtefactType? = null): Boolean
 }

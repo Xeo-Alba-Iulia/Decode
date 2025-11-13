@@ -2,8 +2,11 @@ package org.firstinspires.ftc.teamcode.sorter
 
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.HardwareMap
+import dev.zacsweers.metro.ContributesBinding
+import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @Config
+@ContributesBinding(OpModeScope::class)
 class SorterImpl(map: HardwareMap) : Sorter {
     companion object {
         @JvmField
@@ -32,9 +35,9 @@ class SorterImpl(map: HardwareMap) : Sorter {
         } ?: false
 
 
-    override fun get(type: ArtefactType?) =
+    override fun shoot(type: ArtefactType?) =
         artefacts.indexOfLast { storedType ->
-            type?.equals(storedType) ?: (storedType != null)
+            if (type == null) storedType != null else storedType == type
         }.takeUnless { it == -1 }?.let {
             shooterPosition(it)
             artefacts[it] = null
