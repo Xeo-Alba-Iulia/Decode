@@ -7,8 +7,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import java.util.*
-import kotlin.jvm.optionals.getOrNull
 
 @TeleOp(group = "Tests")
 class SorterOpMode : OpMode() {
@@ -19,34 +17,27 @@ class SorterOpMode : OpMode() {
     lateinit var sorter: Sorter
 
     override fun init() {
-        sorter = appGraph.sorter
         telemetry = appGraph.telemetry
         telemetry.isAutoClear = false
     }
 
+    override fun start() {
+        sorter = appGraph.sorter
+        telemetry.addData("Sorter", ::sorter)
+    }
+
     override fun loop() {
-        val successfulIntake = when {
+        when {
             gamepad1.dpadUpWasPressed() -> sorter.intake(ArtefactType.PURPLE)
             gamepad1.dpadDownWasPressed() -> sorter.intake(ArtefactType.GREEN)
-            else -> null
-        }
-        if (successfulIntake == false) {
-            telemetry.clear()
-            telemetry.addLine("Intake full")
         }
 
         when {
-            gamepad1.leftBumperWasPressed() -> Optional.of(ArtefactType.PURPLE)
-            gamepad1.rightBumperWasPressed() -> Optional.of(ArtefactType.GREEN)
-            gamepad1.backWasPressed() -> Optional.empty()
-            else -> null
-        }?.let {
-            if (!sorter.shoot(it.getOrNull())) {
-                telemetry.clear()
-                telemetry.addLine("Nu mai sunt artefacte ${it.map(ArtefactType::name).orElse("")}")
-            }
+            gamepad1.leftBumperWasPressed() -> sorter.shoot(ArtefactType.PURPLE)
+            gamepad1.rightBumperWasPressed() -> sorter.shoot(ArtefactType.GREEN)
+            gamepad1.backWasPressed() -> sorter.shoot()
         }
 
-        telemetry.addLine()
+        telemetry.update()
     }
 }
