@@ -42,7 +42,7 @@ android {
             freeCompilerArgs = ["-XXLanguage:+PropertyParamAnnotationDefaultTargetMode"]
         }
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_1_8
+            sourceCompatibility = JavaVersion.VERSION_11
             targetCompatibility = JavaVersion.VERSION_11
         }
     }
@@ -71,4 +71,12 @@ dependencies {
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
     compileOnly("com.acmerobotics.dashboard:dashboard:0.5.1!!")
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
+
+    testImplementation platform("org.junit:junit-bom:5.14.1")
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
