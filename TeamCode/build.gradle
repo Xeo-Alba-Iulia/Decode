@@ -69,6 +69,6 @@ dependencies {
     implementation 'com.pedropathing:ftc:2.0.4'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
-    implementation("com.acmerobotics.slothboard:dashboard:SNAPSHOT-71e3edb")
+    compileOnly("com.acmerobotics.dashboard:dashboard:0.5.1!!")
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
 }
