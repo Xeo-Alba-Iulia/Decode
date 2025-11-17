@@ -1,9 +1,7 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
-import com.sun.tools.javac.code.Type.map
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
@@ -65,5 +63,5 @@ class SorterImpl(@Named("SorterServo") private val servo: Servo) : Sorter {
         } ?: false
     }
 
-    override fun toString() = artefacts.contentToString()
+    override fun toString() = "SorterImpl(artefacts = ${artefacts.contentToString()})"
 }

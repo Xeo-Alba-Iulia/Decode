@@ -1,11 +1,7 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import com.qualcomm.robotcore.hardware.Servo
-import dev.zacsweers.metro.BindingContainer
-import dev.zacsweers.metro.ContributesTo
-import dev.zacsweers.metro.Named
-import dev.zacsweers.metro.Provider
-import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.*
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import org.firstinspires.ftc.teamcode.metro.SorterProviders
 
@@ -13,14 +9,12 @@ import org.firstinspires.ftc.teamcode.metro.SorterProviders
 @ContributesTo(OpModeScope::class, replaces = [SorterProviders::class])
 @BindingContainer
 object FakeSorterServoBinding {
-    lateinit var fakeServo: FakeServo
+    lateinit var sorterServo: FakeServo
 
     @Provides
     @Named("SorterServo")
     fun provideShooterServo(fakeServoProvider: Provider<FakeServo>): Servo {
-        if (!::fakeServo.isInitialized) {
-            fakeServo = fakeServoProvider()
-        }
-        return fakeServo
+        sorterServo = fakeServoProvider()
+        return sorterServo
     }
 }
