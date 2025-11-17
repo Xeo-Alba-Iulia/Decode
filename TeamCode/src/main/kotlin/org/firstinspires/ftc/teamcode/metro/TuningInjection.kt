@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.metro
 
+import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import dev.zacsweers.metro.ContributesTo
-import org.firstinspires.ftc.teamcode.pedropathing.Tuning
+import dev.zacsweers.metro.Provider
+import org.firstinspires.ftc.teamcode.pedropathing.TuningOpModeKey
 
 @ContributesTo(OpModeScope::class)
 interface TuningInjection {
-    fun inject(opMode: Tuning)
+    val tuningOpModesMap: Map<TuningOpModeKey, Provider<OpMode>>
 }
