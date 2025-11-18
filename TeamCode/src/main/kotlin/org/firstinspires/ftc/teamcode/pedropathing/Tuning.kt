@@ -4,22 +4,17 @@ import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.config.Config
 import com.acmerobotics.dashboard.config.ValueProvider
 import com.pedropathing.follower.Follower
-import com.pedropathing.geometry.BezierCurve
-import com.pedropathing.geometry.BezierLine
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.Vector
 import com.pedropathing.paths.HeadingInterpolator
-import com.pedropathing.paths.Path
 import com.pedropathing.paths.PathChain
+import com.pedropathing.paths.PathLinearExperimental
+import com.pedropathing.paths.pathChain
 import com.pedropathing.telemetry.SelectScope
 import com.pedropathing.telemetry.SelectableOpMode
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import dev.zacsweers.metro.ContributesIntoMap
-import dev.zacsweers.metro.MapKey
-import dev.zacsweers.metro.Provider
-import dev.zacsweers.metro.asContribution
-import dev.zacsweers.metro.createGraphFactory
+import dev.zacsweers.metro.*
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
@@ -36,9 +31,9 @@ import kotlin.math.pow
  */
 @Config
 @TeleOp(name = "Tuning", group = "Pedro Pathing")
-class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Supplier<OpMode?>?>? ->
+class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Supplier<OpMode?>?> ->
     for ((folderName, folderMap) in tuningOpModesMap) {
-        s!!.folder(folderName) { f ->
+        s.folder(folderName) { f ->
             for ((opModeName, opModeProvider) in folderMap) {
                 f.add(opModeName) { opModeProvider() }
             }
@@ -728,8 +723,19 @@ class LateralZeroPowerAccelerationTuner(private val follower: Follower, private 
 class TranslationalTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private var forwards: Path? = null
-    private var backwards: Path? = null
+    private val forwards = pathChain(follower) {
+        pathConstantHeading(0.0) {
+            +Pose()
+            +Pose(DISTANCE, 0.0)
+        }
+    }
+
+    private val backwards = pathChain(follower) {
+        pathConstantHeading(0.0) {
+            +Pose(DISTANCE, 0.0)
+            +Pose()
+        }
+    }
 
     override fun init() {}
 
@@ -746,10 +752,6 @@ class TranslationalTuner(private val follower: Follower, private val telemetryA:
     override fun start() {
         follower.deactivateAllPIDFs()
         follower.activateTranslational()
-        forwards = Path(BezierLine(Pose(0.0, 0.0), Pose(DISTANCE, 0.0)))
-        forwards!!.setConstantHeadingInterpolation(0.0)
-        backwards = Path(BezierLine(Pose(DISTANCE, 0.0), Pose(0.0, 0.0)))
-        backwards!!.setConstantHeadingInterpolation(0.0)
         follower.followPath(forwards)
     }
 
@@ -795,8 +797,18 @@ class TranslationalTuner(private val follower: Follower, private val telemetryA:
 class HeadingTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private lateinit var forwards: Path
-    private lateinit var backwards: Path
+    private val forwards = pathChain(follower) {
+        pathConstantHeading(0.0) {
+            +Pose()
+            +Pose(DISTANCE, 0.0)
+        }
+    }
+    private val backwards = pathChain(follower) {
+        pathConstantHeading(0.0) {
+            +Pose(DISTANCE, 0.0)
+            +Pose()
+        }
+    }
 
     override fun init() {}
 
@@ -816,10 +828,6 @@ class HeadingTuner(private val follower: Follower, private val telemetryA: Telem
     override fun start() {
         follower.deactivateAllPIDFs()
         follower.activateHeading()
-        forwards = Path(BezierLine(Pose(0.0, 0.0), Pose(DISTANCE, 0.0)))
-        forwards!!.setConstantHeadingInterpolation(0.0)
-        backwards = Path(BezierLine(Pose(DISTANCE, 0.0), Pose(0.0, 0.0)))
-        backwards!!.setConstantHeadingInterpolation(0.0)
         follower.followPath(forwards)
     }
 
@@ -866,8 +874,18 @@ class HeadingTuner(private val follower: Follower, private val telemetryA: Telem
 class DriveTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private lateinit var forwards: PathChain
-    private lateinit var backwards: PathChain
+    private val forwards = pathChain(follower, decelerationType = PathChain.DecelerationType.GLOBAL) {
+        pathConstantHeading(0.0) {
+            +Pose()
+            +Pose(DISTANCE, 0.0)
+        }
+    }
+    private val backwards = pathChain(follower, decelerationType = PathChain.DecelerationType.GLOBAL) {
+        pathConstantHeading(0.0) {
+            +Pose(DISTANCE, 0.0)
+            +Pose()
+        }
+    }
 
     override fun init() {}
 
@@ -887,19 +905,6 @@ class DriveTuner(private val follower: Follower, private val telemetryA: Telemet
     override fun start() {
         follower.deactivateAllPIDFs()
         follower.activateDrive()
-
-        forwards = follower.pathBuilder()
-            .setGlobalDeceleration()
-            .addPath(BezierLine(Pose(0.0, 0.0), Pose(DISTANCE, 0.0)))
-            .setConstantHeadingInterpolation(0.0)
-            .build()
-
-        backwards = follower.pathBuilder()
-            .setGlobalDeceleration()
-            .addPath(BezierLine(Pose(DISTANCE, 0.0), Pose(0.0, 0.0)))
-            .setConstantHeadingInterpolation(0.0)
-            .build()
-
         follower.followPath(forwards)
     }
 
@@ -947,10 +952,18 @@ class DriveTuner(private val follower: Follower, private val telemetryA: Telemet
 class Line(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private val forwards =
-        Path(BezierLine(Pose(), Pose(DISTANCE, 0.0))).apply { setConstantHeadingInterpolation(0.0) }
-    private val backwards =
-        Path(BezierLine(Pose(DISTANCE, 0.0), Pose())).apply { setConstantHeadingInterpolation(0.0) }
+    private val forwards = pathChain(follower) {
+        pathConstantHeading(0.0) {
+            +Pose()
+            +Pose(DISTANCE, 0.0)
+        }
+    }
+    private val backwards = pathChain(follower) {
+        pathConstantHeading(0.0) {
+            +Pose(DISTANCE, 0.0)
+            +Pose()
+        }
+    }
 
     override fun init() {}
 
@@ -1013,8 +1026,20 @@ class Line(private val follower: Follower, private val telemetryA: Telemetry) : 
 class CentripetalTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private var forwards: Path? = null
-    private var backwards: Path? = null
+    private val forwards = pathChain(follower) {
+        path {
+            +Pose()
+            +Pose(abs(DISTANCE), 0.0)
+            +Pose(abs(DISTANCE), DISTANCE)
+        }
+    }
+    private val backwards = pathChain(follower) {
+        path(interpolator = HeadingInterpolator.tangent.reverse()) {
+            +Pose(abs(DISTANCE), DISTANCE)
+            +Pose(abs(DISTANCE), 0.0)
+            +Pose()
+        }
+    }
 
     override fun init() {}
 
@@ -1033,12 +1058,6 @@ class CentripetalTuner(private val follower: Follower, private val telemetryA: T
 
     override fun start() {
         follower.activateAllPIDFs()
-        forwards = Path(BezierCurve(Pose(), Pose(abs(DISTANCE), 0.0), Pose(abs(DISTANCE), DISTANCE)))
-        backwards = Path(BezierCurve(Pose(abs(DISTANCE), DISTANCE), Pose(abs(DISTANCE), 0.0), Pose(0.0, 0.0)))
-
-        backwards!!.setTangentHeadingInterpolation()
-        backwards!!.reverseHeadingInterpolation()
-
         follower.followPath(forwards)
     }
 
@@ -1080,12 +1099,26 @@ class CentripetalTuner(private val follower: Follower, private val telemetryA: T
 @Config
 @ContributesIntoMap(OpModeScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Triangle Test Tuner")
+@OptIn(PathLinearExperimental::class)
 class Triangle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val startPose = Pose(0.0, 0.0, Math.toRadians(0.0))
     private val interPose = Pose(24.0, -24.0, Math.toRadians(90.0))
     private val endPose = Pose(24.0, 24.0, Math.toRadians(45.0))
 
-    private lateinit var triangle: PathChain
+    private val triangle = pathChain(follower) {
+        pathLinearHeading {
+            +startPose
+            +interPose
+        }
+        pathLinearHeading {
+            +interPose
+            +endPose
+        }
+        pathLinearHeading {
+            +endPose
+            +startPose
+        }
+    }
 
     /**
      * This runs the OpMode, updating the Follower as well as printing out the debug statements to
@@ -1114,15 +1147,6 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
     override fun start() {
         follower.setStartingPose(startPose)
 
-        triangle = follower.pathBuilder()
-            .addPath(BezierLine(startPose, interPose))
-            .setLinearHeadingInterpolation(startPose.heading, interPose.heading)
-            .addPath(BezierLine(interPose, endPose))
-            .setLinearHeadingInterpolation(interPose.heading, endPose.heading)
-            .addPath(BezierLine(endPose, startPose))
-            .setLinearHeadingInterpolation(endPose.heading, startPose.heading)
-            .build()
-
         follower.followPath(triangle)
     }
 }
@@ -1142,19 +1166,30 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
 @ContributesIntoMap(OpModeScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Circle Test Tuner")
 class Circle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
-    private var circle: PathChain? = null
+    private val circle = pathChain(follower) {
+        pathFacingPoint(0.0, RADIUS) {
+            +Pose()
+            +Pose(RADIUS, 0.0)
+            +Pose(RADIUS, RADIUS)
+        }
+        pathFacingPoint(0.0, RADIUS) {
+            +Pose(RADIUS, RADIUS)
+            +Pose(RADIUS, 2 * RADIUS)
+            +Pose(0.0, 2 * RADIUS)
+        }
+        pathFacingPoint(0.0, RADIUS) {
+            +Pose(0.0, 2 * RADIUS)
+            +Pose(-RADIUS, 2 * RADIUS)
+            +Pose(-RADIUS, RADIUS)
+        }
+        pathFacingPoint(0.0, RADIUS) {
+            +Pose(-RADIUS, RADIUS)
+            +Pose(-RADIUS, 0.0)
+            +Pose()
+        }
+    }
 
     override fun start() {
-        circle = follower.pathBuilder()
-            .addPath(BezierCurve(Pose(0.0, 0.0), Pose(RADIUS, 0.0), Pose(RADIUS, RADIUS)))
-            .setHeadingInterpolation(HeadingInterpolator.facingPoint(0.0, RADIUS))
-            .addPath(BezierCurve(Pose(RADIUS, RADIUS), Pose(RADIUS, 2 * RADIUS), Pose(0.0, 2 * RADIUS)))
-            .setHeadingInterpolation(HeadingInterpolator.facingPoint(0.0, RADIUS))
-            .addPath(BezierCurve(Pose(0.0, 2 * RADIUS), Pose(-RADIUS, 2 * RADIUS), Pose(-RADIUS, RADIUS)))
-            .setHeadingInterpolation(HeadingInterpolator.facingPoint(0.0, RADIUS))
-            .addPath(BezierCurve(Pose(-RADIUS, RADIUS), Pose(-RADIUS, 0.0), Pose(0.0, 0.0)))
-            .setHeadingInterpolation(HeadingInterpolator.facingPoint(0.0, RADIUS))
-            .build()
         follower.followPath(circle)
     }
 
