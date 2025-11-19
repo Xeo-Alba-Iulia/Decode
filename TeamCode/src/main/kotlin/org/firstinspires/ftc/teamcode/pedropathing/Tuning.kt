@@ -10,16 +10,15 @@ import com.pedropathing.paths.HeadingInterpolator
 import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
-import com.pedropathing.telemetry.SelectScope
-import com.pedropathing.telemetry.SelectableOpMode
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import dev.zacsweers.metro.*
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.MapKey
+import dev.zacsweers.metro.Provider
+import dev.zacsweers.metro.createGraphFactory
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
-import org.firstinspires.ftc.teamcode.metro.TuningInjection
-import java.util.function.Supplier
 import kotlin.math.abs
 import kotlin.math.pow
 
@@ -31,22 +30,20 @@ import kotlin.math.pow
  */
 @Config
 @TeleOp(name = "Tuning", group = "Pedro Pathing")
-class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Supplier<OpMode?>?> ->
+class Tuning : SelectableOpMode("Select a Tuning OpMode", {
     for ((folderName, folderMap) in tuningOpModesMap) {
-        s.folder(folderName) { f ->
+        folder(folderName) { folder ->
             for ((opModeName, opModeProvider) in folderMap) {
-                f.add(opModeName) { opModeProvider() }
+                folder.add(opModeName, opModeProvider)
             }
         }
     }
 }) {
     val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
 
-    private val opModesMap = appGraph.asContribution<TuningInjection>().tuningOpModesMap
+    private val opModesMap = appGraph.tuningOpModesMap
 
-    public override fun onLog(lines: List<String>) {}
-
-    override fun onSelect() {
+    override fun init() {
         val finalMap = mutableMapOf<String, MutableMap<String, Provider<OpMode>>>()
 
         for ((key, value) in opModesMap) {
@@ -54,6 +51,8 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", { s: SelectScope<Suppl
         }
 
         tuningOpModesMap = finalMap
+        this.telemetry = appGraph.telemetry
+        super.init()
     }
 }
 private val changes = arrayListOf<String>()
