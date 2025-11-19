@@ -1,13 +1,21 @@
 package org.firstinspires.ftc.teamcode.intake
 
-import com.qualcomm.robotcore.hardware.HardwareMap
+import com.acmerobotics.dashboard.config.Config
+import com.qualcomm.robotcore.hardware.DcMotor
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
 
-class Intake(hardwareMap: HardwareMap) {
-    private val intakeMotor = hardwareMap.dcMotor["IntakeMotor"]
-
+@Config
+@Inject
+class Intake(@Named("intakeMotor") private val motor: DcMotor) {
     var isRunning: Boolean
-        get() = intakeMotor.power != 0.0
+        get() = motor.power != 0.0
         set(value) {
-            intakeMotor.power = if (value) 1.0 else 0.0
+            motor.power = if (value) INTAKE_POWER else 0.0
         }
+
+    companion object {
+        @JvmField
+        var INTAKE_POWER = 0.7
+    }
 }

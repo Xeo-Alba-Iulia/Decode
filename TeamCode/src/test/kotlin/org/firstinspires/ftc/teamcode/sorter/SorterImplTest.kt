@@ -17,7 +17,7 @@ class SorterImplTest {
     fun setup() {
         appGraph = createGraph<TestOpModeGraph>()
         sorter = appGraph.sorterImpl
-        servo = FakeSorterServoBinding.sorterServo
+        servo = appGraph.sorterServo
     }
 
     @Test

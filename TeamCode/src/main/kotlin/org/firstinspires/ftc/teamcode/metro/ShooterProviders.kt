@@ -15,6 +15,6 @@ interface ShooterProviders {
     val ShooterNoMotorImpl.bind: Shooter
 
     @Provides
-    @Named("ShooterHoodServo")
+    @Named("shooterHoodServo")
     fun provideShooterHoodServo(map: HardwareMap): Servo = map.servo["hood"]
 }

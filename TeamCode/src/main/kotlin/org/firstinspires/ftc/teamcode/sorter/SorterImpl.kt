@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 @Config
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class)
-class SorterImpl(@Named("SorterServo") private val servo: Servo) : Sorter {
+class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
     companion object {
         @JvmField
         var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)

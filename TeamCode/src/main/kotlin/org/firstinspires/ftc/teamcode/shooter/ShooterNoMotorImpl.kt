@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @SingleIn(OpModeScope::class)
 @Inject
-open class ShooterNoMotorImpl(@Named("ShooterHoodServo") private val hoodServo: Servo) : Shooter {
+open class ShooterNoMotorImpl(@Named("shooterHoodServo") private val hoodServo: Servo) : Shooter {
     override var angleDegrees: Double = 0.0
         set(_) {}
 

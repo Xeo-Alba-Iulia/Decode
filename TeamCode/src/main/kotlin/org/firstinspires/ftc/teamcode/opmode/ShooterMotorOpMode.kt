@@ -25,7 +25,7 @@ class ShooterMotorOpMode : ShooterOpMode() {
         fun provideShooter(shooter: ShooterNoDirectionImpl): Shooter = shooter
 
         @Provides
-        @Named("ShootingMotor")
+        @Named("shootingMotor")
         fun provideShootingMotor(map: HardwareMap): DcMotor = error("Motorul de shooter nu are port")
     }
 }

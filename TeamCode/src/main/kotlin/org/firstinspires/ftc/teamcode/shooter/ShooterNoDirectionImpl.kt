@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 @SingleIn(OpModeScope::class)
 @Inject
 class ShooterNoDirectionImpl(
-    @Named("ShootingMotor") private val motor: DcMotor,
+    @Named("shootingMotor") private val motor: DcMotor,
     private val shooterNoMotorImpl: ShooterNoMotorImpl,
 ) : Shooter by shooterNoMotorImpl {
 

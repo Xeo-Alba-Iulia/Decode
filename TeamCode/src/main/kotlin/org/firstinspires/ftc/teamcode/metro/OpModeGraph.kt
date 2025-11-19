@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -23,11 +24,13 @@ interface OpModeGraph {
     fun provideHardwareMap(opMode: OpMode): HardwareMap = opMode.hardwareMap
 
     @Provides
-    @Named("StandardTelemetry")
+    @SingleIn(OpModeScope::class)
+    @Named("classic")
     fun provideClassicTelemetry(opMode: OpMode): Telemetry = opMode.telemetry
 
     @Provides
-    fun provideTelemetry(@Named("StandardTelemetry") telemetry: Telemetry): Telemetry =
+    @SingleIn(OpModeScope::class)
+    fun provideTelemetry(@Named("classic") telemetry: Telemetry): Telemetry =
         MultipleTelemetry(
             FtcDashboard.getInstance().telemetry,
             telemetry
