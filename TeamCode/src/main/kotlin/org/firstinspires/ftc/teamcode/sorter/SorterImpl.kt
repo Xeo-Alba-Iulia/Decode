@@ -1,18 +1,17 @@
 package org.firstinspires.ftc.teamcode.sorter
 
-import com.acmerobotics.dashboard.config.Config
+import com.bylazar.configurables.annotations.Configurable
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
-@Config
+@Configurable
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class)
 class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
     companion object {
-        @JvmField
         var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)
 
         @JvmField

@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.intake
 
-import com.acmerobotics.dashboard.config.Config
+import com.bylazar.configurables.annotations.Configurable
 import com.qualcomm.robotcore.hardware.DcMotor
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 
-@Config
+@Configurable
 @Inject
 class Intake(@Named("intakeMotor") private val motor: DcMotor) {
     var isRunning: Boolean

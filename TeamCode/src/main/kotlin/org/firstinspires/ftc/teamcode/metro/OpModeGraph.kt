@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.metro
 
-import com.acmerobotics.dashboard.FtcDashboard
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry
+import com.bylazar.telemetry.JoinedTelemetry
+import com.bylazar.telemetry.PanelsTelemetry
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.DependencyGraph
@@ -25,16 +25,20 @@ interface OpModeGraph {
 
     @Provides
     @SingleIn(OpModeScope::class)
-    @Named("classic")
+    @Named("ftc")
     fun provideClassicTelemetry(opMode: OpMode): Telemetry = opMode.telemetry
 
     @Provides
     @SingleIn(OpModeScope::class)
-    fun provideTelemetry(@Named("classic") telemetry: Telemetry): Telemetry =
-        MultipleTelemetry(
-            FtcDashboard.getInstance().telemetry,
-            telemetry
-        )
+    @Named("panels")
+    fun providePanelsTelemetry(): Telemetry = PanelsTelemetry.ftcTelemetry
+
+    @Provides
+    @SingleIn(OpModeScope::class)
+    fun provideTelemetry(
+        @Named("ftc") ftcTelemetry: Telemetry,
+        @Named("panels") panelsTelemtry: Telemetry
+    ): Telemetry = JoinedTelemetry(ftcTelemetry, panelsTelemtry)
 
     @DependencyGraph.Factory
     fun interface Factory {

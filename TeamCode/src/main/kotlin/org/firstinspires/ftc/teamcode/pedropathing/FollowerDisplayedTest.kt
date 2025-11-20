@@ -1,25 +1,29 @@
 package org.firstinspires.ftc.teamcode.pedropathing
 
-import com.acmerobotics.dashboard.FtcDashboard
-import com.acmerobotics.dashboard.config.VariableProvider
+import com.bylazar.configurables.PanelsConfigurables
+import com.bylazar.configurables.annotations.Configurable
 import com.pedropathing.follower.Follower
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
-import com.qualcomm.robotcore.util.RobotLog
-import dev.zacsweers.metro.ContributesIntoMap
-import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp
+import dev.zacsweers.metro.createGraphFactory
+import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 
-@ContributesIntoMap(OpModeScope::class)
-@TuningOpModeKey(folder = "Custom", name = FollowerDisplayedTest.TAG)
-class FollowerDisplayedTest(private val follower: Follower) : OpMode() {
+//@ContributesIntoMap(OpModeScope::class)
+//@TuningOpModeKey(folder = "Custom", name = FollowerDisplayedTest.TAG)
+@TeleOp
+@Configurable
+class FollowerDisplayedTest() : OpMode() {
     companion object {
+        lateinit var follower: Follower
         const val TAG = "FollowerDisplayTest"
     }
 
+    lateinit var opModeGraph: OpModeGraph
+
     override fun init() {
-        RobotLog.dd(TAG, "Started")
-        FtcDashboard.getInstance().addConfigVariable("FollowerDisplayTest", "follower", VariableProvider(follower))
-        RobotLog.dd(TAG, "Added")
-        FtcDashboard.getInstance().updateConfig()
+        opModeGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
+        follower = opModeGraph.follower
+        PanelsConfigurables.refreshClass(this)
     }
 
     override fun loop() {}

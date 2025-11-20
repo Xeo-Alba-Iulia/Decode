@@ -1,14 +1,14 @@
 @file:JvmName("Constants")
-@file:Config
 package org.firstinspires.ftc.teamcode.pedropathing
 
-import com.acmerobotics.dashboard.config.Config
 import com.pedropathing.follower.FollowerConstants
+import com.pedropathing.ftc.FollowerBuilder
 import com.pedropathing.ftc.drivetrains.MecanumConstants
 import com.pedropathing.ftc.localization.constants.PinpointConstants
 import com.pedropathing.paths.PathConstraints
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.qualcomm.robotcore.hardware.DcMotorSimple
+import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 
 @JvmField
@@ -32,3 +32,10 @@ var mecanumConstants: MecanumConstants = MecanumConstants()
     .rightRearMotorName("backRight")
     .leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
     .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
+
+fun createFollower(map: HardwareMap) =
+    FollowerBuilder(followerConstants, map)
+        .mecanumDrivetrain(mecanumConstants)
+        .pathConstraints(pathConstraints)
+        .pinpointLocalizer(pinpointConstants)
+        .build()
