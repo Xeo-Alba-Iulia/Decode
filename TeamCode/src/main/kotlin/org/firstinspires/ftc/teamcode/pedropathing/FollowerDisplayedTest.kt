@@ -12,9 +12,9 @@ import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 //@TuningOpModeKey(folder = "Custom", name = FollowerDisplayedTest.TAG)
 @TeleOp
 @Configurable
-class FollowerDisplayedTest() : OpMode() {
+class FollowerDisplayedTest : OpMode() {
     companion object {
-        lateinit var follower: Follower
+        var follower: Follower? = null
         const val TAG = "FollowerDisplayTest"
     }
 

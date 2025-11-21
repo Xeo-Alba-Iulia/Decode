@@ -56,8 +56,7 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
         }.takeIf { it != -1 }?.let {
             shooterPosition(it)
             size--
-            if (isEmpty)
-                prepareIntake()
+            if (isEmpty) prepareIntake()
             true
         } ?: false
     }

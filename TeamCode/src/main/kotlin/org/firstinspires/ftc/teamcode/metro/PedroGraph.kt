@@ -6,10 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import org.firstinspires.ftc.teamcode.pedropathing.followerConstants
-import org.firstinspires.ftc.teamcode.pedropathing.mecanumConstants
-import org.firstinspires.ftc.teamcode.pedropathing.pathConstraints
-import org.firstinspires.ftc.teamcode.pedropathing.pinpointConstants
+import org.firstinspires.ftc.teamcode.pedropathing.Constants.*
 
 @ContributesTo(OpModeScope::class)
 interface PedroGraph {

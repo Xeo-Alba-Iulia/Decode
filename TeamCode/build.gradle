@@ -69,7 +69,7 @@ dependencies {
     implementation 'com.pedropathing:ftc:2.0.4'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
-    implementation 'com.bylazar:fullpanels:1.0.6'
+    implementation 'com.bylazar:fullpanels:1.0.9'
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
 
     testImplementation platform("org.junit:junit-bom:5.14.1")
