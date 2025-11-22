@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
-import org.firstinspires.ftc.teamcode.ConstrainedDouble
+import org.firstinspires.ftc.teamcode.constrainedDouble
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @SingleIn(OpModeScope::class)
@@ -14,7 +14,7 @@ class ShooterNoDirectionImpl(
     private val shooterNoMotorImpl: ShooterNoMotorImpl,
 ) : Shooter by shooterNoMotorImpl {
 
-    override var shooterSpeed by ConstrainedDouble(-1.0..1.0, 0.5)
+    override var shooterSpeed by constrainedDouble(-1.0..1.0, 0.5)
 
     override var isRunning = false
         set(value) {
