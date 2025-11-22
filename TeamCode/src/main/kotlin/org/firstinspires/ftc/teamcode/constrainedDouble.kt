@@ -3,7 +3,8 @@ package org.firstinspires.ftc.teamcode
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-class ConstrainedDouble(
+@Suppress("ClassName")
+class constrainedDouble(
     val range: ClosedFloatingPointRange<Double>,
     defaultValue: Double = 0.0
 ) : ReadWriteProperty<Any?, Double> {
