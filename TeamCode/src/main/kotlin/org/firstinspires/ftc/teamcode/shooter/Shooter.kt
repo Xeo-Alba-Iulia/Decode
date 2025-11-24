@@ -4,6 +4,8 @@ interface Shooter {
     var angleDegrees: Double
     var hood: Double
     var shooterSpeed: Double
-    var isRunning: Boolean
-    val isAtTarget: Boolean
+    val isRunning: Boolean
+
+    suspend fun turnOn()
+    fun turnOff()
 }

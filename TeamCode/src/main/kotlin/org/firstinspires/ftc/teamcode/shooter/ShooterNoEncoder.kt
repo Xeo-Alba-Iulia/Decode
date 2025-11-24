@@ -5,7 +5,9 @@ import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import kotlin.time.Duration.Companion.seconds
 
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class)
@@ -23,13 +25,20 @@ class ShooterNoEncoder(
     override var hood by hoodServo::position
     override var shooterSpeed = 0.7
     override var isRunning = false
-        set(value) {
-            field = value
-            motor.power = if (value) shooterSpeed else 0.0
-        }
+        private set
 
-    override val isAtTarget = true
+    override suspend fun turnOn() {
+        if (isRunning) return
+        motor.power = shooterSpeed
+        delay(2.seconds)
+        isRunning = true
+    }
+
+    override fun turnOff() {
+        motor.power = 0.0
+        isRunning = false
+    }
 
     override fun toString() =
-        "ShooterNoEncoder(angleDegrees=$angleDegrees, hood=$hood, shooterSpeed=$shooterSpeed, isRunning=$isRunning)"
+        "ShooterNoEncoder(angleDegrees=$angleDegrees, hood=$hood, shooterSpeed=$shooterSpeed)"
 }

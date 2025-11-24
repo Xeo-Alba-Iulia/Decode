@@ -1,16 +1,20 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import com.acmerobotics.dashboard.config.Config
+import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.delay
+import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import kotlin.time.Duration.Companion.seconds
 
 @Config
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class)
-class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
+class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpModeObserver {
     companion object {
         @JvmField
         var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)
@@ -26,29 +30,29 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
     override var size = 0
         private set
 
-    fun intakePosition(index: Int) {
+    suspend fun intakePosition(index: Int) {
+        delay(0.5.seconds)
         servo.position = INTAKE_POSITIONS[index]
     }
 
-    fun shooterPosition(index: Int) {
+    suspend fun shooterPosition(index: Int) {
+        delay(0.3.seconds)
         servo.position = SHOOTER_POSITIONS[index]
     }
 
-    init { prepareIntake() }
-
-    override fun prepareIntake() {
+    override suspend fun prepareIntake() {
         require(!isFull) { "Sorter is full" }
         currentIntakeSlot = artefacts.indexOfFirst { it == null }.also { intakePosition(it) }
     }
 
-    override fun intake(type: ArtefactType) {
+    override suspend fun intake(type: ArtefactType) {
         require(currentIntakeSlot != -1) { "Sorter not prepared for intake" }
         artefacts[currentIntakeSlot] = type
         size++
         if (!isFull) prepareIntake() else currentIntakeSlot = -1
     }
 
-    override fun shoot(type: ArtefactType?): Boolean {
+    override suspend fun shoot(type: ArtefactType?): Boolean {
         require(!isEmpty) { "Sorter is empty" }
         currentIntakeSlot = -1
 
@@ -61,6 +65,10 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
                 prepareIntake()
             true
         } ?: false
+    }
+
+    override suspend fun onStart(opMode: OpMode) {
+        prepareIntake()
     }
 
     override fun toString() = "SorterImpl(artefacts = ${artefacts.contentToString()})"

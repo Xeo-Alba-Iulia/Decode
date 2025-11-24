@@ -14,7 +14,7 @@ sealed interface Sorter {
      * @see isFull
      * @see isEmpty
      */
-    fun prepareIntake()
+    suspend fun prepareIntake()
 
     /**
      * Sets the type of artefact that was put in the intake.
@@ -26,7 +26,7 @@ sealed interface Sorter {
      * [OpMode][com.qualcomm.robotcore.eventloop.opmode.OpMode.start]
      * @see [isFull]
      */
-    fun intake(type: ArtefactType)
+    suspend fun intake(type: ArtefactType)
 
     /**
      * Supplies an artefact to be picked up by the shooter
@@ -35,7 +35,7 @@ sealed interface Sorter {
      *
      * @see isEmpty
      */
-    fun shoot(type: ArtefactType? = null): Boolean
+    suspend fun shoot(type: ArtefactType? = null): Boolean
 
     /**
      * Number of artefacts currently in the sorter
