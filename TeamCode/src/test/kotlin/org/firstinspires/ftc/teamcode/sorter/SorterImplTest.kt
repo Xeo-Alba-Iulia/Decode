@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.sorter
 
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.createGraph
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +22,8 @@ class SorterImplTest {
     }
 
     @Test
-    fun intake() {
+    fun intake() = runTest {
+        sorter.prepareIntake()
         assertEquals(SorterImpl.INTAKE_POSITIONS[0], servo.position)
         assertEquals(
             SorterImpl.INTAKE_POSITIONS[1],

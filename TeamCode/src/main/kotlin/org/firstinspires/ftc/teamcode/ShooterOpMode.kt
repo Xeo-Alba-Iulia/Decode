@@ -2,7 +2,11 @@ package org.firstinspires.ftc.teamcode
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
+import dev.zacsweers.metro.asContribution
 import dev.zacsweers.metro.createGraphFactory
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.firstinspires.ftc.teamcode.metro.CoroutineProviders
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 
@@ -19,10 +23,10 @@ open class ShooterOpMode : OpMode() {
 
     override fun loop() {
         if (gamepad1.a) {
-            shooter.isRunning = true
+            appGraph.opModeScope.launch { shooter.turnOn() }
         }
         if (gamepad1.b) {
-            shooter.isRunning = false
+            shooter.turnOff()
         }
         if (gamepad1.y) shooter.shooterSpeed += 0.001
         if (gamepad1.x) shooter.shooterSpeed -= 0.001

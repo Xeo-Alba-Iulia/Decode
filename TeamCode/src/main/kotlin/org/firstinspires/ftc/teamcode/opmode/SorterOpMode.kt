@@ -38,6 +38,7 @@ class SorterOpMode : CoroutineOpMode() {
                 gamepad1.backWasPressed() -> sorter.shoot()
             }
 
+            telemetry.addData("Runtime", runtime)
             telemetry.update()
         }
     }

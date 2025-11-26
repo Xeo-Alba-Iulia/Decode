@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.binding
 import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
@@ -13,7 +14,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Config
 @SingleIn(OpModeScope::class)
-@ContributesBinding(OpModeScope::class)
+@ContributesBinding(OpModeScope::class, binding<Sorter>())
 class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpModeObserver {
     companion object {
         @JvmField
@@ -67,9 +68,7 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
         } ?: false
     }
 
-    override suspend fun onStart(opMode: OpMode) {
-        prepareIntake()
-    }
+    override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
     override fun toString() = "SorterImpl(artefacts = ${artefacts.contentToString()})"
 }
