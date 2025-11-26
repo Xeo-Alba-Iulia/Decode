@@ -5,9 +5,9 @@ import com.pedropathing.telemetry.Selector
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import dev.zacsweers.metro.Provider
 
-abstract class SelectableOpMode(
+abstract class SelectableOpMode<T: SelectableOpMode<T>>(
     private val name: String,
-    private val block: SelectScope<Provider<OpMode>>.() -> Unit
+    private val block: SelectScope<Provider<OpMode>>.(opMode: T) -> Unit
 ) : OpMode() {
 
     companion object {
@@ -22,7 +22,8 @@ abstract class SelectableOpMode(
     private lateinit var selector: Selector<Provider<OpMode>>
 
     override fun init() {
-        selector = Selector.create(name, block, MESSAGE)
+        @Suppress("UNCHECKED_CAST")
+        selector = Selector.create(name, { block(it, this as T) }, MESSAGE)
         selector.onSelect {
             selectedOpMode = it()
             selectedOpMode.gamepad1 = gamepad1
@@ -35,7 +36,7 @@ abstract class SelectableOpMode(
 
     override fun init_loop() {
         if (::selectedOpMode.isInitialized) {
-            selectedOpMode.init()
+            selectedOpMode.init_loop()
             return
         }
 

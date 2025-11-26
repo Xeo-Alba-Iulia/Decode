@@ -15,10 +15,12 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.MapKey
 import dev.zacsweers.metro.Provider
+import dev.zacsweers.metro.asContribution
 import dev.zacsweers.metro.createGraphFactory
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import org.firstinspires.ftc.teamcode.metro.TuningInjection
 import kotlin.math.abs
 import kotlin.math.pow
 
@@ -30,8 +32,8 @@ import kotlin.math.pow
  */
 @Config
 @TeleOp(name = "Tuning", group = "Pedro Pathing")
-class Tuning : SelectableOpMode("Select a Tuning OpMode", {
-    for ((folderName, folderMap) in tuningOpModesMap) {
+final class Tuning : SelectableOpMode<Tuning>("Select a Tuning OpMode", {
+    for ((folderName, folderMap) in it.opModesMap) {
         folder(folderName) { folder ->
             for ((opModeName, opModeProvider) in folderMap) {
                 folder.add(opModeName, opModeProvider)
@@ -41,23 +43,18 @@ class Tuning : SelectableOpMode("Select a Tuning OpMode", {
 }) {
     val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
 
-    private val opModesMap = appGraph.tuningOpModesMap
+    private val opModesMap = buildMap {
+        for ((key, provider) in appGraph.tuningOpModesMap) {
+            getOrPut(key.folder, ::sortedMapOf)[key.name] = provider
+        }
+    }.toSortedMap()
 
     override fun init() {
-        val finalMap = mutableMapOf<String, MutableMap<String, Provider<OpMode>>>()
-
-        for ((key, value) in opModesMap) {
-            finalMap.getOrPut(key.folder, ::mutableMapOf)[key.name] = value
-        }
-
-        tuningOpModesMap = finalMap
         this.telemetry = appGraph.telemetry
         super.init()
     }
 }
 private val changes = arrayListOf<String>()
-
-private lateinit var tuningOpModesMap: Map<String, Map<String, Provider<OpMode>>>
 
 fun drawOnlyCurrent(follower: Follower) {
     drawRobot(follower.pose)
