@@ -14,13 +14,10 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.MapKey
-import dev.zacsweers.metro.Provider
-import dev.zacsweers.metro.asContribution
 import dev.zacsweers.metro.createGraphFactory
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
-import org.firstinspires.ftc.teamcode.metro.TuningInjection
 import kotlin.math.abs
 import kotlin.math.pow
 
@@ -944,7 +941,7 @@ class DriveTuner(private val follower: Follower, private val telemetryA: Telemet
  */
 @Config
 @ContributesIntoMap(OpModeScope::class)
-@TuningOpModeKey(folder = "Tests", name = "Line Test Tuner")
+@TuningOpModeKey(folder = "Tests", name = "Line")
 class Line(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
@@ -1094,7 +1091,7 @@ class CentripetalTuner(private val follower: Follower, private val telemetryA: T
  */
 @Config
 @ContributesIntoMap(OpModeScope::class)
-@TuningOpModeKey(folder = "Tests", name = "Triangle Test Tuner")
+@TuningOpModeKey(folder = "Tests", name = "Triangle")
 @OptIn(PathLinearExperimental::class)
 class Triangle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val startPose = Pose(0.0, 0.0, Math.toRadians(0.0))
@@ -1160,7 +1157,7 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
  */
 @Config
 @ContributesIntoMap(OpModeScope::class)
-@TuningOpModeKey(folder = "Tests", name = "Circle Test Tuner")
+@TuningOpModeKey(folder = "Tests", name = "Circle")
 class Circle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val circle = pathChain(follower) {
         pathFacingPoint(0.0, RADIUS) {
