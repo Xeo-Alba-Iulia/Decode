@@ -56,9 +56,8 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter {
             if (type == null) storedType != null else type == storedType
         }.takeIf { it != -1 }?.let {
             shooterPosition(it)
+            artefacts[it] = null
             size--
-            if (isEmpty)
-                prepareIntake()
             true
         } ?: false
     }
