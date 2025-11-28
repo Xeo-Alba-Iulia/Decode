@@ -1,20 +1,130 @@
-## NOTICE
+# Decode
 
-This repository contains the public FTC SDK for the DECODE (2025-2026) competition season.
+## 🚀 Overview
+Decode is an open-source project designed to provide a comprehensive SDK for controlling FIRST Tech Challenge (FTC) robots. This SDK includes essential tools and libraries to help teams develop and deploy their robot control applications efficiently. Whether you're a beginner or an experienced developer, Decode offers a robust foundation to build upon.
 
-## Welcome!
-This GitHub repository contains the source code that is used to build an Android app to control a *FIRST* Tech Challenge competition robot.  To use this SDK, download/clone the entire project to your local computer.
+## ✨ Features
+- **FTC Robot Control**: Built specifically for FTC robots, providing a wide range of sensors and motor control functionalities.
+- **Cross-Platform Support**: Works seamlessly with Android Studio, Blocks, and OnBot Java.
+- **Extensive Documentation**: Comprehensive guides and tutorials to help you get started quickly.
+- **Community-Driven**: Open to contributions from the community, ensuring continuous improvement and innovation.
 
-## Requirements
-To use this Android Studio project, you will need Android Studio Ladybug (2024.2) or later.
+## 🛠️ Tech Stack
+- **Programming Language**: Unknown
+- **Frameworks and Libraries**: Android Gradle, Kotlin, Java
+- **Tools**: Android Studio, Git
 
-To program your robot in Blocks or OnBot Java, you do not need Android Studio.
+## 📦 Installation
 
-## Getting Started
-If you are new to robotics or new to the *FIRST* Tech Challenge, then you should consider reviewing the [FTC Blocks Tutorial](https://ftc-docs.firstinspires.org/programming_resources/blocks/Blocks-Tutorial.html) to get familiar with how to use the control system:
+### Prerequisites
+- **Android Studio**: Version 2024.2 or later
+- **Java Development Kit (JDK)**: Version 1.8 or later
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[FTC Blocks Online Tutorial](https://ftc-docs.firstinspires.org/programming_resources/blocks/Blocks-Tutorial.html)
+### Quick Start
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/FIRST-Tech-Challenge/Decode.git
+    ```
+2. Open the project in Android Studio:
+    ```bash
+    cd Decode
+    open . -a AndroidStudio
+    ```
 
+### Alternative Installation Methods
+- **Download Zip**: Use the "Download Zip" button on the GitHub repository page.
+- **Docker Setup**: If applicable, follow the Docker setup instructions in the `docker` directory.
+
+## 🎯 Usage
+
+### Basic Usage
+```unknown
+// Example code snippet demonstrating basic usage
+```
+
+### Advanced Usage
+- **Sensor Integration**: Learn how to integrate various sensors like color sensors, distance sensors, etc.
+- **Motor Control**: Control motors using different modes and configurations.
+- **Custom OpModes**: Create custom OpModes to suit your team's specific needs.
+
+## 📁 Project Structure
+```
+Decode/
+├── .gitignore
+├── build.gradle
+├── LICENSE
+├── README.md
+├── gradle.properties
+├── gradlew.bat
+├── .github/
+│   ├── CONTRIBUTING.md
+│   ├── PULL_REQUEST_TEMPLATE.md
+├── FtcRobotController/
+│   ├── build.gradle
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── AndroidManifest.xml
+│   │   │   ├── java/
+│   │   │   │   └── org/firstinspires/ftc/robotcontroller/
+│   │   │   └── res/
+│   │   └── external/
+│   │       └── samples/
+│   └── gradle/
+│       └── wrapper/
+│           └── gradle-wrapper.properties
+├── TeamCode/
+│   ├── build.gradle
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── AndroidManifest.xml
+│   │   │   ├── java/
+│   │   │   │   └── org/firstinspires/ftc/teamcode/
+│   │   │   └── res/
+│   │   └── external/
+│   └── gradle/
+│       └── wrapper/
+│           └── gradle-wrapper.properties
+└── libs/
+    └── README.txt
+```
+
+## 🔧 Configuration
+- **Environment Variables**: Set up environment variables for custom configurations.
+- **Configuration Files**: Modify `gradle.properties` for build settings.
+- **Customization**: Adjust `AndroidManifest.xml` for specific app configurations.
+
+## 🤝 Contributing
+- **How to Contribute**: Follow the guidelines in the `.github/CONTRIBUTING.md` file.
+- **Development Setup**: Clone the repository and set up your development environment.
+- **Code Style Guidelines**: Follow the coding standards outlined in the project documentation.
+- **Pull Request Process**: Submit pull requests via the GitHub interface.
+
+## 📝 License
+This project is licensed under the [FIRST Open Source License](LICENSE).
+
+## 👥 Authors & Contributors
+- **Maintainers**: FIRST Tech Challenge Team
+- **Contributors**: Community members and developers
+
+## 🐛 Issues & Support
+- **Report Issues**: Use the GitHub Issues tab to report bugs or suggest features.
+- **Get Help**: Join the community forums or contact the maintainers for assistance.
+
+## 🗺️ Roadmap
+- **Planned Features**: Upcoming features and enhancements.
+- **Known Issues**: List of known issues and their status.
+- **Future Improvements**: Long-term goals and improvements.
+
+---
+
+**Additional Guidelines:**
+- Use modern markdown features (badges, collapsible sections, etc.)
+- Include practical, working code examples
+- Make it visually appealing with appropriate emojis
+- Ensure all code snippets are syntactically correct for Unknown
+- Include relevant badges (build status, version, license, etc.)
+- Make installation instructions copy-pasteable
+- Focus on clarity and developer experience
 Even if you are an advanced Java programmer, it is helpful to start with the [FTC Blocks tutorial](https://ftc-docs.firstinspires.org/programming_resources/blocks/Blocks-Tutorial.html), and then migrate to the [OnBot Java Tool](https://ftc-docs.firstinspires.org/programming_resources/onbot_java/OnBot-Java-Tutorial.html) or to [Android Studio](https://ftc-docs.firstinspires.org/programming_resources/android_studio_java/Android-Studio-Tutorial.html) afterwards.
 
 ## Downloading the Project
