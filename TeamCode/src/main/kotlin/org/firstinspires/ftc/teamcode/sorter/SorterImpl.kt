@@ -24,6 +24,8 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
         var SHOOTER_POSITIONS = doubleArrayOf(0.593, 0.991, 0.231)
     }
 
+    var position by servo::position
+
     private val artefacts = arrayOfNulls<ArtefactType>(3)
 
     private var currentIntakeSlot: Int = -1
@@ -63,13 +65,11 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
             shooterPosition(it)
             artefacts[it] = null
             size--
-            if (isEmpty)
-                prepareIntake()
             true
         } ?: false
     }
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
-    override fun toString() = "SorterImpl(artefacts = ${artefacts.contentToString()})"
+    override fun toString() = "SorterImpl(artefacts = ${artefacts.contentToString()}, position = $position)"
 }
