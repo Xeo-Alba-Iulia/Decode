@@ -32,13 +32,13 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
         private set
 
     suspend fun intakePosition(index: Int) {
-        delay(0.5.seconds)
         servo.position = INTAKE_POSITIONS[index]
+        delay(0.5.seconds)
     }
 
     suspend fun shooterPosition(index: Int) {
-        delay(0.3.seconds)
         servo.position = SHOOTER_POSITIONS[index]
+        delay(0.3.seconds)
     }
 
     override suspend fun prepareIntake() {
@@ -61,6 +61,7 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
             if (type == null) storedType != null else type == storedType
         }.takeIf { it != -1 }?.let {
             shooterPosition(it)
+            artefacts[it] = null
             size--
             if (isEmpty)
                 prepareIntake()
