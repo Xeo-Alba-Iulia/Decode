@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.opmode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import kotlinx.coroutines.runBlocking
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
@@ -16,13 +15,7 @@ class SorterOpMode : CoroutineOpMode() {
     override fun init() {
         telemetry = opModeGraph.telemetry
         sorter = opModeGraph.sorter
-        (sorter as? OpModeObserver)?.let { addObserver(it) }
-        telemetry.isAutoClear = false
-    }
-
-    override fun start() {
-        telemetry.addData("Sorter", ::sorter)
-        super.start()
+        observers += sorter
     }
 
     override fun loop() {
@@ -39,6 +32,7 @@ class SorterOpMode : CoroutineOpMode() {
             }
 
             telemetry.addData("Runtime", runtime)
+            telemetry.addData("Sorter", sorter)
             telemetry.update()
         }
     }

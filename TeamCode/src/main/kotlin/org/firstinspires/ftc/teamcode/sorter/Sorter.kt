@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.sorter
 
-sealed interface Sorter {
+import org.firstinspires.ftc.teamcode.OpModeObserver
+
+interface Sorter : OpModeObserver {
     /**
      * Prepares the sorter to receive a ball by preselecting a free slot
      *

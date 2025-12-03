@@ -1,45 +1,26 @@
 package org.firstinspires.ftc.teamcode.opmode
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
-import dev.zacsweers.metro.asContribution
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.OpModeObserver
-import org.firstinspires.ftc.teamcode.metro.CoroutineProviders
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 
-abstract class CoroutineOpMode : OpMode() {
+abstract class CoroutineOpMode(protected val observers: MutableList<OpModeObserver> = mutableListOf()) : OpMode() {
     val opModeGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
-    protected val opModeScope = opModeGraph.asContribution<CoroutineProviders>().opModeScope
-    private val observerList = mutableListOf<OpModeObserver>()
-
-    protected fun addObserver(observer: OpModeObserver) {
-        observerList += observer
-    }
-    protected fun addObservers(vararg observers: OpModeObserver) {
-        observerList += observers
-    }
-
-    protected fun removeObserver(observer: OpModeObserver) {
-        observerList -= observer
-    }
-    protected fun removeObservers(vararg observers: OpModeObserver) {
-        observerList -= observers.toSet()
-    }
+    protected val opModeScope = opModeGraph.opModeScope
 
     override fun start() {
-        for (observer in observerList) {
+        for (observer in observers) {
             opModeScope.launch {
                 observer.onStart(this@CoroutineOpMode)
             }
         }
     }
 
-    override fun loop() {}
-
     override fun stop() {
-        for (observer in observerList.asReversed()) {
+        for (observer in observers.asReversed()) {
             opModeScope.launch {
                 observer.onStop(this@CoroutineOpMode)
             }
