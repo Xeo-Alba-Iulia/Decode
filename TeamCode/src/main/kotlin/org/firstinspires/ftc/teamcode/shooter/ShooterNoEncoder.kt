@@ -5,11 +5,7 @@ import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -23,27 +19,31 @@ class ShooterNoEncoder(
     @Named("shooterHoodServo") private val hoodServo: Servo,
     @Named("shooterRotationServo") private val rotationServo: Servo,
 ) : Shooter {
-    private var runningJob = AtomicReference<Job?>(null)
+    private val runningJob = AtomicReference<Job?>(null)
 
-    override var angleDegrees: Double
-        get() = (rotationServo.position * 120.0) - 60.0
-        set(value) {
-            rotationServo.position = (value + 60.0) / 120.0
-        }
+    override var angleDegrees: Double by rotationServo::position
     override var hood by hoodServo::position
-    override var shooterSpeed = 0.7
+    override var shooterSpeed = 0.88
+        set(value) {
+            field = value.coerceIn(0.0, 1.0)
+            if (isRunning) {
+                motor.power = field
+            }
+        }
     override var isRunning = false
         private set
 
     override suspend fun turnOn() {
-        if (isRunning) return
         motor.power = shooterSpeed
-        runningJob.compareAndSet(null, coroutineScope {
+        if (isRunning) return
+        val newJob = coroutineScope {
             launch {
                 delay(2.seconds)
                 isRunning = true
             }
-        })
+        }
+        runningJob.compareAndSet(null, newJob)
+        newJob.join()
     }
 
     override fun turnOff() {
@@ -53,5 +53,5 @@ class ShooterNoEncoder(
     }
 
     override fun toString() =
-        "ShooterNoEncoder(angleDegrees=$angleDegrees, hood=$hood, shooterSpeed=$shooterSpeed)"
+        "ShooterNoEncoder(angleDegrees=$angleDegrees, hood=$hood, shooterSpeed=$shooterSpeed, isRunning=$isRunning)"
 }
