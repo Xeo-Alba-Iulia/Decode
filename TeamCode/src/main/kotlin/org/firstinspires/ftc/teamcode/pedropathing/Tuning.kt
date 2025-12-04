@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedropathing
 
-import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.config.Config
-import com.acmerobotics.dashboard.config.ValueProvider
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.Vector
@@ -72,6 +70,33 @@ fun stopRobot(follower: Follower) {
 @MapKey(unwrapValue = false)
 annotation class TuningOpModeKey(val folder: String, val name: String)
 
+@ContributesIntoMap(OpModeScope::class)
+@TuningOpModeKey(folder = "Tests", name = "Motor Directions")
+class MotorDirectionsTest(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
+    private val drivetrain = follower.drivetrain
+
+    override fun init() {}
+
+    override fun start() {
+        drivetrain.updateConstants()
+    }
+
+    override fun loop() {
+        drivetrain.runDrive(
+            when {
+                gamepad1.x -> doubleArrayOf(1.0, 0.0, 0.0, 0.0)
+                gamepad1.a -> doubleArrayOf(0.0, 1.0, 0.0, 0.0)
+                gamepad1.y -> doubleArrayOf(0.0, 0.0, 1.0, 0.0)
+                gamepad1.b -> doubleArrayOf(0.0, 0.0, 0.0, 1.0)
+                else -> doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+            }
+        )
+        if (gamepad1.rightBumperWasPressed()) {
+            drivetrain.updateConstants()
+        }
+    }
+}
+
 /**
  * This is the LocalizationTest OpMode. This is basically just a simple mecanum drive attached to a
  * PoseUpdater. The OpMode will print out the robot's pose to telemetry as well as draw the robot.
@@ -103,15 +128,6 @@ class LocalizationTest(
 
     override fun start() {
         follower.startTeleopDrive()
-        FtcDashboard.getInstance().run {
-            addConfigVariable("Localization", "MULTIPLIER", object : ValueProvider<Double> {
-                override fun get() = multiplier
-                override fun set(value: Double) {
-                    multiplier = value
-                }
-            })
-            updateConfig()
-        }
     }
 
     /**
