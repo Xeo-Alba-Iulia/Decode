@@ -6,6 +6,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -23,7 +24,7 @@ class ShooterNoEncoder(
 
     override var angleDegrees: Double by rotationServo::position
     override var hood by hoodServo::position
-    override var shooterSpeed = 0.88
+    override var velocity = 0.88
         set(value) {
             field = value.coerceIn(0.0, 1.0)
             if (isRunning) {
@@ -33,8 +34,10 @@ class ShooterNoEncoder(
     override var isRunning = false
         private set
 
+    override val isAtTarget = MutableStateFlow(false)
+
     override suspend fun turnOn() {
-        motor.power = shooterSpeed
+        motor.power = velocity
         if (isRunning) return
         val newJob = coroutineScope {
             launch {
@@ -53,5 +56,5 @@ class ShooterNoEncoder(
     }
 
     override fun toString() =
-        "ShooterNoEncoder(angleDegrees=$angleDegrees, hood=$hood, shooterSpeed=$shooterSpeed, isRunning=$isRunning)"
+        "ShooterNoEncoder(angleDegrees=$angleDegrees, hood=$hood, velocity=$velocity, isRunning=$isRunning)"
 }

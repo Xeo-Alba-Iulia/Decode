@@ -4,6 +4,7 @@ import com.pedropathing.follower.Follower
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import dev.zacsweers.metro.createGraphFactory
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.shooter.Shooter
@@ -14,6 +15,7 @@ open class ShooterOpMode : OpMode() {
     lateinit var follower: Follower
 
     open val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
+    val opModeScope = appGraph.opModeScope
 
     override fun init() {
         shooter = appGraph.shooter
@@ -23,15 +25,23 @@ open class ShooterOpMode : OpMode() {
         follower.startTeleopDrive()
     }
 
+    override fun start() {
+        opModeScope.launch {
+            shooter.isAtTarget.filter { it }.collect {
+                gamepad1.rumble(500)
+            }
+        }
+    }
+
     override fun loop() {
         if (gamepad1.aWasPressed()) {
-            appGraph.opModeScope.launch { shooter.turnOn() }
+            opModeScope.launch { shooter.turnOn() }
         }
         if (gamepad1.bWasPressed()) {
             shooter.turnOff()
         }
-        if (gamepad1.y) shooter.shooterSpeed += 0.01
-        if (gamepad1.x) shooter.shooterSpeed -= 0.01
+        if (gamepad1.y) shooter.velocity += 0.01
+        if (gamepad1.x) shooter.velocity -= 0.01
         if (gamepad1.dpad_up) {
             shooter.hood += 0.01
         }
