@@ -24,7 +24,7 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
         var SHOOTER_POSITIONS = doubleArrayOf(0.593, 0.991, 0.231)
     }
 
-    var position by servo::position
+    override var position by servo::position
 
     private val artefacts = arrayOfNulls<ArtefactType>(3)
 

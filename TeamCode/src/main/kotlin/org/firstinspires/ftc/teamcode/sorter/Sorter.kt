@@ -46,4 +46,6 @@ interface Sorter : OpModeObserver {
 
     val isEmpty get() = size == 0
     val isFull get() = size == 3
+
+    var position: Double
 }
