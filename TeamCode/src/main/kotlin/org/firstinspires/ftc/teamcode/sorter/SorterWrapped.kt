@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.sorter
 
+import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
@@ -7,20 +8,37 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
+import org.firstinspires.ftc.teamcode.KotlinVariableProvider
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
+import kotlin.properties.Delegates.observable
 
 @Config
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
 class SorterWrapped(@Named("sorterServo") private val servo: Servo) : Sorter, OpModeObserver {
     companion object {
-        @JvmField
-        var HALF_ROTATION = 0.283
+        var HALF_ROTATION by observable(0.283) { _, _, _ -> updatePositions() }
 
-        @JvmField
-        var OFFSET = 0.122
+        var OFFSET by observable(0.122) { _, _, _ -> updatePositions() }
+
+        private fun updatePositions() {}
+
+        init {
+            FtcDashboard.getInstance().run {
+                addConfigVariable(
+                    SorterWrapped::class.simpleName,
+                    ::HALF_ROTATION.name,
+                    KotlinVariableProvider(::HALF_ROTATION)
+                )
+                addConfigVariable(
+                    SorterWrapped::class.simpleName,
+                    ::OFFSET.name,
+                    KotlinVariableProvider(::OFFSET)
+                )
+            }
+        }
     }
 
     override var position by servo::position
