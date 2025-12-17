@@ -4,7 +4,8 @@ import com.pedropathing.follower.Follower
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import dev.zacsweers.metro.createGraphFactory
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 import org.firstinspires.ftc.teamcode.shooter.Shooter
@@ -17,6 +18,9 @@ open class ShooterOpMode : OpMode() {
     open val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
     val opModeScope = appGraph.opModeScope
 
+    private var currentJob: Job? = null
+    private var currentFlow: Flow<Shooter.State>? = null
+
     override fun init() {
         shooter = appGraph.shooter
         shooter.hood = 0.5
@@ -25,20 +29,19 @@ open class ShooterOpMode : OpMode() {
         follower.startTeleopDrive()
     }
 
-    override fun start() {
-        opModeScope.launch {
-            shooter.isAtTarget.filter { it }.collect {
-                gamepad1.rumble(500)
-            }
-        }
-    }
-
     override fun loop() {
         if (gamepad1.aWasPressed()) {
-            opModeScope.launch { shooter.turnOn() }
+            if (currentFlow == null) {
+                currentFlow = shooter.shoot()
+            }
+            currentJob = opModeScope.launch {
+                currentFlow!!.collect { telemetry.addData("Shooter State", it) }
+            }
         }
         if (gamepad1.bWasPressed()) {
-            shooter.turnOff()
+            currentJob?.cancel()
+            currentJob = null
+            currentFlow = null
         }
         if (gamepad1.y) shooter.velocity += 0.01
         if (gamepad1.x) shooter.velocity -= 0.01

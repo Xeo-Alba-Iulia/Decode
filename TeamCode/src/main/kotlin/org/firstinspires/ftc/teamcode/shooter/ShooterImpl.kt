@@ -1,54 +1,59 @@
 package org.firstinspires.ftc.teamcode.shooter
 
+import com.acmerobotics.dashboard.config.Config
+import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.Servo
+import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.flow
+import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import kotlin.math.abs
 
+@Config
+@ContributesBinding(OpModeScope::class)
 class ShooterImpl(
     @Named("shooterMotor") private val motor: DcMotorEx,
     @Named("shooterHoodServo") private val hoodServo: Servo,
     @Named("shooterRotationServo") private val rotationServo: Servo,
-    opModeScope: CoroutineScope,
+    private val tickFlow: SharedFlow<Unit>,
 ) : Shooter {
 
-    private val _isAtTarget = MutableStateFlow(false)
-    override val isAtTarget = _isAtTarget.asStateFlow()
+    companion object {
+        @JvmField
+        @Volatile
+        var TOLERANCE = 20.0
+    }
 
     init {
-        opModeScope.launch {
-            while (true) {
-                _isAtTarget.value = isRunning && (motor.velocity - velocity).absoluteValue < 20.0
-                delay(50)
-            }
-        }
+        motor.mode = DcMotor.RunMode.RUN_USING_ENCODER
+        motor.power = 0.0
     }
 
     override var angleDegrees by rotationServo::position
     override var hood by hoodServo::position
-    override var velocity = 0.0
+    override var velocity: Double
+        get() = motor.velocity
         set(value) {
-            field = value
-            if (isRunning) {
-                motor.velocity = field
-            }
+            desiredVelocity = value
+            motor.velocity = value
         }
 
-    override var isRunning = false
-        private set
+    private var desiredVelocity = 0.0
 
-    override suspend fun turnOn() {
-        isRunning = true
-        motor.velocity = velocity
-    }
-
-    override fun turnOff() {
-        isRunning = false
-        motor.velocity = 0.0
+    override fun shoot(): Flow<Shooter.State> {
+        motor.power = 1.0
+        return flow {
+            try {
+                tickFlow.collect {
+                    val currentVelocity = motor.velocity
+                    emit(Shooter.State(hood, currentVelocity, abs(currentVelocity - desiredVelocity) <= TOLERANCE))
+                }
+            } finally {
+                motor.power = 0.0
+            }
+        }
     }
 }
