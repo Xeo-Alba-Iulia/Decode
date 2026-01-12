@@ -15,7 +15,7 @@ buildscript {
     repositories {
         mavenCentral()
         maven {
-            url "https://repo.dairy.foundation/releases"
+            url = "https://repo.dairy.foundation/releases"
         }
     }
     dependencies {
@@ -24,8 +24,8 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.android' version '2.2.21'
-    id 'dev.zacsweers.metro' version '0.7.5'
+    id 'org.jetbrains.kotlin.android' version '2.3.0'
+    id 'dev.zacsweers.metro' version '0.9.4'
 }
 
 // Include common definitions from above.
@@ -38,17 +38,22 @@ android {
 
     kotlin {
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_11
-            freeCompilerArgs = ["-XXLanguage:+PropertyParamAnnotationDefaultTargetMode"]
+            jvmTarget = JvmTarget.JVM_17
+            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
+            freeCompilerArgs.add("-Xreturn-value-checker=full")
+            freeCompilerArgs.add("-Xexplicit-backing-fields")
         }
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
     }
 
     packagingOptions {
-        jniLibs.useLegacyPackaging true
+        jniLibs {
+            pickFirsts += ['**/*.so']
+        }
+        jniLibs.useLegacyPackaging = true
     }
 }
 
@@ -61,13 +66,14 @@ repositories {
 
 metro {
     contributesAsInject = true
+//    reportsDestination.set(layout.buildDirectory.dir("reports/metro"))
 }
 
 dependencies {
     implementation project(':FtcRobotController')
     implementation project(':PedroPathingDSL')
 
-    implementation 'com.pedropathing:ftc:2.0.4'
+    implementation 'com.pedropathing:ftc:2.0.5'
     implementation 'com.pedropathing:telemetry:1.0.0'
 
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")

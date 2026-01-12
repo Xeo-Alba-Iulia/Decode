@@ -37,6 +37,7 @@ interface Sorter : OpModeObserver {
      *
      * @see isEmpty
      */
+    @IgnorableReturnValue
     suspend fun shoot(type: ArtefactType? = null): Boolean
 
     /**
