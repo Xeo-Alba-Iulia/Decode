@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.shooter
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
+import com.qualcomm.robotcore.hardware.PIDFCoefficients
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
@@ -25,23 +26,25 @@ class ShooterImpl(
         @JvmField
         @Volatile
         var TOLERANCE = 20.0
+
+        @JvmField
+        var VELOCITY = 500.0
+
+        @JvmField
+        var coefficients = PIDFCoefficients()
     }
 
     init {
-        motor.mode = DcMotor.RunMode.RUN_USING_ENCODER
-        motor.power = 0.0
+        motor.setPIDFCoefficients(
+            DcMotor.RunMode.RUN_USING_ENCODER,
+            coefficients
+        )
     }
 
     override var angleDegrees by rotationServo::position
     override var hood by hoodServo::position
-    override var velocity: Double
-        get() = motor.velocity
-        set(value) {
-            desiredVelocity = value
-            motor.velocity = value
-        }
 
-    private var desiredVelocity = 0.0
+    override var velocity = VELOCITY
 
     override fun shoot(): Flow<Shooter.State> {
         motor.power = 1.0
@@ -49,7 +52,7 @@ class ShooterImpl(
             try {
                 tickFlow.collect {
                     val currentVelocity = motor.velocity
-                    emit(Shooter.State(hood, currentVelocity, abs(currentVelocity - desiredVelocity) <= TOLERANCE))
+                    emit(Shooter.State(hood, currentVelocity, abs(currentVelocity - velocity) <= TOLERANCE))
                 }
             } finally {
                 motor.power = 0.0

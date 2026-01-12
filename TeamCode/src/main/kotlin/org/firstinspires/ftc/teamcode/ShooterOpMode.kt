@@ -1,32 +1,23 @@
 package org.firstinspires.ftc.teamcode
 
-import com.pedropathing.follower.Follower
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import org.firstinspires.ftc.teamcode.metro.OpModeGraph
+import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 
 @TeleOp(group = "Shooter")
-open class ShooterOpMode : OpMode() {
+open class ShooterOpMode : CoroutineOpMode() {
     lateinit var shooter: Shooter
-    lateinit var follower: Follower
-
-    open val appGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
-    val opModeScope = appGraph.opModeScope
 
     private var currentJob: Job? = null
     private var currentFlow: Flow<Shooter.State>? = null
 
     override fun init() {
-        shooter = appGraph.shooter
+        shooter = opModeGraph.shooter
         shooter.hood = 0.5
-        telemetry = appGraph.telemetry
-        follower = appGraph.follower
-        follower.startTeleopDrive()
+        telemetry = opModeGraph.telemetry
     }
 
     override fun loop() {
@@ -35,7 +26,10 @@ open class ShooterOpMode : OpMode() {
                 currentFlow = shooter.shoot()
             }
             currentJob = opModeScope.launch {
-                currentFlow!!.collect { telemetry.addData("Shooter State", it) }
+                currentFlow!!.collect {
+                    telemetry.addData("Shooter State", it)
+                    telemetry.update()
+                }
             }
         }
         if (gamepad1.bWasPressed()) {
@@ -43,8 +37,8 @@ open class ShooterOpMode : OpMode() {
             currentJob = null
             currentFlow = null
         }
-        if (gamepad1.y) shooter.velocity += 0.01
-        if (gamepad1.x) shooter.velocity -= 0.01
+        if (gamepad1.y) shooter.velocity += 1.0
+        if (gamepad1.x) shooter.velocity -= 1.0
         if (gamepad1.dpad_up) {
             shooter.hood += 0.01
         }
@@ -55,16 +49,5 @@ open class ShooterOpMode : OpMode() {
             gamepad1.dpad_right -> shooter.angleDegrees += 0.01
             gamepad1.dpad_left -> shooter.angleDegrees -= 0.01
         }
-
-        follower.setTeleOpDrive(
-            -gamepad1.left_stick_y.toDouble(),
-            -gamepad1.left_stick_x.toDouble(),
-            -gamepad1.right_stick_x.toDouble(),
-            /* isRobotCentric = */ false
-        )
-        follower.update()
-
-        this.telemetry.addLine(shooter.toString())
-        this.telemetry.update()
     }
 }
