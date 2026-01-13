@@ -42,8 +42,10 @@ class SorterWrapped(@Named("sorterServo") private val servo: Servo) : Sorter, Op
         if (!isFull) prepareIntake() else currentIntakeSlot = -1
     }
 
+    //TODO: This can be heavily optimized if needed by precomputing positions
     override suspend fun shoot(type: ArtefactType?) =
-        artefacts.withIndex().filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
+        artefacts.asSequence().withIndex()
+            .filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
             .map(IndexedValue<*>::index)
             .flatMap {
                 buildList {
