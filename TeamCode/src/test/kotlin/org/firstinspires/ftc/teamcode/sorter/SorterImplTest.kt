@@ -38,6 +38,9 @@ class SorterImplTest {
             isFull
         })
         assertThrows<IllegalArgumentException>("Wrong exception on full shooter") { sorter.intake(ArtefactType.PURPLE) }
-        assertEquals("SorterImpl(artefacts = [PURPLE, PURPLE, GREEN])", sorter.toString())
+        assertEquals(
+            "SorterImpl(artefacts = [PURPLE, PURPLE, GREEN], position = ${SorterImpl.INTAKE_POSITIONS.last()})",
+            sorter.toString()
+        )
     }
 }
