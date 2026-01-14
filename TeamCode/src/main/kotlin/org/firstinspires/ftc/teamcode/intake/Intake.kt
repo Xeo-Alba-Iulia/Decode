@@ -8,9 +8,9 @@ import dev.zacsweers.metro.Named
 @Config
 @Inject
 class Intake(@Named("intakeMotor") private val motor: DcMotor) {
-    var isRunning: Boolean
-        get() = motor.power != 0.0
+    var isRunning = false
         set(value) {
+            field = value
             motor.power = if (value) INTAKE_POWER else 0.0
         }
 
