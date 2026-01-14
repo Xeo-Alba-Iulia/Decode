@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 
 abstract class CoroutineOpMode(protected val observers: MutableList<OpModeObserver> = mutableListOf()) : OpMode() {
-    val opModeGraph = createGraphFactory<OpModeGraph.Factory>().create(this)
+    val opModeGraph by lazy { createGraphFactory<OpModeGraph.Factory>().create(this) }
     protected val opModeScope = opModeGraph.opModeScope
 
     override fun start() {
