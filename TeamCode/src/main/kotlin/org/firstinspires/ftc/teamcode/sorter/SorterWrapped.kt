@@ -17,10 +17,10 @@ import kotlin.math.abs
 class SorterWrapped(@Named("sorterServo") private val servo: Servo) : Sorter, OpModeObserver {
     companion object {
         @JvmField
-        var HALF_ROTATION = 0.283
+        var HALF_ROTATION = 0.285
 
         @JvmField
-        var OFFSET = 0.122
+        var OFFSET = 0.015
     }
 
     override var position by servo::position
