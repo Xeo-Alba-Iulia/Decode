@@ -9,7 +9,6 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
