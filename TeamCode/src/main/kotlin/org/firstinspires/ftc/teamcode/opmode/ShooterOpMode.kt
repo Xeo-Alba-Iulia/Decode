@@ -1,10 +1,9 @@
-package org.firstinspires.ftc.teamcode
+package org.firstinspires.ftc.teamcode.opmode
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 
 @TeleOp(group = "Shooter")
