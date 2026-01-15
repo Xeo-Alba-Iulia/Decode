@@ -12,7 +12,8 @@ interface ShooterProviders {
     @Provides
     @Named("shooterHoodServo")
     fun provideShooterHoodServo(map: HardwareMap): Servo = map.servo["hood"].apply {
-        scaleRange(0.88, 0.97)
+        direction = Servo.Direction.REVERSE
+        // TODO: add scaleRange
     }
 
     @Provides
