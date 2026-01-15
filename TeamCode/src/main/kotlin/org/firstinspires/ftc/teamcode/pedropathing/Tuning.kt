@@ -72,25 +72,35 @@ annotation class TuningOpModeKey(val folder: String, val name: String)
 
 @ContributesIntoMap(OpModeScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Motor Directions")
-class MotorDirectionsTest(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
-    private val drivetrain = follower.drivetrain
+class MotorDirectionsTest(follower: Follower, private val telemetryA: Telemetry) : OpMode() {
+    private val drivetrain = follower.drivetrain ?: error("Follower has no drivetrain, wtf?")
+
+    private val driveArray = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
 
     override fun init() {}
 
     override fun start() {
         drivetrain.updateConstants()
+        listOf(
+            "Press X, A, Y, B to test each motor individually.",
+            "Press Right Bumper to update motor directions.",
+            "",
+            "Press X: Front Left",
+            "Press A: Back Left",
+            "Press Y: Front Right",
+            "Press B: Back Right",
+            "",
+            "Tip: turn the controller 45 degrees clockwise"
+        ).forEach { telemetryA.addLine(it) }
     }
 
     override fun loop() {
-        drivetrain.runDrive(
-            when {
-                gamepad1.x -> doubleArrayOf(1.0, 0.0, 0.0, 0.0)
-                gamepad1.a -> doubleArrayOf(0.0, 1.0, 0.0, 0.0)
-                gamepad1.y -> doubleArrayOf(0.0, 0.0, 1.0, 0.0)
-                gamepad1.b -> doubleArrayOf(0.0, 0.0, 0.0, 1.0)
-                else -> doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            }
-        )
+        driveArray[0] = if (gamepad1.x) 1.0 else 0.0 // Front Left
+        driveArray[1] = if (gamepad1.a) 1.0 else 0.0 // Back Left
+        driveArray[2] = if (gamepad1.y) 1.0 else 0.0 // Front Right
+        driveArray[3] = if (gamepad1.b) 1.0 else 0.0 // Back Right
+
+        drivetrain.runDrive(driveArray)
         if (gamepad1.rightBumperWasPressed()) {
             drivetrain.updateConstants()
         }
