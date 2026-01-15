@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.sorter
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
+import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
@@ -11,6 +12,7 @@ import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
+import kotlin.time.measureTime
 
 @Config
 @SingleIn(OpModeScope::class)
@@ -51,29 +53,38 @@ class SorterWrapped(
         if (!isFull) prepareIntake() else currentIntakeSlot = -1
     }
 
-    //TODO: This can be heavily optimized if needed by precomputing positions
-    override suspend fun prepareShoot(type: ArtefactType?) =
-        artefacts.asSequence().withIndex()
-            .filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
-            .map(IndexedValue<*>::index)
-            .flatMap {
-                buildList {
-                    var position = OFFSET + HALF_ROTATION + it * HALF_ROTATION * 2 / 3
-                    while (position < 1.0) {
-                        add(it to position)
-                        position += 2 * HALF_ROTATION
+    /* TODO: This can be heavily optimized if needed by precomputing positions
+       From testing after warmup this takes 6-8ms when it has a match, and 500μs without one
+    */
+    override suspend fun prepareShoot(type: ArtefactType?): Boolean {
+        val wasSuccessful: Boolean
+        val oldPosition = servo.position
+        val usedTime = measureTime {
+            wasSuccessful = artefacts.asSequence().withIndex()
+                .filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
+                .map(IndexedValue<*>::index)
+                .flatMap {
+                    buildList {
+                        var position = OFFSET - HALF_ROTATION + it * HALF_ROTATION * 2 / 3
+                        while (position < 1.0) {
+                            if (position >= 0.0)
+                                add(it to position)
+                            position += 2 * HALF_ROTATION
+                        }
                     }
-                }
-            }.minByOrNull { (_, position) ->
-                abs(servo.position - position)
-            }?.let { (idx, position) ->
-                val oldPosition = servo.position
-                servo.position = position
-                artefacts[idx] = null
-                size--
-                delay((abs(servo.position - oldPosition) * SPEED).toLong())
-                true
-            } ?: false
+                }.minByOrNull { (_, position) ->
+                    abs(servo.position - position)
+                }?.let { (idx, position) ->
+                    servo.position = position
+                    artefacts[idx] = null
+                    size--
+                    true
+                } ?: false
+        }
+        RobotLog.dd("Sorter", "prepareShoot took $usedTime")
+        delay((abs(servo.position - oldPosition) * SPEED).toLong())
+        return wasSuccessful
+    }
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
