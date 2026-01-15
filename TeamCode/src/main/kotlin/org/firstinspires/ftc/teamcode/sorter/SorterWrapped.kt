@@ -7,6 +7,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
+import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
@@ -24,6 +25,9 @@ class SorterWrapped(
 
         @JvmField
         var OFFSET = 0.015
+
+        @JvmField
+        var SPEED = 1000.0
     }
 
     override var isLifting by transfer::isRunning
@@ -63,9 +67,11 @@ class SorterWrapped(
             }.minByOrNull { (_, position) ->
                 abs(servo.position - position)
             }?.let { (idx, position) ->
+                val oldPosition = servo.position
                 servo.position = position
                 artefacts[idx] = null
                 size--
+                delay((abs(servo.position - oldPosition) * SPEED).toLong())
                 true
             } ?: false
 

@@ -61,16 +61,25 @@ class ShooterImpl(
     }
 }
 
-suspend fun shootAll(
+suspend fun shootCount(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
     count: Int = sorter.size
 ) {
+    require(count <= sorter.size)
+    sorter.prepareShoot()
     shootFlow
         .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
+        .onEach {
+            if (!it.canShoot) {
+                RobotLog.ii("Shooter", "State after shooting is: $it")
+                sorter.isLifting = false
+                sorter.prepareShoot()
+            }
+        }
         .filter { it.canShoot }
         .take(count).collect {
-            sorter.prepareShoot()
-            RobotLog.ii("ShootAll", "Shot item with state: $it")
+            sorter.isLifting = true
+            RobotLog.ii("Shooter", "Shot item with state: $it")
         }
 }
