@@ -7,7 +7,7 @@ interface Sorter : OpModeObserver {
      * Prepares the sorter to receive a ball by preselecting a free slot
      *
      * Conforming implementations will also call this in [intake] as long as the sorter isn't full,
-     * and in [shoot], when the sorter becomes empty
+     * and in [prepareShoot], when the sorter becomes empty
      *
      * As such, if you always empty the sorter when you start shooting, you never need this method
      *
@@ -38,7 +38,9 @@ interface Sorter : OpModeObserver {
      * @see isEmpty
      */
     @IgnorableReturnValue
-    suspend fun shoot(type: ArtefactType? = null): Boolean
+    suspend fun prepareShoot(type: ArtefactType? = null): Boolean
+
+    var isLifting: Boolean
 
     /**
      * Number of artefacts currently in the sorter

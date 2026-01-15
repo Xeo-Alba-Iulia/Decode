@@ -15,7 +15,11 @@ import kotlin.time.Duration.Companion.seconds
 @Config
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class, binding<Sorter>())
-class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpModeObserver {
+class SorterImpl(
+    @Named("sorterServo") private val servo: Servo,
+    private val transfer: Transfer
+) : Sorter, OpModeObserver {
+
     companion object {
         @JvmField
         var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)
@@ -23,6 +27,8 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
         @JvmField
         var SHOOTER_POSITIONS = doubleArrayOf(0.593, 0.991, 0.231)
     }
+
+    override var isLifting by transfer::isRunning
 
     override var position by servo::position
 
@@ -55,7 +61,7 @@ class SorterImpl(@Named("sorterServo") private val servo: Servo) : Sorter, OpMod
         if (!isFull) prepareIntake() else currentIntakeSlot = -1
     }
 
-    override suspend fun shoot(type: ArtefactType?): Boolean {
+    override suspend fun prepareShoot(type: ArtefactType?): Boolean {
         require(!isEmpty) { "Sorter is empty" }
         currentIntakeSlot = -1
 

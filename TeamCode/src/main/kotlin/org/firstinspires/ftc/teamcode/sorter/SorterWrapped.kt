@@ -14,7 +14,10 @@ import kotlin.math.abs
 @Config
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
-class SorterWrapped(@Named("sorterServo") private val servo: Servo) : Sorter, OpModeObserver {
+class SorterWrapped(
+    @Named("sorterServo") private val servo: Servo,
+    private val transfer: Transfer,
+) : Sorter, OpModeObserver {
     companion object {
         @JvmField
         var HALF_ROTATION = 0.285
@@ -22,6 +25,8 @@ class SorterWrapped(@Named("sorterServo") private val servo: Servo) : Sorter, Op
         @JvmField
         var OFFSET = 0.015
     }
+
+    override var isLifting by transfer::isRunning
 
     override var position by servo::position
 
@@ -43,7 +48,7 @@ class SorterWrapped(@Named("sorterServo") private val servo: Servo) : Sorter, Op
     }
 
     //TODO: This can be heavily optimized if needed by precomputing positions
-    override suspend fun shoot(type: ArtefactType?) =
+    override suspend fun prepareShoot(type: ArtefactType?) =
         artefacts.asSequence().withIndex()
             .filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
             .map(IndexedValue<*>::index)

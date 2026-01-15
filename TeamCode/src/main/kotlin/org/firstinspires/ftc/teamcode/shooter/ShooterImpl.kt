@@ -8,12 +8,7 @@ import com.qualcomm.robotcore.hardware.Servo
 import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.abs
@@ -75,7 +70,7 @@ suspend fun shootAll(
         .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
         .filter { it.canShoot }
         .take(count).collect {
-            sorter.shoot()
+            sorter.prepareShoot()
             RobotLog.ii("ShootAll", "Shot item with state: $it")
         }
 }

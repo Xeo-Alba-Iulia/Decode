@@ -26,13 +26,19 @@ open class SorterOpMode : CoroutineOpMode() {
             }
 
             when {
-                gamepad1.leftBumperWasPressed() -> sorter.shoot(ArtefactType.PURPLE)
-                gamepad1.rightBumperWasPressed() -> sorter.shoot(ArtefactType.GREEN)
-                gamepad1.backWasPressed() -> sorter.shoot()
+                gamepad1.leftBumperWasPressed() -> sorter.prepareShoot(ArtefactType.PURPLE)
+                gamepad1.rightBumperWasPressed() -> sorter.prepareShoot(ArtefactType.GREEN)
+                gamepad1.backWasPressed() -> sorter.prepareShoot()
             }
 
             if (gamepad1.startWasPressed())
                 sorter.prepareIntake()
+
+            when {
+                gamepad1.aWasPressed() -> true
+                gamepad1.aWasReleased() -> false
+                else -> null
+            }?.let { sorter.isLifting = it }
 
             sorter.position += (gamepad1.right_trigger - gamepad1.left_trigger).toDouble() * 0.001
 
