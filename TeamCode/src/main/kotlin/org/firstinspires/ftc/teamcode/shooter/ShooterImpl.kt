@@ -73,8 +73,9 @@ suspend fun shootCount(
         .onEach {
             if (!it.canShoot) {
                 RobotLog.ii("Shooter", "State after shooting is: $it")
+                if (sorter.isLifting)
+                    sorter.prepareShoot()
                 sorter.isLifting = false
-                sorter.prepareShoot()
             }
         }
         .filter { it.canShoot }
