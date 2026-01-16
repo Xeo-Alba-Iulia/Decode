@@ -33,14 +33,15 @@ class ShooterImpl(
     companion object {
         @JvmField
         @Volatile
-        var TOLERANCE = 20.0
+        var TOLERANCE = 150.0
 
         @JvmField
-        var VELOCITY = 500.0
+        var VELOCITY = 2400.0
 
         @JvmField
         var coefficients = PIDFCoefficients()
     }
+
 
     override var angleDegrees by rotationServo::position
     override var hood by hoodServo::position
@@ -48,32 +49,28 @@ class ShooterImpl(
     override var velocity = VELOCITY
 
     private val controller = controlSystem {
-        velPid(0.1, kD = 0.001)
+        velPid(0.007, kD = 0.0003)
     }
 
-    override fun shoot(): Flow<Shooter.State> {
-        val pidJob = opModeScope.launch {
+    final override val stateFlow: StateFlow<Shooter.State>
+        field = MutableStateFlow(Shooter.State(0.5, 0.0, false))
+
+    override fun shoot() =
+        opModeScope.launch {
             try {
                 tickFlow.collect {
+                    val currentVelocity = encoder.velocity
                     controller.goal = KineticState(velocity = velocity)
                     motor.power =
-                        controller.calculate(KineticState(encoder.currentPosition.toDouble(), encoder.velocity))
+                        controller.calculate(KineticState(encoder.currentPosition.toDouble(), currentVelocity))
+                    stateFlow.value =
+                        Shooter.State(hood, currentVelocity, abs(currentVelocity - velocity) < TOLERANCE)
                 }
             } finally {
                 motor.power = 0.0
+                stateFlow.value = Shooter.State(hood, 0.0, false)
             }
         }
-        return flow {
-            try {
-                tickFlow.collect {
-                    val currentVelocity = motor.velocity
-                    emit(Shooter.State(hood, currentVelocity, abs(currentVelocity - velocity) <= TOLERANCE))
-                }
-            } finally {
-                pidJob.cancel()
-            }
-        }
-    }
 }
 
 private val shootCountMutex = Mutex()
@@ -86,6 +83,7 @@ suspend fun shootCount(
     if (count <= 0) return@withLock
     require(count <= sorter.size)
     sorter.prepareShoot()
+
     shootFlow
         .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
         .onEach {
