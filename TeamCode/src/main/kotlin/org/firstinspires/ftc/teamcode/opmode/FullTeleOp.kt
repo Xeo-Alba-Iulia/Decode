@@ -2,15 +2,22 @@ package org.firstinspires.ftc.teamcode.opmode
 
 import com.pedropathing.follower.Follower
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
+import com.qualcomm.robotcore.util.RobotLog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.teamcode.Drive
 import org.firstinspires.ftc.teamcode.SensorOdometry
 import org.firstinspires.ftc.teamcode.intake.Intake
+import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.shootCount
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
@@ -56,7 +63,7 @@ class FullTeleOp : CoroutineOpMode() {
     lateinit var follower: Follower
 
     // Drive state
-    private var isFieldCentric = false
+    private var isRobotCentric = true
     private var wasYPressed = false
 
     // Shooter state
@@ -65,6 +72,8 @@ class FullTeleOp : CoroutineOpMode() {
     private var lastShooterState: Shooter.State? = null
 
     private var speedMultiplier = NORMAL_MODE_MULTIPLIER
+
+    private var isDrawingMutex = Mutex()
 
     // Speed control
     companion object {
@@ -84,38 +93,66 @@ class FullTeleOp : CoroutineOpMode() {
         follower = opModeGraph.follower
 
         // Initialize drive and odometry directly (not in DI graph)
-        drive = Drive(hardwareMap)
-        odometry = SensorOdometry(hardwareMap)
+//        drive = Drive(hardwareMap)
+//        odometry = SensorOdometry(hardwareMap)
 
         runBlocking { sorter.prepareIntake() }
     }
 
     override fun start() {
         super.start()
-        follower.startTeleopDrive()
+        follower.startTeleopDrive(true)
+        opModeGraph.tickFlow
+            .onEach {
+                handleSorter()
+            }
+            .launchIn(opModeScope)
+
+        shooter.stateFlow
+            .onEach {
+                RobotLog.dd("FullTeleOp", it.toString())
+                telemetry.addData("Shooter", it)
+                telemetry.update()
+            }
+            .launchIn(opModeScope)
     }
 
     override fun loop() {
         follower.setTeleOpDrive(
-            -gamepad1.left_stick_y.toDouble() * speedMultiplier,
-            -gamepad1.left_stick_x.toDouble() * speedMultiplier,
-            -gamepad1.right_stick_x.toDouble(),
+            /* forward = */ -gamepad1.left_stick_y.toDouble() * speedMultiplier,
+            /* strafe = */ gamepad1.left_stick_x.toDouble() * speedMultiplier,
+            /* turn = */ -gamepad1.right_stick_x.toDouble(),
+            /* isRobotCentric = */ isRobotCentric
         )
+        follower.update()
+        if (!isDrawingMutex.isLocked) {
+            opModeScope.launch(Dispatchers.IO) {
+                isDrawingMutex.withLock {
+                    drawDebug(follower)
+                }
+            }
+        }
+
         // Update odometry
 //        odometry.update()
 
         // Handle driving
 //        handleDrive()
 
-        if (gamepad1.aWasPressed()) {
-            intake.isRunning = !intake.isRunning
+        when {
+            gamepad1.crossWasPressed() -> intake.isRunning = !intake.isRunning
+            gamepad1.circleWasPressed() -> intake.isOuttake = true
+            gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
+
+        if (gamepad1.yWasPressed())
+            isRobotCentric = !isRobotCentric
 
         // Handle shooter controls (Gamepad 2)
         handleShooter()
 
         // Handle sorter controls (Gamepad 2)
-        handleSorter()
+//        handleSorter()
 
         // Update telemetry
 //        updateTelemetry()
@@ -128,13 +165,8 @@ class FullTeleOp : CoroutineOpMode() {
         val yaw = gamepad1.right_stick_x.toDouble()
 
         // Toggle field-centric mode with Y button
-        if (gamepad1.y && !wasYPressed) {
-            isFieldCentric = !isFieldCentric
-        }
-        wasYPressed = gamepad1.y
-
         // Apply field-centric transformation
-        if (isFieldCentric) {
+        if (!isRobotCentric) {
             val heading = odometry.pose.getHeading(AngleUnit.RADIANS)
             val temp = axial * cos(heading) - lateral * sin(heading)
             lateral = axial * sin(heading) + lateral * cos(heading)
@@ -152,23 +184,20 @@ class FullTeleOp : CoroutineOpMode() {
 
     private fun handleShooter() {
         // Start/stop shooting sequence
-        if (gamepad2.aWasPressed() && currentShooterFlow == null) {
-            currentShooterFlow = shooter.shoot()
+        if (gamepad2.aWasPressed() && currentShooterJob == null) {
+            currentShooterJob = shooter.shoot()
         }
 
-        val shootFlow = currentShooterFlow
+        if (currentShooterJob != null) {
+            if (gamepad1.rightBumperWasPressed())
+                opModeScope.launch {
+                    shootCount(shooter.stateFlow, sorter)
+                }
 
-        if (gamepad1.rightBumperWasPressed() && shootFlow != null) {
-            opModeScope.launch {
-                shootCount(shootFlow, sorter)
+            if (gamepad2.bWasPressed()) {
+                currentShooterJob?.cancel()
+                currentShooterJob = null
             }
-        }
-
-        if (gamepad2.bWasPressed()) {
-            currentShooterJob?.cancel()
-            currentShooterJob = null
-            currentShooterFlow = null
-            lastShooterState = null
         }
 
         // Adjust shooter velocity
@@ -220,10 +249,6 @@ class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("Target Velocity", shooter.velocity)
         telemetry.addData("Hood Position", "%.3f".format(shooter.hood))
         telemetry.addData("Angle", "%.3f°".format(shooter.angleDegrees))
-        lastShooterState?.let { state ->
-            telemetry.addData("Current Velocity", "%.1f".format(state.velocity))
-            telemetry.addData("Can Shoot", state.canShoot)
-        } ?: telemetry.addData("Status", "Idle")
 
         telemetry.addData("Size", "${sorter.size}/3")
         telemetry.addData("Is Lifting", sorter.isLifting)
@@ -236,4 +261,3 @@ class FullTeleOp : CoroutineOpMode() {
         telemetry.update()
     }
 }
-
