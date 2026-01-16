@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.metro
 
 import com.qualcomm.robotcore.hardware.DcMotorEx
+import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesTo
@@ -13,7 +14,7 @@ interface ShooterProviders {
     @Named("shooterHoodServo")
     fun provideShooterHoodServo(map: HardwareMap): Servo = map.servo["hood"].apply {
         direction = Servo.Direction.REVERSE
-        // TODO: add scaleRange
+        scaleRange(0.1, 0.7)
     }
 
     @Provides
@@ -25,4 +26,10 @@ interface ShooterProviders {
     @Provides
     @Named("shooterMotor")
     fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
+
+    @Provides
+    @Named("shooterEncoder")
+    fun provideShooterEncoder(map: HardwareMap): DcMotorEx = map.dcMotor["encoder"].apply {
+        direction = DcMotorSimple.Direction.REVERSE
+    } as DcMotorEx
 }
