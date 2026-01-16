@@ -8,10 +8,22 @@ import dev.zacsweers.metro.Named
 @Config
 @Inject
 class Intake(@Named("intakeMotor") private val motor: DcMotor) {
-    var isRunning = false
+    private var _isRunning = false
+    var isRunning
+        get() = _isRunning
         set(value) {
-            field = value
+            _isOuttake = false
+            _isRunning = value
             motor.power = if (value) INTAKE_POWER else 0.0
+        }
+
+    private var _isOuttake = false
+    var isOuttake
+        get() = _isOuttake
+        set(value) {
+            _isOuttake = value
+            _isRunning = false
+            motor.power = if (value) -INTAKE_POWER else 0.0
         }
 
     companion object {
