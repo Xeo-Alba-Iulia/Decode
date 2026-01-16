@@ -22,7 +22,8 @@ var pinpointConstants: PinpointConstants = PinpointConstants()
     .distanceUnit(DistanceUnit.CM)
     .forwardPodY(18.0)
     .strafePodX(0.0)
-    .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
+    .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
+    .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
 
 @JvmField
 var mecanumConstants: MecanumConstants = MecanumConstants()
