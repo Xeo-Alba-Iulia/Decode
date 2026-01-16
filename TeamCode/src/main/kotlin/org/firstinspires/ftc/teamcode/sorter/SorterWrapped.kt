@@ -43,15 +43,14 @@ class SorterWrapped(
     private var currentIntakeSlot: Int = -1
 
     override suspend fun prepareIntake() {
-        if (currentIntakeSlot != -1) return
-        require(!isFull) { "Sorter is full" }
+        if (isFull) return
         currentIntakeSlot = artefacts.indexOfFirst { it == null }.also {
             servo.position = OFFSET + it * HALF_ROTATION * 2.0 / 3.0
         }
     }
 
     override suspend fun intake(type: ArtefactType) {
-        require(currentIntakeSlot != -1) { "Sorter not prepared for intake" }
+        if (currentIntakeSlot == -1) return
         artefacts[currentIntakeSlot] = type
         size++
         currentIntakeSlot = -1
