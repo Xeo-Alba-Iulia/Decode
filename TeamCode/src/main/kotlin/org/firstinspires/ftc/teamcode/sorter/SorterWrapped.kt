@@ -21,6 +21,7 @@ class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
 ) : Sorter, OpModeObserver {
+
     companion object {
         @JvmField
         var HALF_ROTATION = 0.285
@@ -37,9 +38,12 @@ class SorterWrapped(
     override var position by servo::position
 
     private var artefacts = arrayOfNulls<ArtefactType>(3)
+
+    @Volatile
     private var currentIntakeSlot: Int = -1
 
     override suspend fun prepareIntake() {
+        if (currentIntakeSlot != -1) return
         require(!isFull) { "Sorter is full" }
         currentIntakeSlot = artefacts.indexOfFirst { it == null }.also {
             servo.position = OFFSET + it * HALF_ROTATION * 2.0 / 3.0
@@ -50,7 +54,8 @@ class SorterWrapped(
         require(currentIntakeSlot != -1) { "Sorter not prepared for intake" }
         artefacts[currentIntakeSlot] = type
         size++
-        if (!isFull) prepareIntake() else currentIntakeSlot = -1
+        currentIntakeSlot = -1
+        if (!isFull) prepareIntake()
     }
 
     /* TODO: This can be heavily optimized if needed by precomputing positions
