@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.shootCount
+import org.firstinspires.ftc.teamcode.shooter.shootCountMutex
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.atan2
@@ -70,13 +71,14 @@ open class FullTeleOp : CoroutineOpMode() {
     private var currentShooterJob: Job? = null
     private var currentShooterFlow: Flow<Shooter.State>? = null
     private var lastShooterState: Shooter.State? = null
+    private var isAllining = true
 
     private var speedMultiplier = NORMAL_MODE_MULTIPLIER
 
     private var isDrawingMutex = Mutex()
 
-    protected val GOAL_POSITION = Pose(24.0 * -3.0 - 12.0, 24.0 * 3 - 12.0)
-    protected val START_POSITION = Pose(24.0 * 3.0, 0.0)
+    protected val GOAL_POSITION = Pose(24.0 * 3.0 - 12.0, 24.0 * (-3) - 12.0)
+    protected val START_POSITION = Pose(24.0 * (-3.0), 0.0)
 
     protected var TURET_OFFSET = 0.0
 
@@ -146,11 +148,7 @@ open class FullTeleOp : CoroutineOpMode() {
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
 
-        if (gamepad1.yWasPressed())
-            isRobotCentric = !isRobotCentric
 
-        if (gamepad1.xWasPressed())
-            follower.pose = START_POSITION
 
         // Handle shooter controls (Gamepad 2)
         handleShooter()
@@ -171,11 +169,20 @@ open class FullTeleOp : CoroutineOpMode() {
             TURET_OFFSET += TURET_OFFSET_ADJUSTMENT_STEP
         }
 
+        telemetry.addData("Turret Offset", TURET_OFFSET)
+        telemetry.addData("shooter Angle", shooter.angleDegrees)
+
         // TODO: Check turret auto-align
         val subtractedPose = GOAL_POSITION.minus(follower.pose)
         val angleDegrees = Math.toDegrees(atan2(subtractedPose.x, subtractedPose.y))
         RobotLog.dd("FullTeleOp", "Pose: $subtractedPose, Angle: $angleDegrees")
-        shooter.angleDegrees = angleDegrees - Math.toDegrees(follower.pose.heading) + TURET_OFFSET
+//        shooter.angleDegrees = 0 - Math.toDegrees(follower.pose.heading) + TURET_OFFSET
+
+        if (gamepad1.aWasPressed())
+            isAllining = !isAllining
+
+        if (!isAllining)
+            shooter.angleDegrees = 0.0
     }
 
     private fun handleDrive() {
@@ -231,10 +238,10 @@ open class FullTeleOp : CoroutineOpMode() {
         if (gamepad2.dpad_down) shooter.hood -= HOOD_ADJUSTMENT_STEP
 
         // Adjust shooter angle
-//        when {
-//            gamepad2.dpad_right -> shooter.angleDegrees += ANGLE_ADJUSTMENT_STEP
-//            gamepad2.dpad_left -> shooter.angleDegrees -= ANGLE_ADJUSTMENT_STEP
-//        }
+        when {
+            gamepad2.dpad_right -> shooter.angleDegrees += ANGLE_ADJUSTMENT_STEP
+            gamepad2.dpad_left -> shooter.angleDegrees -= ANGLE_ADJUSTMENT_STEP
+        }
     }
 
     private suspend fun handleSorter() {
@@ -272,7 +279,6 @@ open class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("Target Velocity", shooter.velocity)
         telemetry.addData("Hood Position", "%.3f".format(shooter.hood))
         telemetry.addData("Angle", "%.3f°".format(shooter.angleDegrees))
-        telemetry.addData("Turret Offset", "%.3f".format(TURET_OFFSET))
 
         telemetry.addData("Size", "${sorter.size}/3")
         telemetry.addData("Is Lifting", sorter.isLifting)
