@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode.opmode
 
 import com.pedropathing.follower.Follower
+import com.pedropathing.geometry.Pose
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.util.RobotLog
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.teamcode.Drive
@@ -22,6 +21,7 @@ import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.shootCount
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -51,7 +51,7 @@ import kotlin.math.sin
  * - Right Stick Button: Intake green artefact
  */
 @TeleOp(group = "Meet")
-class FullTeleOp : CoroutineOpMode() {
+open class FullTeleOp : CoroutineOpMode() {
     // Subsystems
     @Suppress("PROPERTY_HIDES_JAVA_FIELD")
     lateinit var telemetry: Telemetry
@@ -75,14 +75,17 @@ class FullTeleOp : CoroutineOpMode() {
 
     private var isDrawingMutex = Mutex()
 
+    protected val GOAL_POSITION = Pose(24.0 * 3 - 12.0, 24.0 * 3 - 12.0)
+    protected val START_POSITION = Pose(0.0, 0.0)
+
     // Speed control
     companion object {
         const val SLOW_MODE_MULTIPLIER = 0.3
         const val NORMAL_MODE_MULTIPLIER = 1.0
         const val HOOD_ADJUSTMENT_STEP = 0.01
-        const val ANGLE_ADJUSTMENT_STEP = 0.01
+        const val ANGLE_ADJUSTMENT_STEP = -0.5
         const val VELOCITY_ADJUSTMENT_STEP = 10.0
-        const val SORTER_POSITION_MULTIPLIER = 0.001
+        const val SORTER_POSITION_MULTIPLIER = 0.005
     }
 
     override fun init() {
@@ -101,6 +104,7 @@ class FullTeleOp : CoroutineOpMode() {
 
     override fun start() {
         super.start()
+        follower.setStartingPose(START_POSITION)
         follower.startTeleopDrive(true)
         opModeGraph.tickFlow
             .onEach {
@@ -125,13 +129,7 @@ class FullTeleOp : CoroutineOpMode() {
             /* isRobotCentric = */ isRobotCentric
         )
         follower.update()
-        if (!isDrawingMutex.isLocked) {
-            opModeScope.launch(Dispatchers.IO) {
-                isDrawingMutex.withLock {
-                    drawDebug(follower)
-                }
-            }
-        }
+        drawDebug(follower)
 
         // Update odometry
 //        odometry.update()
@@ -140,7 +138,7 @@ class FullTeleOp : CoroutineOpMode() {
 //        handleDrive()
 
         when {
-            gamepad1.crossWasPressed() -> intake.isRunning = !intake.isRunning
+            gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
@@ -151,11 +149,20 @@ class FullTeleOp : CoroutineOpMode() {
         // Handle shooter controls (Gamepad 2)
         handleShooter()
 
+        telemetry.addData("Pose", follower.pose)
+
         // Handle sorter controls (Gamepad 2)
 //        handleSorter()
 
         // Update telemetry
 //        updateTelemetry()
+        telemetry.update()
+
+        // TODO: Check turret auto-align
+        val subtractedPose = GOAL_POSITION.minus(follower.pose)
+        val angleDegrees = Math.toDegrees(atan2(subtractedPose.x, subtractedPose.y))
+        RobotLog.dd("FullTeleOp", "Pose: $subtractedPose, Angle: $angleDegrees")
+        shooter.angleDegrees = angleDegrees - Math.toDegrees(follower.pose.heading)
     }
 
     private fun handleDrive() {
@@ -183,17 +190,19 @@ class FullTeleOp : CoroutineOpMode() {
     }
 
     private fun handleShooter() {
+        val autoShoot = gamepad2.triangleWasPressed()
+
         // Start/stop shooting sequence
-        if (gamepad2.aWasPressed() && currentShooterJob == null) {
+        if ((gamepad2.aWasPressed() || autoShoot) && currentShooterJob?.isCancelled ?: true) {
             currentShooterJob = shooter.shoot()
         }
 
-        if (currentShooterJob != null) {
-            if (gamepad1.rightBumperWasPressed())
-                opModeScope.launch {
-                    shootCount(shooter.stateFlow, sorter)
-                }
+        if (autoShoot)
+            opModeScope.launch {
+                shootCount(shooter.stateFlow, sorter, currentShooterJob ?: error("Shooter not started"))
+            }
 
+        if (currentShooterJob != null) {
             if (gamepad2.bWasPressed()) {
                 currentShooterJob?.cancel()
                 currentShooterJob = null
@@ -215,32 +224,33 @@ class FullTeleOp : CoroutineOpMode() {
         }
     }
 
-    private fun handleSorter() {
-        runBlocking {
-            // Intake artefacts (using stick buttons to avoid conflicts)
-            when {
-                gamepad2.leftStickButtonWasReleased() -> sorter.intake(ArtefactType.PURPLE)
-                gamepad2.rightStickButtonWasPressed() -> sorter.intake(ArtefactType.GREEN)
-            }
-
-            // Prepare shoot
-            when {
-                gamepad2.leftBumperWasPressed() -> sorter.prepareShoot(ArtefactType.PURPLE)
-                gamepad2.rightBumperWasPressed() -> sorter.prepareShoot(ArtefactType.GREEN)
-                gamepad2.backWasPressed() -> sorter.prepareShoot()
-            }
-
-            // Prepare intake
-            if (gamepad2.startWasPressed()) {
-                sorter.prepareIntake()
-            }
-
-            // Using left trigger as boolean for lifting
-            sorter.isLifting = gamepad2.left_trigger > 0.5
-
-//            // Adjust sorter position with triggers
-//            sorter.position += (gamepad2.right_trigger - gamepad2.left_trigger).toDouble() * SORTER_POSITION_MULTIPLIER
+    private suspend fun handleSorter() {
+        // Intake artefacts (using stick buttons to avoid conflicts)
+        when {
+            gamepad2.rightBumperWasPressed() -> sorter.intake(ArtefactType.PURPLE)
+            gamepad2.leftBumperWasPressed() -> sorter.intake(ArtefactType.GREEN)
         }
+
+        // Prepare shoot
+        when {
+            gamepad2.rightStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.PURPLE)
+            gamepad2.leftStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.GREEN)
+            gamepad2.backWasPressed() -> sorter.prepareShoot()
+        }
+
+        // Prepare intake
+        if (gamepad2.startWasPressed()) {
+            sorter.prepareIntake()
+        }
+
+        // Using left trigger as boolean for lifting
+        when {
+            gamepad2.squareWasPressed() -> sorter.isLifting = true
+            gamepad2.squareWasReleased() -> sorter.isLifting = false
+        }
+
+        // Adjust sorter position with triggers
+        sorter.position += (gamepad2.right_trigger - gamepad2.left_trigger).toDouble() * SORTER_POSITION_MULTIPLIER
     }
 
     private fun updateTelemetry() {
