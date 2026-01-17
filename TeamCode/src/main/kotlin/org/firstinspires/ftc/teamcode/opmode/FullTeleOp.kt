@@ -75,8 +75,10 @@ open class FullTeleOp : CoroutineOpMode() {
 
     private var isDrawingMutex = Mutex()
 
-    protected val GOAL_POSITION = Pose(24.0 * 3 - 12.0, 24.0 * 3 - 12.0)
-    protected val START_POSITION = Pose(0.0, 0.0)
+    protected val GOAL_POSITION = Pose(24.0 * -3.0 - 12.0, 24.0 * 3 - 12.0)
+    protected val START_POSITION = Pose(24.0 * 3.0, 0.0)
+
+    protected var TURET_OFFSET = 0.0
 
     // Speed control
     companion object {
@@ -86,6 +88,7 @@ open class FullTeleOp : CoroutineOpMode() {
         const val ANGLE_ADJUSTMENT_STEP = -0.5
         const val VELOCITY_ADJUSTMENT_STEP = 10.0
         const val SORTER_POSITION_MULTIPLIER = 0.005
+        const val TURET_OFFSET_ADJUSTMENT_STEP = 1
     }
 
     override fun init() {
@@ -146,6 +149,9 @@ open class FullTeleOp : CoroutineOpMode() {
         if (gamepad1.yWasPressed())
             isRobotCentric = !isRobotCentric
 
+        if (gamepad1.xWasPressed())
+            follower.pose = START_POSITION
+
         // Handle shooter controls (Gamepad 2)
         handleShooter()
 
@@ -158,11 +164,18 @@ open class FullTeleOp : CoroutineOpMode() {
 //        updateTelemetry()
         telemetry.update()
 
+        if (gamepad2.dpad_right) {
+            TURET_OFFSET -= TURET_OFFSET_ADJUSTMENT_STEP
+        }
+        if (gamepad2.dpad_left) {
+            TURET_OFFSET += TURET_OFFSET_ADJUSTMENT_STEP
+        }
+
         // TODO: Check turret auto-align
         val subtractedPose = GOAL_POSITION.minus(follower.pose)
         val angleDegrees = Math.toDegrees(atan2(subtractedPose.x, subtractedPose.y))
         RobotLog.dd("FullTeleOp", "Pose: $subtractedPose, Angle: $angleDegrees")
-        shooter.angleDegrees = angleDegrees - Math.toDegrees(follower.pose.heading)
+        shooter.angleDegrees = angleDegrees - Math.toDegrees(follower.pose.heading) + TURET_OFFSET
     }
 
     private fun handleDrive() {
@@ -218,10 +231,10 @@ open class FullTeleOp : CoroutineOpMode() {
         if (gamepad2.dpad_down) shooter.hood -= HOOD_ADJUSTMENT_STEP
 
         // Adjust shooter angle
-        when {
-            gamepad2.dpad_right -> shooter.angleDegrees += ANGLE_ADJUSTMENT_STEP
-            gamepad2.dpad_left -> shooter.angleDegrees -= ANGLE_ADJUSTMENT_STEP
-        }
+//        when {
+//            gamepad2.dpad_right -> shooter.angleDegrees += ANGLE_ADJUSTMENT_STEP
+//            gamepad2.dpad_left -> shooter.angleDegrees -= ANGLE_ADJUSTMENT_STEP
+//        }
     }
 
     private suspend fun handleSorter() {
@@ -259,6 +272,7 @@ open class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("Target Velocity", shooter.velocity)
         telemetry.addData("Hood Position", "%.3f".format(shooter.hood))
         telemetry.addData("Angle", "%.3f°".format(shooter.angleDegrees))
+        telemetry.addData("Turret Offset", "%.3f".format(TURET_OFFSET))
 
         telemetry.addData("Size", "${sorter.size}/3")
         telemetry.addData("Is Lifting", sorter.isLifting)
