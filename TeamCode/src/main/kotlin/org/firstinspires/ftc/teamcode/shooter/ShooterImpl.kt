@@ -2,22 +2,21 @@ package org.firstinspires.ftc.teamcode.shooter
 
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.DcMotorEx
-import com.qualcomm.robotcore.hardware.PIDFCoefficients
 import com.qualcomm.robotcore.hardware.Servo
 import com.qualcomm.robotcore.util.RobotLog
-import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
+import dev.nextftc.control.feedback.PIDCoefficients
+import dev.nextftc.control.feedforward.BasicFeedforwardParameters
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.math.abs
 
 @Config
 @ContributesBinding(OpModeScope::class)
@@ -32,24 +31,29 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        @Volatile
-        var TOLERANCE = 150.0
+        var MIN_LAUNCH_VELOCITY = 2200.0
 
         @JvmField
-        var VELOCITY = 2400.0
+        var coefficients = PIDCoefficients(0.015, kD = 0.0004)
 
         @JvmField
-        var coefficients = PIDFCoefficients()
+        var parameters = BasicFeedforwardParameters(kS = 0.06, kV = 0.000005)
     }
 
 
-    override var angleDegrees by rotationServo::position
-    override var hood by hoodServo::position
+    override var angleDegrees = 0.0
+        set(value) {
+            field = value.coerceIn(-80.0..80.0)
+            rotationServo.position = 0.5 - field / 160.0
+            RobotLog.dd("Shooter angle degrees", field.toString())
+        }
 
-    override var velocity = VELOCITY
+    override var hood by hoodServo::position
+    override var velocity = MIN_LAUNCH_VELOCITY
 
     private val controller = controlSystem {
-        velPid(0.007, kD = 0.0003)
+        velPid(coefficients)
+        basicFF(parameters)
     }
 
     final override val stateFlow: StateFlow<Shooter.State>
@@ -57,14 +61,15 @@ class ShooterImpl(
 
     override fun shoot() =
         opModeScope.launch {
+            motor.power = 1.0
             try {
                 tickFlow.collect {
                     val currentVelocity = encoder.velocity
-                    controller.goal = KineticState(velocity = velocity)
-                    motor.power =
-                        controller.calculate(KineticState(encoder.currentPosition.toDouble(), currentVelocity))
+//                    controller.goal = KineticState(velocity = velocity)
+//                    motor.power =
+//                        controller.calculate(KineticState(encoder.currentPosition.toDouble(), currentVelocity))
                     stateFlow.value =
-                        Shooter.State(hood, currentVelocity, abs(currentVelocity - velocity) < TOLERANCE)
+                        Shooter.State(hood, currentVelocity, currentVelocity >= MIN_LAUNCH_VELOCITY)
                 }
             } finally {
                 motor.power = 0.0
@@ -78,32 +83,22 @@ private val shootCountMutex = Mutex()
 suspend fun shootCount(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
+    shooterJob: Job? = null,
     count: Int = sorter.size
 ) = shootCountMutex.withLock {
     if (count <= 0) return@withLock
     require(count <= sorter.size)
     sorter.prepareShoot()
-
+    var alreadyShot = 0
     shootFlow
+        .dropWhile { (_, _, canShoot) -> !canShoot }
         .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
-        .onEach {
-            if (!it.canShoot) {
-                RobotLog.ii("Shooter", "State after shooting is: $it")
-                if (sorter.isLifting)
-                    sorter.prepareShoot()
-                sorter.isLifting = false
-            }
+        .filter { !it.canShoot }
+        .take(count)
+        .collect {
+            if (++alreadyShot == count) return@collect
+            sorter.prepareShoot()
         }
-        .filter { it.canShoot }
-        .take(count).collect {
-            sorter.isLifting = true
-            RobotLog.ii("Shooter", "Shot item with state: $it")
-        }
-    sorter.isLifting = false
-    if (sorter.isEmpty)
-        coroutineScope {
-            launch {
-                sorter.prepareIntake()
-            }
-        }
+    sorter.prepareIntake()
+    shooterJob?.cancel()
 }
