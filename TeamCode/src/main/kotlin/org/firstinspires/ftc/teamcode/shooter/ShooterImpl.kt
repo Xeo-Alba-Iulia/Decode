@@ -78,7 +78,7 @@ class ShooterImpl(
         }
 }
 
-private val shootCountMutex = Mutex()
+val shootCountMutex = Mutex()
 
 suspend fun shootCount(
     shootFlow: Flow<Shooter.State>,
@@ -87,7 +87,8 @@ suspend fun shootCount(
     count: Int = sorter.size
 ) = shootCountMutex.withLock {
     if (count <= 0) return@withLock
-    require(count <= sorter.size)
+    if (count != sorter.size)
+        return
     sorter.prepareShoot()
     var alreadyShot = 0
     shootFlow
