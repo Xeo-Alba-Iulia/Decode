@@ -18,8 +18,7 @@ import org.firstinspires.ftc.teamcode.SensorOdometry
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.shootCount
-import org.firstinspires.ftc.teamcode.shooter.shootCountMutex
+import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.atan2
@@ -213,13 +212,13 @@ open class FullTeleOp : CoroutineOpMode() {
         val autoShoot = gamepad2.triangleWasPressed()
 
         // Start/stop shooting sequence
-        if ((gamepad2.aWasPressed() || autoShoot) && currentShooterJob?.isCancelled ?: true) {
+        if ((gamepad2.aWasPressed() || autoShoot) && currentShooterJob?.isCancelled != false) {
             currentShooterJob = shooter.shoot()
         }
 
         if (autoShoot)
             opModeScope.launch {
-                shootCount(shooter.stateFlow, sorter, currentShooterJob ?: error("Shooter not started"))
+                shootAll(shooter.stateFlow, sorter, currentShooterJob!!)
             }
 
         if (currentShooterJob != null) {

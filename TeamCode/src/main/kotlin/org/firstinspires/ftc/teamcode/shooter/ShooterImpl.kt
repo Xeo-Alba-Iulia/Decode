@@ -56,20 +56,18 @@ class ShooterImpl(
         basicFF(parameters)
     }
 
+    @Suppress("RedundantModalityModifier")
     final override val stateFlow: StateFlow<Shooter.State>
-        field = MutableStateFlow(Shooter.State(0.5, 0.0, false))
+        field = MutableStateFlow(Shooter.State(hood, 0.0, false))
 
     override fun shoot() =
         opModeScope.launch {
             motor.power = 1.0
             try {
                 tickFlow.collect {
-                    val currentVelocity = encoder.velocity
-//                    controller.goal = KineticState(velocity = velocity)
-//                    motor.power =
-//                        controller.calculate(KineticState(encoder.currentPosition.toDouble(), currentVelocity))
+                    val velocity = encoder.velocity
                     stateFlow.value =
-                        Shooter.State(hood, currentVelocity, currentVelocity >= MIN_LAUNCH_VELOCITY)
+                        Shooter.State(hood, velocity, velocity >= MIN_LAUNCH_VELOCITY)
                 }
             } finally {
                 motor.power = 0.0
@@ -78,28 +76,28 @@ class ShooterImpl(
         }
 }
 
-val shootCountMutex = Mutex()
+private val shootCountMutex = Mutex()
 
-suspend fun shootCount(
+suspend fun shootAll(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
     shooterJob: Job? = null,
-    count: Int = sorter.size
-) = shootCountMutex.withLock {
-    if (count <= 0) return@withLock
-    if (count != sorter.size)
-        return
-    sorter.prepareShoot()
-    var alreadyShot = 0
-    shootFlow
-        .dropWhile { (_, _, canShoot) -> !canShoot }
-        .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
-        .filter { !it.canShoot }
-        .take(count)
-        .collect {
-            if (++alreadyShot == count) return@collect
-            sorter.prepareShoot()
-        }
-    sorter.prepareIntake()
-    shooterJob?.cancel()
+) {
+    if (shootCountMutex.isLocked) return
+    shootCountMutex.withLock {
+        val count = sorter.size
+        sorter.prepareShoot()
+        var alreadyShot = 0
+        shootFlow
+            .dropWhile { (_, _, canShoot) -> !canShoot }
+            .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
+            .filter { !it.canShoot }
+            .take(count)
+            .collect {
+                if (++alreadyShot == count) return@collect
+                sorter.prepareShoot()
+            }
+        sorter.prepareIntake()
+        shooterJob?.cancel()
+    }
 }
