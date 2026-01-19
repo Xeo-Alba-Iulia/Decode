@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.opmode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import kotlinx.coroutines.runBlocking
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import org.firstinspires.ftc.teamcode.sorter.ArtefactType
+import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @TeleOp(group = "Systems")

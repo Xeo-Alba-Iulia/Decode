@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.sorter
 
+import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 
 interface Sorter : OpModeObserver {

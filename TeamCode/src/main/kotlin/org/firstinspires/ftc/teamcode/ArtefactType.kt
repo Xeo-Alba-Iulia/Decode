@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.sorter
+package org.firstinspires.ftc.teamcode
 
 enum class ArtefactType {
     GREEN, PURPLE
