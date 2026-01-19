@@ -10,14 +10,11 @@ import dev.nextftc.control.feedforward.BasicFeedforwardParameters
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
-import org.firstinspires.ftc.teamcode.sorter.ArtefactType
-import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @Config
 @ContributesBinding(OpModeScope::class)
@@ -76,31 +73,3 @@ class ShooterImpl(
         }
 }
 
-private val shootCountMutex = Mutex()
-
-suspend fun shootAll(
-    shootFlow: Flow<Shooter.State>,
-    sorter: Sorter,
-    shooterJob: Job? = null,
-    vararg shootOrder: ArtefactType,
-) {
-    fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
-    if (shootCountMutex.isLocked) return
-    val orderIterator = shootOrder.iterator()
-    shootCountMutex.withLock {
-        val count = sorter.size
-        sorter.prepareShoot(orderIterator.nextOrNull())
-        var alreadyShot = 0
-        shootFlow
-            .dropWhile { (_, _, canShoot) -> !canShoot }
-            .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
-            .filter { !it.canShoot }
-            .take(count)
-            .collect {
-                if (++alreadyShot == count) return@collect
-                sorter.prepareShoot(orderIterator.nextOrNull())
-            }
-        sorter.prepareIntake()
-        shooterJob?.cancel()
-    }
-}
