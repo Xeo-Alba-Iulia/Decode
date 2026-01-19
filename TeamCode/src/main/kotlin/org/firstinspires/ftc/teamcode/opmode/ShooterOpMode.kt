@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 
-@TeleOp(group = "Shooter")
+@TeleOp(group = "Systems")
 open class ShooterOpMode : CoroutineOpMode() {
     @Suppress("PROPERTY_HIDES_JAVA_FIELD")
     lateinit var telemetry: Telemetry

@@ -6,7 +6,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
-@TeleOp(group = "Tests")
+@TeleOp(group = "Systems")
 open class SorterOpMode : CoroutineOpMode() {
     @Suppress("PROPERTY_HIDES_JAVA_FIELD")
     lateinit var telemetry: Telemetry
