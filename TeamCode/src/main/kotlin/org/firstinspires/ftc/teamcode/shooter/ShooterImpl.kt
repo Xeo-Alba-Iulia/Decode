@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import org.firstinspires.ftc.teamcode.sorter.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @Config
@@ -66,8 +67,7 @@ class ShooterImpl(
             try {
                 tickFlow.collect {
                     val velocity = encoder.velocity
-                    stateFlow.value =
-                        Shooter.State(hood, velocity, velocity >= MIN_LAUNCH_VELOCITY)
+                    stateFlow.value = Shooter.State(hood, velocity, velocity >= MIN_LAUNCH_VELOCITY)
                 }
             } finally {
                 motor.power = 0.0
@@ -82,11 +82,14 @@ suspend fun shootAll(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
     shooterJob: Job? = null,
+    vararg shootOrder: ArtefactType,
 ) {
+    fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
     if (shootCountMutex.isLocked) return
+    val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
         val count = sorter.size
-        sorter.prepareShoot()
+        sorter.prepareShoot(orderIterator.nextOrNull())
         var alreadyShot = 0
         shootFlow
             .dropWhile { (_, _, canShoot) -> !canShoot }
@@ -95,7 +98,7 @@ suspend fun shootAll(
             .take(count)
             .collect {
                 if (++alreadyShot == count) return@collect
-                sorter.prepareShoot()
+                sorter.prepareShoot(orderIterator.nextOrNull())
             }
         sorter.prepareIntake()
         shooterJob?.cancel()
