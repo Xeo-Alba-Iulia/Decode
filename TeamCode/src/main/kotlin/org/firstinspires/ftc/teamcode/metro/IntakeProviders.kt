@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.metro
 
+import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.ContributesTo
@@ -14,4 +15,7 @@ interface IntakeProviders {
     @Provides
     @Named("intakeMotor")
     fun provideIntakeMotor(map: HardwareMap): DcMotor = map.dcMotor["intake"]
+
+    @Provides
+    fun provideColorSensor(map: HardwareMap): ColorSensor = map.getAll(ColorSensor::class.java).single()
 }
