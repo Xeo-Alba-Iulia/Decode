@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.sorter
 
+import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.Servo
+import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
@@ -17,4 +19,8 @@ interface FakeSorterServoBinding {
     @SingleIn(OpModeScope::class)
     @Named("sorterServo")
     fun provideShooterServo(servo: FakeServo): Servo = servo
+
+    @Binds
+    @Named("transferServo")
+    private val FakeCRServo.bind: CRServo get() = this
 }
