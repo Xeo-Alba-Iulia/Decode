@@ -5,6 +5,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +19,7 @@ interface CoroutineProviders {
 
     @Provides
     @SingleIn(OpModeScope::class)
-    fun provideOpModeScope(): CoroutineScope = CoroutineScope(Dispatchers.Default)
+    fun provideOpModeScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Provides
     @SingleIn(OpModeScope::class)
