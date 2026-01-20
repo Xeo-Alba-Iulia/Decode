@@ -1,16 +1,14 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import com.acmerobotics.dashboard.config.Config
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -19,9 +17,9 @@ import org.firstinspires.ftc.teamcode.SensorOdometry
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -50,8 +48,8 @@ import kotlin.math.sin
  * - Left Stick Button: Intake purple artefact
  * - Right Stick Button: Intake green artefact
  */
-@TeleOp(group = "Meet")
-open class FullTeleOp : CoroutineOpMode() {
+@Config
+abstract class FullTeleOp : CoroutineOpMode() {
     // Subsystems
     @Suppress("PROPERTY_HIDES_JAVA_FIELD")
     lateinit var telemetry: Telemetry
@@ -63,23 +61,18 @@ open class FullTeleOp : CoroutineOpMode() {
     lateinit var follower: Follower
 
     // Drive state
-    private var isRobotCentric = true
-    private var wasYPressed = false
+    private var isRobotCentric = false
 
     // Shooter state
     private var currentShooterJob: Job? = null
-    private var currentShooterFlow: Flow<Shooter.State>? = null
-    private var lastShooterState: Shooter.State? = null
     private var isAllining = true
 
     private var speedMultiplier = NORMAL_MODE_MULTIPLIER
 
-    private var isDrawingMutex = Mutex()
+    private var turretOffset = 0.0
 
-    protected val GOAL_POSITION = Pose(24.0 * 3.0 - 12.0, 24.0 * (-3) - 12.0)
-    protected val START_POSITION = Pose(24.0 * (-3.0), 0.0)
-
-    protected var TURET_OFFSET = 0.0
+    abstract val goalPose: Pose
+    abstract val startPose: Pose
 
     // Speed control
     companion object {
@@ -108,7 +101,7 @@ open class FullTeleOp : CoroutineOpMode() {
 
     override fun start() {
         super.start()
-        follower.setStartingPose(START_POSITION)
+        follower.setStartingPose(startPose)
         follower.startTeleopDrive(true)
         opModeGraph.tickFlow
             .onEach {
@@ -147,8 +140,6 @@ open class FullTeleOp : CoroutineOpMode() {
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
 
-
-
         // Handle shooter controls (Gamepad 2)
         handleShooter()
 
@@ -162,26 +153,21 @@ open class FullTeleOp : CoroutineOpMode() {
         telemetry.update()
 
         if (gamepad2.dpad_right) {
-            TURET_OFFSET -= TURET_OFFSET_ADJUSTMENT_STEP
+            turretOffset -= TURET_OFFSET_ADJUSTMENT_STEP
         }
         if (gamepad2.dpad_left) {
-            TURET_OFFSET += TURET_OFFSET_ADJUSTMENT_STEP
+            turretOffset += TURET_OFFSET_ADJUSTMENT_STEP
         }
 
-        telemetry.addData("Turret Offset", TURET_OFFSET)
+        telemetry.addData("Turret Offset", turretOffset)
         telemetry.addData("shooter Angle", shooter.angleDegrees)
-
-        // TODO: Check turret auto-align
-        val subtractedPose = GOAL_POSITION.minus(follower.pose)
-        val angleDegrees = Math.toDegrees(atan2(subtractedPose.x, subtractedPose.y))
-        RobotLog.dd("FullTeleOp", "Pose: $subtractedPose, Angle: $angleDegrees")
-//        shooter.angleDegrees = 0 - Math.toDegrees(follower.pose.heading) + TURET_OFFSET
 
         if (gamepad1.aWasPressed())
             isAllining = !isAllining
 
-        if (!isAllining)
-            shooter.angleDegrees = 0.0
+        if (isAllining) {
+            shooter.alignToPose(follower.pose, goalPose, turretOffset)
+        }
     }
 
     private fun handleDrive() {
