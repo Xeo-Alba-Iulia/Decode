@@ -1,22 +1,26 @@
 package org.firstinspires.ftc.teamcode.elevator
 
+import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
 import dev.nextftc.control.feedback.PIDCoefficients
 import dev.nextftc.control.feedforward.GravityFeedforwardParameters
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
-//@Config
-//@SingleIn(OpModeScope::class)
-//@Inject
+@Config
+@SingleIn(OpModeScope::class)
+@Inject
 class Elevator(
     private val motors: List<DcMotorEx>,
     private val opModeScope: CoroutineScope,
-    private val tickFlow: StateFlow<Unit>,
+    private val tickFlow: SharedFlow<Unit>,
 ) {
     companion object {
         @JvmField
