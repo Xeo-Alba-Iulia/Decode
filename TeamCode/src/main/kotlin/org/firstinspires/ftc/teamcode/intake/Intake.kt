@@ -1,26 +1,25 @@
 package org.firstinspires.ftc.teamcode.intake
 
-import android.graphics.Color
 import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.DcMotor
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.runBlocking
 import org.firstinspires.ftc.teamcode.ArtefactType
 
 @Config
 @Inject
 class Intake(
     @Named("intakeMotor") private val motor: DcMotor,
-    private val sensor: ColorSensor
+    private val sensor: NormalizedColorSensor,
+    private val opModeScope: CoroutineScope,
 ) {
     private var _isRunning = false
     var isRunning
@@ -40,25 +39,38 @@ class Intake(
             motor.power = if (value) -INTAKE_POWER else 0.0
         }
 
-    @OptIn(FlowPreview::class)
-    val artefactFlow: Flow<ArtefactType?> =
-        flow {
-            while (_isRunning) {
-                val colors = sensor.argb()
-                val green = Color.green(colors)
-                val blue = Color.blue(colors)
+    init {
+        sensor.gain = GAIN
+    }
 
-                when {
-                    green > 500 -> emit(ArtefactType.GREEN)
-                    blue > 500 -> emit(ArtefactType.PURPLE)
-                    else -> emit(null)
-                }
+    val colorFlow = runBlocking {
+        flow {
+            while (true) {
+                emit(sensor.normalizedColors)
                 delay(20L)
             }
-        }.flowOn(Dispatchers.IO).debounce(50L).distinctUntilChanged()
+        }.stateIn(opModeScope)
+    }
+
+    val artefactFlow
+        get() = colorFlow.map {
+            when {
+                it.blue > BLUE_THRESHOLD && it.red > RED_THRESHOLD -> ArtefactType.PURPLE
+                it.green > GREEN_THRESHOLD -> ArtefactType.GREEN
+                else -> null
+            }
+        }.distinctUntilChanged()
 
     companion object {
         @JvmField
         var INTAKE_POWER = 0.7
+        @JvmField
+        var RED_THRESHOLD = 0.44f
+        @JvmField
+        var GREEN_THRESHOLD = 0.5f
+        @JvmField
+        var BLUE_THRESHOLD = 0.45f
+        @JvmField
+        var GAIN = 5f
     }
 }
