@@ -10,11 +10,13 @@
             <Servo name="rotation" port="1" />
             <Servo name="sorter" port="2" />
             <ContinuousRotationServo name="transfer" port="3" />
+            <LynxColorSensor name="color" bus="0" port="0" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
             <goBILDA5202SeriesMotor name="intake" port="0" />
             <goBILDA5202SeriesMotor name="frontRight" port="1" />
             <goBILDA5202SeriesMotor name="frontLeft" port="2" />
+            <goBILDA5202SeriesMotor name="lift right" port="3" />
             <ControlHubImuBHI260AP name="imu" bus="0" port="0" />
             <goBILDAPinpoint name="pinpoint" bus="0" port="1" />
         </LynxModule>
