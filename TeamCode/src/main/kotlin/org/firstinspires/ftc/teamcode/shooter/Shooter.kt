@@ -23,7 +23,7 @@ interface Shooter {
     data class State(val hood: Double, val velocity: Double, val canShoot: Boolean)
 }
 
-fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose) {
+fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
     val angle = atan2(
         targetPose.y - currentPose.y,
         targetPose.x - currentPose.x
@@ -31,7 +31,7 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose) {
     val normalizedAngle = MathFunctions.normalizeAngle(currentPose.heading).let {
         if (it > 3 / 2 * PI) it - 2 * PI else it
     }
-    angleDegrees = Math.toDegrees(angle - normalizedAngle)
+    angleDegrees = Math.toDegrees(angle - normalizedAngle) + offset
 }
 
 private val shootCountMutex = Mutex()
