@@ -29,7 +29,7 @@ interface ShooterProviders {
 
     @Provides
     @Named("shooterEncoder")
-    fun provideShooterEncoder(map: HardwareMap): DcMotorEx = (map.dcMotor["encoder"] as DcMotorEx).apply {
+    fun provideShooterEncoder(map: HardwareMap): DcMotorEx = (map.dcMotor["shooter"] as DcMotorEx).apply {
         direction = DcMotorSimple.Direction.REVERSE
     }
 }

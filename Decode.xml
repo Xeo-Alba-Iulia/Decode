@@ -5,7 +5,7 @@
             <goBILDA5202SeriesMotor name="backRight" port="0" />
             <goBILDA5202SeriesMotor name="backLeft" port="1" />
             <goBILDA5202SeriesMotor name="shooter" port="2" />
-            <Motor name="encoder" port="3" />
+            <goBILDA5202SeriesMotor name="lift left" port="3" />
             <Servo name="hood" port="0" />
             <Servo name="rotation" port="1" />
             <Servo name="sorter" port="2" />

@@ -14,7 +14,7 @@ interface ElevatorProviders {
     @Suppress("UNCHECKED_CAST")
     fun provideElevatorMotors(map: HardwareMap): List<DcMotorEx> =
         listOf(
-            map.dcMotor["encoder"],
+            map.dcMotor["lift left"],
             map.dcMotor["lift right"],
         ) as List<DcMotorEx>
 }
