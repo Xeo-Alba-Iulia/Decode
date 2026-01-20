@@ -36,8 +36,10 @@ open class IntakeOpMode : CoroutineOpMode() {
                 telemetry.addData("ArtefactType", it)
             }
             .zipWithNext()
-            .onEach { (previous, current) ->
-                telemetry.addData("Artefact Change", "$previous -> $current")
+            .onEach { (previous, _) ->
+                if (previous != null) {
+                    sorter.intake(previous)
+                }
             }
             .launchIn(opModeScope)
     }
@@ -47,7 +49,7 @@ open class IntakeOpMode : CoroutineOpMode() {
             gamepad1.aWasPressed() -> intake.isRunning = true
             gamepad1.bWasPressed() -> intake.isRunning = false
         }
-//        telemetry.addData("Sorter", sorter)
+        telemetry.addData("Sorter", sorter)
         telemetry.update()
     }
 }
