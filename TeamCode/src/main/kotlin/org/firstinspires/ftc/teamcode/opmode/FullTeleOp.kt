@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
+import org.firstinspires.ftc.teamcode.intake.zipWithNext
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
@@ -96,6 +97,18 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 RobotLog.dd("FullTeleOp", it.toString())
                 telemetry.addData("Shooter", it)
                 telemetry.update()
+            }
+            .launchIn(opModeScope)
+
+        intake.artefactFlow
+            .onEach {
+                telemetry.addData("ArtefactType", it)
+            }
+            .zipWithNext()
+            .onEach { (previous, _) ->
+                if (previous != null) {
+                    sorter.intake(previous)
+                }
             }
             .launchIn(opModeScope)
     }
