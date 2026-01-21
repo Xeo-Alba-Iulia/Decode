@@ -78,8 +78,10 @@ dependencies {
 
     implementation 'dev.nextftc:control:1.0.0'
 
-    implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
-    implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.5.1")
+    debugImplementation("dev.frozenmilk.sinister:Sloth:0.2.4")
+    debugImplementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.5.1")
+    debugImplementation("com.bylazar:fullpanels:1.0.12")
+    releaseImplementation("com.acmerobotics.dashboard:dashboard:0.5.1")
 
     implementation platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
