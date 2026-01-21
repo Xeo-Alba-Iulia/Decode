@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.canvas.Canvas
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
+import com.pedropathing.ftc.FTCCoordinates
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.Vector
 import com.pedropathing.paths.Path
@@ -117,6 +118,7 @@ fun sendPacket(): Boolean {
  * @param t the Pose to draw at
  */
 fun drawRobotOnCanvas(c: Canvas, t: Pose) {
+    val t = t.getAsCoordinateSystem(FTCCoordinates.INSTANCE)
     c.strokeCircle(t.x, t.y, ROBOT_RADIUS)
     val v: Vector = t.headingAsUnitVector * ROBOT_RADIUS
     val x1 = t.x + v.xComponent / 2
