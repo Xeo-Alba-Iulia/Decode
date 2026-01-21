@@ -27,7 +27,7 @@ import kotlin.math.pow
  */
 @Config
 @TeleOp(name = "Tuning", group = "Pedro Pathing")
-final class Tuning : SelectableOpMode<Tuning>("Select a Tuning OpMode", {
+class Tuning : SelectableOpMode<Tuning>("Select a Tuning OpMode", {
     for ((folderName, folderMap) in it.opModesMap) {
         folder(folderName) { folder ->
             for ((opModeName, opModeProvider) in folderMap) {
@@ -79,10 +79,10 @@ class MotorDirectionsTest(follower: Follower, private val telemetryA: Telemetry)
             "Press X, A, Y, B to test each motor individually.",
             "Press Right Bumper to update motor directions.",
             "",
-            "Press X: Front Left",
-            "Press A: Back Left",
-            "Press Y: Front Right",
-            "Press B: Back Right",
+            "Press X (Square):   Front Left",
+            "Press A (Cross):    Back Left",
+            "Press Y (Triangle): Front Right",
+            "Press B (Circle):   Back Right",
             "",
             "Tip: turn the controller 45 degrees clockwise"
         ).forEach { telemetryA.addLine(it) }
