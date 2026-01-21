@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
+import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
@@ -14,7 +15,7 @@ interface ShooterProviders {
     @Named("shooterHoodServo")
     fun provideShooterHoodServo(map: HardwareMap): Servo = map.servo["hood"].apply {
         direction = Servo.Direction.REVERSE
-        scaleRange(0.3, 0.92)
+        scaleRange(0.0, 0.9)
     }
 
     @Provides
@@ -25,11 +26,11 @@ interface ShooterProviders {
 
     @Provides
     @Named("shooterMotor")
-    fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
-
-    @Provides
-    @Named("shooterEncoder")
-    fun provideShooterEncoder(map: HardwareMap): DcMotorEx = (map.dcMotor["shooter"] as DcMotorEx).apply {
+    fun provideShooterMotor(map: HardwareMap): DcMotorEx = (map.dcMotor["shooter"] as DcMotorEx).apply {
         direction = DcMotorSimple.Direction.REVERSE
     }
+
+    @Binds
+    @Named("shooterEncoder")
+    val @receiver:Named("shooterMotor") DcMotorEx.bind: DcMotorEx
 }
