@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.elevator
 
 import com.acmerobotics.dashboard.config.Config
+import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
@@ -12,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @Config
@@ -21,7 +23,7 @@ class Elevator(
     private val motors: List<DcMotorEx>,
     private val opModeScope: CoroutineScope,
     private val tickFlow: SharedFlow<Unit>,
-) {
+) : OpModeObserver {
     companion object {
         @JvmField
         var HEIGHT = 2000.0
@@ -36,7 +38,7 @@ class Elevator(
     var height = HEIGHT
     private var power = 0.0
         set(value) {
-            field = value.coerceIn(0.0..POWER)
+            field = value.coerceIn(-0.2..POWER)
             motors.forEach { it.power = field }
         }
 
@@ -62,4 +64,10 @@ class Elevator(
             }
         }
     }
+
+    fun setHold() {
+        power = -0.15
+    }
+
+    override suspend fun onStart(opMode: OpMode) = setHold()
 }

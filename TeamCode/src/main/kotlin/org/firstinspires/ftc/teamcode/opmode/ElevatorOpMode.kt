@@ -1,20 +1,36 @@
 package org.firstinspires.ftc.teamcode.opmode
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.qualcomm.robotcore.hardware.DcMotor
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.firstinspires.ftc.robotcore.external.Telemetry
+import org.firstinspires.ftc.teamcode.elevator.Elevator
 
 @TeleOp(group = "Systems")
-class ElevatorOpMode : OpMode() {
-    //    lateinit var elevator: Elevator
-    lateinit var motors: List<DcMotor>
+class ElevatorOpMode : CoroutineOpMode() {
+    @Suppress("PROPERTY_HIDES_JAVA_FIELD")
+    lateinit var telemetry: Telemetry
+    lateinit var elevator: Elevator
+    var liftJob: Job? = null
 
     override fun init() {
-        motors = listOf(hardwareMap.dcMotor["encoder"], hardwareMap.dcMotor["lift right"])
+        elevator = opModeGraph.elevator
+        telemetry = opModeGraph.telemetry
+        observers += elevator
     }
 
-    override fun loop() {
-        val power = (gamepad1.right_trigger - gamepad1.left_trigger).toDouble()
-        motors.forEach { it.power = power }
+    override fun start() {
+        super.start()
+        opModeScope.launch {
+            while (true) {
+                elevator.setHold()
+                while (gamepad1.crossWasPressed())
+                    delay(100L)
+                elevator.lift().join()
+            }
+        }
     }
+
+    override fun loop() {}
 }
