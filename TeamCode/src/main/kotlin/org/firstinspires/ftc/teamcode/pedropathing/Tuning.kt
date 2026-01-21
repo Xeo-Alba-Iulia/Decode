@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedropathing
 
-import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.config.Config
-import com.acmerobotics.dashboard.config.ValueProvider
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.Vector
@@ -66,6 +64,43 @@ fun stopRobot(follower: Follower) {
 @MapKey(unwrapValue = false)
 annotation class TuningOpModeKey(val folder: String, val name: String)
 
+@ContributesIntoMap(OpModeScope::class)
+@TuningOpModeKey(folder = "Tests", name = "Motor Directions")
+class MotorDirectionsTest(follower: Follower, private val telemetryA: Telemetry) : OpMode() {
+    private val drivetrain = follower.drivetrain ?: error("Follower has no drivetrain, wtf?")
+
+    private val driveArray = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+
+    override fun init() {}
+
+    override fun start() {
+        drivetrain.updateConstants()
+        listOf(
+            "Press X, A, Y, B to test each motor individually.",
+            "Press Right Bumper to update motor directions.",
+            "",
+            "Press X: Front Left",
+            "Press A: Back Left",
+            "Press Y: Front Right",
+            "Press B: Back Right",
+            "",
+            "Tip: turn the controller 45 degrees clockwise"
+        ).forEach { telemetryA.addLine(it) }
+    }
+
+    override fun loop() {
+        driveArray[0] = if (gamepad1.x) 1.0 else 0.0 // Front Left
+        driveArray[1] = if (gamepad1.a) 1.0 else 0.0 // Back Left
+        driveArray[2] = if (gamepad1.y) 1.0 else 0.0 // Front Right
+        driveArray[3] = if (gamepad1.b) 1.0 else 0.0 // Back Right
+
+        drivetrain.runDrive(driveArray)
+        if (gamepad1.rightBumperWasPressed()) {
+            drivetrain.updateConstants()
+        }
+    }
+}
+
 /**
  * This is the LocalizationTest OpMode. This is basically just a simple mecanum drive attached to a
  * PoseUpdater. The OpMode will print out the robot's pose to telemetry as well as draw the robot.
@@ -97,15 +132,6 @@ class LocalizationTest(
 
     override fun start() {
         follower.startTeleopDrive()
-        FtcDashboard.getInstance().run {
-            addConfigVariable("Localization", "MULTIPLIER", object : ValueProvider<Double> {
-                override fun get() = multiplier
-                override fun set(value: Double) {
-                    multiplier = value
-                }
-            })
-            updateConfig()
-        }
     }
 
     /**

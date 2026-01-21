@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import kotlin.math.abs
 
 class Drive(hardwareMap: HardwareMap) {
-    val frontLeft = hardwareMap.dcMotor["frontLeft"]
+    val frontLeft = hardwareMap.dcMotor["frontLeft"].apply { direction = DcMotorSimple.Direction.REVERSE }
     val frontRight = hardwareMap.dcMotor["frontRight"]
     val backLeft = hardwareMap.dcMotor["backLeft"].apply { direction = DcMotorSimple.Direction.REVERSE }
     val backRight = hardwareMap.dcMotor["backRight"]

@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.sorter
 
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.createGraph
+import kotlinx.coroutines.test.runTest
+import org.firstinspires.ftc.teamcode.ArtefactType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +23,8 @@ class SorterImplTest {
     }
 
     @Test
-    fun intake() {
+    fun intake() = runTest {
+        sorter.prepareIntake()
         assertEquals(SorterImpl.INTAKE_POSITIONS[0], servo.position)
         assertEquals(
             SorterImpl.INTAKE_POSITIONS[1],
@@ -36,6 +39,9 @@ class SorterImplTest {
             isFull
         })
         assertThrows<IllegalArgumentException>("Wrong exception on full shooter") { sorter.intake(ArtefactType.PURPLE) }
-        assertEquals("SorterImpl(artefacts = [PURPLE, PURPLE, GREEN])", sorter.toString())
+        assertEquals(
+            "SorterImpl(artefacts = [PURPLE, PURPLE, GREEN], position = ${SorterImpl.INTAKE_POSITIONS.last()})",
+            sorter.toString()
+        )
     }
 }

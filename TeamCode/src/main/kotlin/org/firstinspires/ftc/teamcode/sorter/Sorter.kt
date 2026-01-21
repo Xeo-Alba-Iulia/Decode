@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.sorter
 
-sealed interface Sorter {
+import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.OpModeObserver
+
+interface Sorter : OpModeObserver {
     /**
      * Prepares the sorter to receive a ball by preselecting a free slot
      *
      * Conforming implementations will also call this in [intake] as long as the sorter isn't full,
-     * and in [shoot], when the sorter becomes empty
+     * and in [prepareShoot], when the sorter becomes empty
      *
      * As such, if you always empty the sorter when you start shooting, you never need this method
      *
@@ -14,7 +17,7 @@ sealed interface Sorter {
      * @see isFull
      * @see isEmpty
      */
-    fun prepareIntake()
+    suspend fun prepareIntake()
 
     /**
      * Sets the type of artefact that was put in the intake.
@@ -26,7 +29,7 @@ sealed interface Sorter {
      * [OpMode][com.qualcomm.robotcore.eventloop.opmode.OpMode.start]
      * @see [isFull]
      */
-    fun intake(type: ArtefactType)
+    suspend fun intake(type: ArtefactType)
 
     /**
      * Supplies an artefact to be picked up by the shooter
@@ -35,7 +38,10 @@ sealed interface Sorter {
      *
      * @see isEmpty
      */
-    fun shoot(type: ArtefactType? = null): Boolean
+    @IgnorableReturnValue
+    suspend fun prepareShoot(type: ArtefactType? = null): Boolean
+
+    var isLifting: Boolean
 
     /**
      * Number of artefacts currently in the sorter
@@ -44,4 +50,6 @@ sealed interface Sorter {
 
     val isEmpty get() = size == 0
     val isFull get() = size == 3
+
+    var position: Double
 }

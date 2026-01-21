@@ -99,6 +99,7 @@ fun drawPoseHistory(poseHistory: PoseHistory, color: String) {
  *
  * @return returns if the operation was successful.
  */
+@IgnorableReturnValue
 fun sendPacket(): Boolean {
     if (packet != null) {
         FtcDashboard.getInstance().sendTelemetryPacket(packet)
