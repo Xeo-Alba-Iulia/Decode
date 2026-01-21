@@ -36,9 +36,9 @@ class Elevator(
     }
 
     var height = HEIGHT
-    private var power = 0.0
+    var power = 0.0
         set(value) {
-            field = value.coerceIn(-0.2..POWER)
+            field = value.coerceIn(-0.5..POWER)
             motors.forEach { it.power = field }
         }
 
@@ -65,9 +65,5 @@ class Elevator(
         }
     }
 
-    fun setHold() {
-        power = -0.15
-    }
-
-    override suspend fun onStart(opMode: OpMode) = setHold()
+    override suspend fun onStart(opMode: OpMode) {}
 }
