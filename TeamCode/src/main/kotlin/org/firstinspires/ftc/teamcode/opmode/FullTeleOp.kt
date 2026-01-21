@@ -5,6 +5,8 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -105,8 +107,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 telemetry.addData("ArtefactType", it)
             }
             .zipWithNext()
+            .buffer(capacity = 2)
             .onEach { (previous, _) ->
                 if (previous != null) {
+                    delay(150L)
                     sorter.intake(previous)
                 }
             }
@@ -116,7 +120,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     override fun loop() {
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble(),
-            /* strafe = */ gamepad1.left_stick_x.toDouble(),
+            /* strafe = */ gamepad1.left_stick_x.toDouble() * if (!isRobotCentric) -1 else 1,
             /* turn = */ -gamepad1.right_stick_x.toDouble(),
             /* isRobotCentric = */ isRobotCentric
         )
@@ -141,8 +145,11 @@ abstract class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("Turret Offset", turretOffset)
         telemetry.addData("shooter Angle", shooter.angleDegrees)
 
-        if (gamepad1.aWasPressed())
+        if (gamepad1.crossWasPressed())
             shooter.alignToPose(follower.pose, goalPose, turretOffset)
+
+        if (gamepad1.triangleWasPressed())
+            isRobotCentric = !isRobotCentric
     }
 
     private fun handleShooter() {

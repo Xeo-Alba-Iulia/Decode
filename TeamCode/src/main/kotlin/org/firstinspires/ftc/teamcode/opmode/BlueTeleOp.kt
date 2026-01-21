@@ -6,6 +6,6 @@ import kotlin.math.PI
 
 @TeleOp(group = "Meet")
 class BlueTeleOp : FullTeleOp() {
-    override val startPose = Pose(144.0 - 57.0, 9.0, PI / 2)
-    override val goalPose = Pose(144.0 - 12.0, 144.0 - 12.0)
+    override val startPose = Pose(24.0 * 2 + 12.0, 12.0, PI / 2)
+    override val goalPose = Pose(0.0, 144.0)
 }
