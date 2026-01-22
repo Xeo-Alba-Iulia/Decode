@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import kotlin.coroutines.cancellation.CancellationException
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -55,7 +56,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var shooter: Shooter
     lateinit var sorter: Sorter
     lateinit var follower: Follower
-    lateinit var limelight: Limelight3A
+    var limelight: Limelight3A? = null
 
     // Drive state
     private var isRobotCentric = false
@@ -82,7 +83,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         shooter = opModeGraph.shooter
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
-        limelight = hardwareMap.getAll(Limelight3A::class.java).single()
+        limelight = opModeGraph.limelight
         observers += sorter
     }
 
@@ -96,17 +97,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope)
 
-        shooter.stateFlow
-            .onEach {
-                RobotLog.dd("FullTeleOp", it.toString())
-                telemetry.addData("Shooter", it)
-                telemetry.update()
-            }
-            .launchIn(opModeScope)
-
         intake.artefactFlow
             .onEach {
-                telemetry.addData("ArtefactType", it)
+//                telemetry.addData("ArtefactType", it)
             }
             .zipWithNext()
             .buffer(capacity = 2)
@@ -135,7 +128,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
         handleShooter()
         telemetry.addData("Pose", follower.pose)
-        telemetry.update()
 
         if (gamepad2.dpad_right) {
             turretOffset -= TURET_OFFSET_ADJUSTMENT_STEP
@@ -148,11 +140,13 @@ abstract class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("shooter Angle", shooter.angleDegrees)
 
         if (gamepad1.crossWasPressed())
-            limelight.latestResult.fiducialResults.singleOrNull()?.targetXDegrees?.let { shooter.angleDegrees -= it }
+            limelight?.latestResult?.fiducialResults?.singleOrNull()?.targetXDegrees?.let { shooter.angleDegrees -= it }
                 ?: shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
+
+        telemetry.addData("Shooter speed", shooter.stateFlow.value.velocity)
     }
 
     private fun handleShooter() {
@@ -165,7 +159,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         if (autoShoot)
             opModeScope.launch {
-                shootAll(shooter.stateFlow, sorter, currentShooterJob!!)
+                try {
+                    shootAll(shooter.stateFlow, sorter, currentShooterJob!!)
+                } catch (e: Exception) {
+                    if (e is CancellationException) return@launch
+                    RobotLog.dd("FullTeleOp", e, "Shooter problem")
+                }
             }
 
         if (currentShooterJob != null) {
