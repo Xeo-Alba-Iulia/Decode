@@ -21,6 +21,8 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -144,8 +146,18 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
-        if (gamepad1.crossWasPressed())
-            limelight.latestResult.fiducialResults.singleOrNull()?.targetXDegrees?.let { turretOffset -= it }
+        limelight.latestResult.fiducialResults.singleOrNull()?.let {
+            if (gamepad1.crossWasPressed())
+                turretOffset -= it.targetXDegrees
+            val position = it.targetPoseCameraSpace.position
+            val distance = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
+            telemetry.addData("AprilTag Distance", distance)
+        }
+
+
+        limelight.latestResult.fiducialResults.singleOrNull()?.let {
+            it.targetPoseCameraSpace.position
+        }
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
