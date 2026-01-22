@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.metro
 
+import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
@@ -28,9 +29,13 @@ interface ShooterProviders {
     @Named("shooterMotor")
     fun provideShooterMotor(map: HardwareMap): DcMotorEx = (map.dcMotor["shooter"] as DcMotorEx).apply {
         direction = DcMotorSimple.Direction.REVERSE
+        power = -0.01
     }
+
+    @Provides
+    fun provideLimelight(map: HardwareMap): Limelight3A = map.getAll(Limelight3A::class.java).single()
 
     @Binds
     @Named("shooterEncoder")
-    val @receiver:Named("shooterMotor") DcMotorEx.bind: DcMotorEx
+    val @receiver:Named("shooterMotor") DcMotorEx.bindEncoder: DcMotorEx
 }

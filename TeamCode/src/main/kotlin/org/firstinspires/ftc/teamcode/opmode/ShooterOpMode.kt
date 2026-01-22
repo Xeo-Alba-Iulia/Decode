@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
@@ -10,10 +11,11 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 
 @TeleOp(group = "Systems")
-open class ShooterOpMode : CoroutineOpMode() {
+class ShooterOpMode : CoroutineOpMode() {
     @Suppress("PROPERTY_HIDES_JAVA_FIELD")
     lateinit var telemetry: Telemetry
     lateinit var shooter: Shooter
+    lateinit var limelight: Limelight3A
     var shooterJob: Job? = null
 
     override fun init() {
@@ -21,6 +23,9 @@ open class ShooterOpMode : CoroutineOpMode() {
         telemetry = opModeGraph.telemetry
         shooter.hood = 0.5
         telemetry = opModeGraph.telemetry
+        limelight = hardwareMap.getAll(Limelight3A::class.java).single()
+        limelight.pipelineSwitch(1)
+        telemetry.addData("Pipeline type", limelight.status.pipelineType)
     }
 
     override fun start() {
@@ -33,6 +38,7 @@ open class ShooterOpMode : CoroutineOpMode() {
                 RobotLog.dd(ShooterOpMode::class.simpleName, "Shooter State: $it")
             }
             .launchIn(opModeGraph.opModeScope)
+        limelight.start()
     }
 
     override fun loop() {
@@ -52,8 +58,11 @@ open class ShooterOpMode : CoroutineOpMode() {
             shooter.hood -= 0.01
         }
         when {
-            gamepad1.dpad_right -> shooter.angleDegrees += 0.01
-            gamepad1.dpad_left -> shooter.angleDegrees -= 0.01
+            gamepad1.dpad_right -> shooter.angleDegrees -= 1.0
+            gamepad1.dpad_left -> shooter.angleDegrees += 1.0
+        }
+        if (gamepad1.triangleWasPressed()) {
+            limelight.latestResult?.fiducialResults?.singleOrNull()?.targetXDegrees?.let { shooter.angleDegrees -= it }
         }
         telemetry.addData("Angle", shooter.angleDegrees)
     }

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmode
 import com.acmerobotics.dashboard.config.Config
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
+import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -54,6 +55,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var shooter: Shooter
     lateinit var sorter: Sorter
     lateinit var follower: Follower
+    lateinit var limelight: Limelight3A
 
     // Drive state
     private var isRobotCentric = false
@@ -80,7 +82,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         shooter = opModeGraph.shooter
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
-
+        limelight = hardwareMap.getAll(Limelight3A::class.java).single()
         observers += sorter
     }
 
@@ -146,7 +148,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("shooter Angle", shooter.angleDegrees)
 
         if (gamepad1.crossWasPressed())
-            shooter.alignToPose(follower.pose, goalPose, turretOffset)
+            limelight.latestResult.fiducialResults.singleOrNull()?.targetXDegrees?.let { shooter.angleDegrees -= it }
+                ?: shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
