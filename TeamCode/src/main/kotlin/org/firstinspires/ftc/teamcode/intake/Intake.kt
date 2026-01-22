@@ -55,8 +55,8 @@ class Intake(
     val artefactFlow
         get() = colorFlow.map {
             when {
-                it.blue > BLUE_THRESHOLD && it.red > RED_THRESHOLD -> ArtefactType.PURPLE
-                it.green > GREEN_THRESHOLD -> ArtefactType.GREEN
+                it.alpha >= 0.6 && it.red >= 0.33 -> ArtefactType.PURPLE
+                it.alpha >= 0.6 && it.red in 0.12..0.25 -> ArtefactType.GREEN
                 else -> null
             }
         }.distinctUntilChanged()
@@ -71,6 +71,6 @@ class Intake(
         @JvmField
         var BLUE_THRESHOLD = 0.45f
         @JvmField
-        var GAIN = 5f
+        var GAIN = 3.4f
     }
 }

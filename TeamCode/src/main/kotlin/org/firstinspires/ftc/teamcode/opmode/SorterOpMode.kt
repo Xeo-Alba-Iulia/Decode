@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import com.acmerobotics.dashboard.FtcDashboard
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
+import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
+import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -14,9 +18,10 @@ import org.firstinspires.ftc.teamcode.sorter.Sorter
 open class SorterOpMode : CoroutineOpMode() {
     lateinit var sorter: Sorter
     lateinit var intake: Intake
+    lateinit var dashTelemetry: Telemetry
 
     override fun init() {
-        telemetry = opModeGraph.telemetry
+        dashTelemetry = FtcDashboard.getInstance().telemetry
         sorter = opModeGraph.sorter
         intake = opModeGraph.intake
         observers += sorter
@@ -26,20 +31,21 @@ open class SorterOpMode : CoroutineOpMode() {
             .buffer(capacity = 2)
             .onEach { (previous, _) ->
                 if (previous != null) {
-                    delay(150L)
+                    delay(200L)
                     sorter.intake(previous)
                 }
             }
             .launchIn(opModeScope)
 
-
         intake.colorFlow
+            .filter { (alpha, _, _, _) -> alpha >= 0.1 }
             .onEach {
                 val (alpha, red, green, blue) = it
-                telemetry.addData("Alpha", alpha)
-                telemetry.addData("Red", red)
-                telemetry.addData("Green", green)
-                telemetry.addData("Blue", blue)
+                dashTelemetry.addData("Alpha", alpha)
+                dashTelemetry.addData("Red", red)
+                dashTelemetry.addData("Green", green)
+                dashTelemetry.addData("Blue", blue)
+                dashTelemetry.update()
             }
             .launchIn(opModeScope)
     }
@@ -61,6 +67,7 @@ open class SorterOpMode : CoroutineOpMode() {
                 sorter.prepareIntake()
 
             when {
+                sorter.isFull -> intake.isRunning = false
                 gamepad1.crossWasPressed() -> intake.isRunning = !intake.isRunning
                 gamepad1.circleWasPressed() -> intake.isOuttake = true
                 gamepad1.circleWasReleased() -> intake.isOuttake = false
@@ -73,14 +80,11 @@ open class SorterOpMode : CoroutineOpMode() {
             }?.let { sorter.isLifting = it }
 
             sorter.position += (gamepad1.right_trigger - gamepad1.left_trigger).toDouble() * 0.001
-
-            val (alpha, red, green, blue) = intake.colorFlow.value
-            telemetry.addData("Alpha", alpha)
-            telemetry.addData("Red", red)
-            telemetry.addData("Green", green)
-            telemetry.addData("Blue", blue)
-            telemetry.addData("Sorter", sorter)
-            telemetry.update()
         }
+    }
+
+    override fun stop() {
+        super.stop()
+        RobotLog.dd("SorterOpMode", "Sorter: $sorter")
     }
 }
