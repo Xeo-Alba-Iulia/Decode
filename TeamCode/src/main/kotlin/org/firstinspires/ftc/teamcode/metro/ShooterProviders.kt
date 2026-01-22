@@ -11,7 +11,7 @@ import dev.zacsweers.metro.Provides
 
 @ContributesTo(OpModeScope::class)
 interface ShooterProviders {
-    val limelight: Limelight3A?
+    val limelight: Limelight3A
 
     @Provides
     @Named("shooterHoodServo")
@@ -31,7 +31,7 @@ interface ShooterProviders {
     fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
 
     @Provides
-    fun provideLimelight(map: HardwareMap): Limelight3A? = map.getAll(Limelight3A::class.java).single()
+    fun provideLimelight(map: HardwareMap): Limelight3A = map.getAll(Limelight3A::class.java).single()
 
     @Binds
     @Named("shooterEncoder")

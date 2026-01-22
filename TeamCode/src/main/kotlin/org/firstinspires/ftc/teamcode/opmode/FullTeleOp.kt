@@ -56,7 +56,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var shooter: Shooter
     lateinit var sorter: Sorter
     lateinit var follower: Follower
-    var limelight: Limelight3A? = null
+    lateinit var limelight: Limelight3A
 
     // Drive state
     private var isRobotCentric = false
@@ -85,9 +85,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
         observers += sorter
-        if (limelight == null)
-            RobotLog.addGlobalWarningMessage("Limelight not present")
-        limelight?.pipelineSwitch(1)
+        limelight.pipelineSwitch(1)
     }
 
     override fun start() {
@@ -108,19 +106,19 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .buffer(capacity = 2)
             .onEach { (previous, _) ->
                 if (previous != null) {
-                    delay(200L)
+                    delay(160L)
                     sorter.intake(previous)
                 }
             }
             .launchIn(opModeScope)
 
-        limelight?.start()
+        limelight.start()
     }
 
     override fun loop() {
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric) -1 else 1,
-            /* strafe = */ -gamepad1.left_stick_x.toDouble(),
+            /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric) -1 else 1,
             /* turn = */ -gamepad1.right_stick_x.toDouble(),
             /* isRobotCentric = */ isRobotCentric
         )
@@ -144,9 +142,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("Turret Offset", turretOffset)
         telemetry.addData("shooter Angle", shooter.angleDegrees)
 
+        shooter.alignToPose(follower.pose, goalPose, turretOffset)
+
         if (gamepad1.crossWasPressed())
-            limelight?.latestResult?.fiducialResults?.singleOrNull()?.targetXDegrees?.let { shooter.angleDegrees -= it }
-                ?: shooter.alignToPose(follower.pose, goalPose, turretOffset)
+            limelight.latestResult.fiducialResults.singleOrNull()?.targetXDegrees?.let { turretOffset -= it }
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
