@@ -20,7 +20,7 @@ interface Shooter {
 
     fun shoot(): Job
 
-    data class State(val hood: Double, val velocity: Double, val canShoot: Boolean)
+    data class State(val velocity: Double, val canShoot: Boolean)
 }
 
 fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
@@ -50,7 +50,7 @@ suspend fun shootAll(
         sorter.prepareShoot(orderIterator.nextOrNull())
         var alreadyShot = 0
         shootFlow
-            .dropWhile { (_, _, canShoot) -> !canShoot }
+            .dropWhile { (_, canShoot) -> !canShoot }
             .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
             .filter { !it.canShoot }
             .take(count)

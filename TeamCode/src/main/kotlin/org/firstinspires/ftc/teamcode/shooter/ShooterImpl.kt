@@ -56,7 +56,7 @@ class ShooterImpl(
 
     @Suppress("RedundantModalityModifier")
     final override val stateFlow: StateFlow<Shooter.State>
-        field = MutableStateFlow(Shooter.State(hood, 0.0, false))
+        field = MutableStateFlow(Shooter.State(0.0, false))
 
     override fun shoot() =
         opModeScope.launch {
@@ -64,11 +64,11 @@ class ShooterImpl(
             try {
                 tickFlow.collect {
                     val velocity = encoder.velocity
-                    stateFlow.value = Shooter.State(hood, velocity, velocity >= MIN_LAUNCH_VELOCITY)
+                    stateFlow.value = Shooter.State(velocity, velocity >= MIN_LAUNCH_VELOCITY)
                 }
             } finally {
                 motor.power = 0.0
-                stateFlow.value = Shooter.State(hood, 0.0, false)
+                stateFlow.value = Shooter.State(0.0, false)
             }
         }
 }
