@@ -3,6 +3,8 @@
 package org.firstinspires.ftc.teamcode.pedropathing
 
 import com.acmerobotics.dashboard.config.Config
+import com.pedropathing.control.FilteredPIDFCoefficients
+import com.pedropathing.control.PIDFCoefficients
 import com.pedropathing.follower.FollowerConstants
 import com.pedropathing.ftc.drivetrains.MecanumConstants
 import com.pedropathing.ftc.localization.constants.PinpointConstants
@@ -13,9 +15,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 
 @JvmField
 var followerConstants: FollowerConstants = FollowerConstants()
+    .mass(10.0)
+    .forwardZeroPowerAcceleration(-41.02643032142339)
+    .lateralZeroPowerAcceleration(-73.149645)
+    .translationalPIDFCoefficients(PIDFCoefficients(0.3, 0.0, 0.016, 0.01))
+    .headingPIDFCoefficients(PIDFCoefficients(2.3, 0.0, 0.1, 0.02))
+    .drivePIDFCoefficients(FilteredPIDFCoefficients(0.007, 0.0, 0.0001, 0.6, 0.05))
 
 @JvmField
-var pathConstraints: PathConstraints = PathConstraints(0.99, 100.0, 1.0, 1.0)
+var pathConstraints: PathConstraints = PathConstraints(0.99, 100.0, 0.65, 0.9)
 
 @JvmField
 var pinpointConstants: PinpointConstants = PinpointConstants()
@@ -35,3 +43,5 @@ var mecanumConstants: MecanumConstants = MecanumConstants()
     .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
     .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
     .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
+    .xVelocity(76.91)
+    .yVelocity(63.23)
