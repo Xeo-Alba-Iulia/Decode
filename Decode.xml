@@ -19,6 +19,6 @@
             <goBILDAPinpoint name="pinpoint" bus="0" port="1" />
         </LynxModule>
     </LynxUsbDevice>
-    <EthernetDevice name="Limelight" name="Limelight" ipAddress="172.29.0.1" port="0"
+    <EthernetDevice name="Limelight" ipAddress="172.29.0.1" port="0"
         serialNumber="EthernetOverUsb:eth0:172.29.0.23" />
 </Robot>
