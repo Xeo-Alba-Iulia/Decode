@@ -1,0 +1,11 @@
+<root>
+    <item
+        name='com.qualcomm.hardware.limelightvision.Limelight3A com.qualcomm.hardware.limelightvision.LLResult getLatestResult()'>
+        <annotation name='org.jetbrains.annotations.NotNull' />
+        <annotation name='org.jetbrains.annotations.NonBlocking' />
+    </item>
+    <item
+        name='com.qualcomm.hardware.limelightvision.Limelight3A com.qualcomm.hardware.limelightvision.LLStatus getStatus()'>
+        <annotation name='org.jetbrains.annotations.NotNull' />
+    </item>
+</root>
