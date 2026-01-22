@@ -23,9 +23,7 @@ class ShooterOpMode : CoroutineOpMode() {
         telemetry = opModeGraph.telemetry
         shooter.hood = 0.5
         telemetry = opModeGraph.telemetry
-        limelight = hardwareMap.getAll(Limelight3A::class.java).single()
-        limelight.pipelineSwitch(1)
-        telemetry.addData("Pipeline type", limelight.status.pipelineType)
+        limelight = opModeGraph.limelight
     }
 
     override fun start() {
@@ -33,7 +31,7 @@ class ShooterOpMode : CoroutineOpMode() {
             .onEach {
                 telemetry.addData("Shooter State", it)
             }
-            .filter { (_, _, canShoot) -> canShoot }
+            .filter { (_, canShoot) -> canShoot }
             .onEach {
                 RobotLog.dd(ShooterOpMode::class.simpleName, "Shooter State: $it")
             }

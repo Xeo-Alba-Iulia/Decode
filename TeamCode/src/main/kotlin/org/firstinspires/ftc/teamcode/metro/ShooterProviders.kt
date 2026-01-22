@@ -12,6 +12,8 @@ import dev.zacsweers.metro.Provides
 
 @ContributesTo(OpModeScope::class)
 interface ShooterProviders {
+    val limelight: Limelight3A
+
     @Provides
     @Named("shooterHoodServo")
     fun provideShooterHoodServo(map: HardwareMap): Servo = map.servo["hood"].apply {
