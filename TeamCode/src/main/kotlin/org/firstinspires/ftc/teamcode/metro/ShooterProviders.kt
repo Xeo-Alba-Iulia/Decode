@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.metro
 
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.hardware.DcMotorEx
-import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.Binds
@@ -12,7 +11,7 @@ import dev.zacsweers.metro.Provides
 
 @ContributesTo(OpModeScope::class)
 interface ShooterProviders {
-    val limelight: Limelight3A
+    val limelight: Limelight3A?
 
     @Provides
     @Named("shooterHoodServo")
@@ -29,13 +28,10 @@ interface ShooterProviders {
 
     @Provides
     @Named("shooterMotor")
-    fun provideShooterMotor(map: HardwareMap): DcMotorEx = (map.dcMotor["shooter"] as DcMotorEx).apply {
-        direction = DcMotorSimple.Direction.REVERSE
-        power = -0.01
-    }
+    fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
 
     @Provides
-    fun provideLimelight(map: HardwareMap): Limelight3A = map.getAll(Limelight3A::class.java).single()
+    fun provideLimelight(map: HardwareMap): Limelight3A? = map.getAll(Limelight3A::class.java).singleOrNull()
 
     @Binds
     @Named("shooterEncoder")
