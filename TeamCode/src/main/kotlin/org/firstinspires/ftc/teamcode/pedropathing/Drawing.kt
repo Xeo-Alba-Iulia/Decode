@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.canvas.Canvas
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
-import com.pedropathing.ftc.FTCCoordinates
+import com.pedropathing.ftc.InvertedFTCCoordinates
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.Vector
 import com.pedropathing.paths.Path
@@ -92,7 +92,14 @@ fun drawPoseHistory(poseHistory: PoseHistory, color: String) {
     if (packet == null) packet = TelemetryPacket()
 
     packet!!.fieldOverlay().setStroke(color)
-    packet!!.fieldOverlay().strokePolyline(poseHistory.xPositionsArray, poseHistory.yPositionsArray)
+    val xPositionsArray = poseHistory.xPositionsArray.copyOf()
+    val yPositionsArray = poseHistory.yPositionsArray.copyOf()
+    for (i in xPositionsArray.indices) {
+        val pose = Pose(xPositionsArray[i], yPositionsArray[i]).getAsCoordinateSystem(InvertedFTCCoordinates.INSTANCE)
+        xPositionsArray[i] = pose.x
+        yPositionsArray[i] = pose.y
+    }
+    packet!!.fieldOverlay().strokePolyline(xPositionsArray, yPositionsArray)
 }
 
 /**
@@ -118,7 +125,7 @@ fun sendPacket(): Boolean {
  * @param t the Pose to draw at
  */
 fun drawRobotOnCanvas(c: Canvas, t: Pose) {
-    val t = t.getAsCoordinateSystem(FTCCoordinates.INSTANCE)
+    val t = t.getAsCoordinateSystem(InvertedFTCCoordinates.INSTANCE)
     c.strokeCircle(t.x, t.y, ROBOT_RADIUS)
     val v: Vector = t.headingAsUnitVector * ROBOT_RADIUS
     val x1 = t.x + v.xComponent / 2
@@ -135,5 +142,12 @@ fun drawRobotOnCanvas(c: Canvas, t: Pose) {
  * @param points the Points to draw
  */
 fun drawPath(c: Canvas, points: Array<DoubleArray>) {
-    c.strokePolyline(points[0], points[1])
+    val xPositionsArray = points.first().copyOf()
+    val yPositionsArray = points.last().copyOf()
+    for (i in xPositionsArray.indices) {
+        val pose = Pose(xPositionsArray[i], yPositionsArray[i]).getAsCoordinateSystem(InvertedFTCCoordinates.INSTANCE)
+        xPositionsArray[i] = pose.x
+        yPositionsArray[i] = pose.y
+    }
+    c.strokePolyline(xPositionsArray, yPositionsArray)
 }
