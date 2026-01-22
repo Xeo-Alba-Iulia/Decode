@@ -31,7 +31,7 @@ interface ShooterProviders {
     fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
 
     @Provides
-    fun provideLimelight(map: HardwareMap): Limelight3A? = map.getAll(Limelight3A::class.java).singleOrNull()
+    fun provideLimelight(map: HardwareMap): Limelight3A? = map.getAll(Limelight3A::class.java).single()
 
     @Binds
     @Named("shooterEncoder")

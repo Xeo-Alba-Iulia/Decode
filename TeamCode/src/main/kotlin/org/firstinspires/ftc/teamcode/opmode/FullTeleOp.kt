@@ -85,6 +85,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
         observers += sorter
+        if (limelight == null)
+            RobotLog.addGlobalWarningMessage("Limelight not present")
+        limelight?.pipelineSwitch(1)
     }
 
     override fun start() {
@@ -105,17 +108,19 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .buffer(capacity = 2)
             .onEach { (previous, _) ->
                 if (previous != null) {
-                    delay(150L)
+                    delay(200L)
                     sorter.intake(previous)
                 }
             }
             .launchIn(opModeScope)
+
+        limelight?.start()
     }
 
     override fun loop() {
         follower.setTeleOpDrive(
-            /* forward = */ -gamepad1.left_stick_y.toDouble(),
-            /* strafe = */ gamepad1.left_stick_x.toDouble() * if (!isRobotCentric) -1 else 1,
+            /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric) -1 else 1,
+            /* strafe = */ -gamepad1.left_stick_x.toDouble(),
             /* turn = */ -gamepad1.right_stick_x.toDouble(),
             /* isRobotCentric = */ isRobotCentric
         )
