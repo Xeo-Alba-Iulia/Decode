@@ -176,11 +176,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 }
             }
 
-        if (currentShooterJob != null) {
-            if (gamepad2.bWasPressed()) {
-                currentShooterJob?.cancel()
-                currentShooterJob = null
-            }
+        if (gamepad2.bWasPressed()) {
+            currentShooterJob?.cancel()
         }
 
         // Adjust shooter velocity
