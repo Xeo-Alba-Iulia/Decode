@@ -6,23 +6,17 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
-import org.firstinspires.ftc.teamcode.intake.zipWithNext
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -56,7 +50,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var shooter: Shooter
     lateinit var sorter: Sorter
     lateinit var follower: Follower
-//    lateinit var limelight: Limelight3A
+    lateinit var limelight: Limelight3A
 
     // Drive state
     private var isRobotCentric = false
@@ -83,9 +77,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         shooter = opModeGraph.shooter
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
-//        limelight = opModeGraph.limelight
+        limelight = opModeGraph.limelight
         observers += sorter
-//        limelight.pipelineSwitch(1)
+        limelight.pipelineSwitch(1)
     }
 
     override fun start() {
@@ -112,7 +106,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 //            }
 //            .launchIn(opModeScope)
 
-//        limelight.start()
+        limelight.start()
     }
 
     override fun loop() {
@@ -144,18 +138,15 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
-//        limelight.latestResult.fiducialResults.singleOrNull()?.let {
-//            if (gamepad1.crossWasPressed())
-//                turretOffset -= it.targetXDegrees
-//            val position = it.targetPoseCameraSpace.position
-//            val distance = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
-//            telemetry.addData("AprilTag Distance", distance)
-//        }
-//
-//
-//        limelight.latestResult.fiducialResults.singleOrNull()?.let {
-//            it.targetPoseCameraSpace.position
-//        }
+        val distanceToGoal = goalPose.distanceFrom(follower.pose) / 40.0
+        limelight.latestResult.fiducialResults.singleOrNull()?.let {
+            if (gamepad1.crossWasPressed())
+                turretOffset -= it.targetXDegrees
+            val position = it.targetPoseCameraSpace.position
+//            distanceToGoal = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
+        }
+        telemetry.addData("AprilTag Distance", distanceToGoal)
+        shooter.hood = hoodLiftByDistance(distanceToGoal)
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
@@ -234,5 +225,11 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Adjust sorter position with triggers
         sorter.position += (gamepad2.right_trigger - gamepad2.left_trigger).toDouble() * SORTER_POSITION_MULTIPLIER
+    }
+    private fun hoodLiftByDistance(distance: Double) = when (distance) {
+        in 2.8..5.0 -> 0.55
+        in 1.0..2.8 -> 0.2
+        in 0.0..1.0 -> 0.1
+        else -> error("Distance not in interval")
     }
 }

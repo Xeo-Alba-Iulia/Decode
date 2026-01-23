@@ -55,7 +55,7 @@ class FarBlueAuto : CoroutineOpMode() {
         }
     }
     val secondBalls = pathChain(null) {
-        pathLinearHeading {
+        pathConstantHeading(PI) {
             +Pose(scorePose.x, secondBallPose.y)
             +secondBallPose
         }
@@ -101,4 +101,5 @@ class FarBlueAuto : CoroutineOpMode() {
         telemetry.addData("Pose", follower.pose)
         drawDebug(follower)
     }
+
 }
