@@ -1121,8 +1121,8 @@ class CentripetalTuner(private val follower: Follower, private val telemetryA: T
 @OptIn(PathLinearExperimental::class)
 class Triangle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val startPose = Pose(0.0, 0.0, Math.toRadians(0.0))
-    private val interPose = Pose(24.0, -24.0, Math.toRadians(90.0))
-    private val endPose = Pose(24.0, 24.0, Math.toRadians(45.0))
+    private val interPose = Pose(DISTANCE, -DISTANCE, Math.toRadians(90.0))
+    private val endPose = Pose(DISTANCE, DISTANCE, Math.toRadians(45.0))
 
     private val triangle = pathChain(follower) {
         pathLinearHeading {
@@ -1167,6 +1167,11 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
         follower.setStartingPose(startPose)
 
         follower.followPath(triangle)
+    }
+
+    companion object {
+        @JvmField
+        var DISTANCE = 20.0
     }
 }
 
