@@ -7,8 +7,11 @@ import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 
-abstract class CoroutineOpMode(protected val observers: MutableList<OpModeObserver> = mutableListOf()) : OpMode() {
-    val opModeGraph by lazy { createGraphFactory<OpModeGraph.Factory>().create(this) }
+abstract class CoroutineOpMode(
+    protected val observers: MutableList<OpModeObserver> = mutableListOf(),
+    isAuto: Boolean = false
+) : OpMode() {
+    val opModeGraph by lazy { createGraphFactory<OpModeGraph.Factory>().create(this, isAuto) }
     protected val opModeScope = opModeGraph.opModeScope
 
     override fun start() {

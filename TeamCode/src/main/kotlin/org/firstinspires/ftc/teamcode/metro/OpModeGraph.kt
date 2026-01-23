@@ -37,7 +37,7 @@ interface OpModeGraph {
         )
 
     @DependencyGraph.Factory
-    fun interface Factory {
-        fun create(@Provides opMode: OpMode): OpModeGraph
+    interface Factory {
+        fun create(@Provides opMode: OpMode, @Provides isAuto: Boolean = false): OpModeGraph
     }
 }

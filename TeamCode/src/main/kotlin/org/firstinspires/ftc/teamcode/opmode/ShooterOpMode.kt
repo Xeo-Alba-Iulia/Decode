@@ -7,22 +7,27 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
+import org.firstinspires.ftc.teamcode.sorter.Transfer
 
 @TeleOp(group = "Systems")
 class ShooterOpMode : CoroutineOpMode() {
     @Suppress("PROPERTY_HIDES_JAVA_FIELD")
     lateinit var telemetry: Telemetry
-    lateinit var shooter: Shooter
+    lateinit var shooter: ShooterImpl
+    lateinit var transfer: Transfer
     var limelight: Limelight3A? = null
     var shooterJob: Job? = null
 
     override fun init() {
-        shooter = opModeGraph.shooter
+        shooter = opModeGraph.shooter as ShooterImpl
         telemetry = opModeGraph.telemetry
+        transfer = opModeGraph.transfer
         shooter.hood = 0.5
         telemetry = opModeGraph.telemetry
-        limelight = opModeGraph.limelight
+        limelight = opModeGraph.limelight.also {
+            it.pipelineSwitch(1)
+        }
     }
 
     override fun start() {
@@ -42,21 +47,32 @@ class ShooterOpMode : CoroutineOpMode() {
             shooterJob?.cancel()
             shooterJob = null
         }
-        if (gamepad1.y) shooter.velocity += 1.0
-        if (gamepad1.x) shooter.velocity -= 1.0
-        if (gamepad1.dpad_up) {
-            shooter.hood += 0.01
-        }
-        if (gamepad1.dpad_down) {
-            shooter.hood -= 0.01
-        }
+        val diff = gamepad1.right_trigger - gamepad1.left_trigger
+        if (diff != 0f)
+            shooter.power += diff * 0.001
+        if (gamepad1.left_stick_y != 0f)
+            shooter.hood += gamepad1.left_stick_y * (-0.001)
         when {
             gamepad1.dpad_right -> shooter.angleDegrees -= 1.0
             gamepad1.dpad_left -> shooter.angleDegrees += 1.0
         }
         if (gamepad1.triangleWasPressed()) {
-            limelight?.latestResult?.fiducialResults?.singleOrNull()?.targetXDegrees?.let { shooter.angleDegrees -= it }
+            limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
+                shooter.angleDegrees -= it.targetXDegrees
+                val distance = it.targetPoseCameraSpace.position.z
+                telemetry.addData("Distance", distance)
+            }
         }
-        telemetry.addData("Angle", shooter.angleDegrees)
+        when {
+            gamepad1.squareWasPressed() -> transfer.isRunning = true
+            gamepad1.squareWasReleased() -> transfer.isRunning = false
+        }
+        telemetry.addData("Hood", shooter.hood)
+        telemetry.addData("Power", shooter.power)
+    }
+
+    override fun stop() {
+        super.stop()
+        limelight?.stop()
     }
 }

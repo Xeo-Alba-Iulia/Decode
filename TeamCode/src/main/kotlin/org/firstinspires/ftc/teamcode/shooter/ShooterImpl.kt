@@ -48,6 +48,12 @@ class ShooterImpl(
 
     override var hood by hoodServo::position
     override var velocity = MIN_LAUNCH_VELOCITY
+    var power = 1.0
+        set(value) {
+            field = value.coerceIn(-1.0..1.0)
+            if (motor.power != 0.0)
+                motor.power = field
+        }
 
     private val controller = controlSystem {
         velPid(coefficients)
@@ -60,11 +66,16 @@ class ShooterImpl(
 
     override fun shoot() =
         opModeScope.launch {
-            motor.power = 1.0
+            motor.power = power
             try {
                 tickFlow.collect {
                     val velocity = encoder.velocity
-                    stateFlow.value = Shooter.State(velocity, velocity >= MIN_LAUNCH_VELOCITY)
+                    val canShoot =
+                        if (!stateFlow.value.canShoot)
+                            velocity >= MIN_LAUNCH_VELOCITY
+                        else
+                            velocity >= (MIN_LAUNCH_VELOCITY - 80.0)
+                    stateFlow.value = Shooter.State(velocity, canShoot)
                 }
             } finally {
                 motor.power = 0.0

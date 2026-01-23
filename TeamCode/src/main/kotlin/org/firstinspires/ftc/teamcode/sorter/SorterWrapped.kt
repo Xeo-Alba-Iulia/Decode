@@ -21,6 +21,7 @@ import kotlin.time.measureTime
 class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
+    isAuto: Boolean,
 ) : Sorter, OpModeObserver {
 
     companion object {
@@ -38,7 +39,11 @@ class SorterWrapped(
 
     override var position by servo::position
 
-    private var artefacts = arrayOfNulls<ArtefactType>(3)
+    private var artefacts: Array<ArtefactType?> =
+        if (isAuto)
+            arrayOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
+        else
+            arrayOfNulls(3)
 
     @Volatile
     private var currentIntakeSlot: Int = -1
@@ -93,7 +98,7 @@ class SorterWrapped(
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
-    override var size = 0
+    override var size = if (isAuto) 3 else 0
         private set
 
     override fun toString() = "SorterWrapped(artefacts = ${artefacts.contentToString()}, position = $position)"
