@@ -49,26 +49,27 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         val diff = gamepad1.right_trigger - gamepad1.left_trigger
         if (diff != 0f)
-            shooter.power += diff * 0.001
+            shooter.velocity += diff
         if (gamepad1.left_stick_y != 0f)
             shooter.hood += gamepad1.left_stick_y * (-0.001)
         when {
             gamepad1.dpad_right -> shooter.angleDegrees -= 1.0
             gamepad1.dpad_left -> shooter.angleDegrees += 1.0
         }
-        if (gamepad1.triangleWasPressed()) {
-            limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
+        limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
+            val distance = it.targetPoseCameraSpace.position.z
+            telemetry.addData("Distance", distance)
+            if (gamepad1.triangleWasPressed())
                 shooter.angleDegrees -= it.targetXDegrees
-                val distance = it.targetPoseCameraSpace.position.z
-                telemetry.addData("Distance", distance)
-            }
         }
+
         when {
             gamepad1.squareWasPressed() -> transfer.isRunning = true
             gamepad1.squareWasReleased() -> transfer.isRunning = false
         }
         telemetry.addData("Hood", shooter.hood)
-        telemetry.addData("Power", shooter.power)
+        telemetry.addData("Speed", shooter.velocity)
+        telemetry.addData("Actual speed", shooter.stateFlow.value.velocity)
     }
 
     override fun stop() {
