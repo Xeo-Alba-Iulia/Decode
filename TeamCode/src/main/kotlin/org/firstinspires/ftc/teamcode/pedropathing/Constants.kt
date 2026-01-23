@@ -18,9 +18,9 @@ var followerConstants: FollowerConstants = FollowerConstants()
     .mass(10.0)
     .forwardZeroPowerAcceleration(-41.02643032142339)
     .lateralZeroPowerAcceleration(-73.149645)
-    .translationalPIDFCoefficients(PIDFCoefficients(0.3, 0.0, 0.016, 0.01))
-    .headingPIDFCoefficients(PIDFCoefficients(2.3, 0.0, 0.1, 0.02))
-    .drivePIDFCoefficients(FilteredPIDFCoefficients(0.007, 0.0, 0.0001, 0.6, 0.05))
+    .translationalPIDFCoefficients(PIDFCoefficients(0.2, 0.0, 0.012, 0.01))
+    .headingPIDFCoefficients(PIDFCoefficients(1.8, 0.0, 0.09, 0.02))
+    .drivePIDFCoefficients(FilteredPIDFCoefficients(0.007, 0.0, 0.00008, 0.6, 0.04))
 
 @JvmField
 var pathConstraints: PathConstraints = PathConstraints(0.99, 100.0, 0.65, 0.9)
