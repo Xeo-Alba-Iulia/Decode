@@ -52,13 +52,11 @@ import kotlin.math.sqrt
 @Config
 abstract class FullTeleOp : CoroutineOpMode() {
     // Subsystems
-    @Suppress("PROPERTY_HIDES_JAVA_FIELD")
-    lateinit var telemetry: Telemetry
     lateinit var intake: Intake
     lateinit var shooter: Shooter
     lateinit var sorter: Sorter
     lateinit var follower: Follower
-    lateinit var limelight: Limelight3A
+//    lateinit var limelight: Limelight3A
 
     // Drive state
     private var isRobotCentric = false
@@ -85,9 +83,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         shooter = opModeGraph.shooter
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
-        limelight = opModeGraph.limelight
+//        limelight = opModeGraph.limelight
         observers += sorter
-        limelight.pipelineSwitch(1)
+//        limelight.pipelineSwitch(1)
     }
 
     override fun start() {
@@ -100,21 +98,21 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope)
 
-        intake.artefactFlow
-            .onEach {
+//        intake.artefactFlow
+//            .onEach {
 //                telemetry.addData("ArtefactType", it)
-            }
-            .zipWithNext()
-            .buffer(capacity = 2)
-            .onEach { (previous, _) ->
-                if (previous != null) {
-                    delay(160L)
-                    sorter.intake(previous)
-                }
-            }
-            .launchIn(opModeScope)
+//            }
+//            .zipWithNext()
+//            .buffer(capacity = 2)
+//            .onEach { (previous, _) ->
+//                if (previous != null) {
+//                    delay(160L)
+//                    sorter.intake(previous)
+//                }
+//            }
+//            .launchIn(opModeScope)
 
-        limelight.start()
+//        limelight.start()
     }
 
     override fun loop() {
@@ -146,23 +144,27 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
-        limelight.latestResult.fiducialResults.singleOrNull()?.let {
-            if (gamepad1.crossWasPressed())
-                turretOffset -= it.targetXDegrees
-            val position = it.targetPoseCameraSpace.position
-            val distance = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
-            telemetry.addData("AprilTag Distance", distance)
-        }
-
-
-        limelight.latestResult.fiducialResults.singleOrNull()?.let {
-            it.targetPoseCameraSpace.position
-        }
+//        limelight.latestResult.fiducialResults.singleOrNull()?.let {
+//            if (gamepad1.crossWasPressed())
+//                turretOffset -= it.targetXDegrees
+//            val position = it.targetPoseCameraSpace.position
+//            val distance = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
+//            telemetry.addData("AprilTag Distance", distance)
+//        }
+//
+//
+//        limelight.latestResult.fiducialResults.singleOrNull()?.let {
+//            it.targetPoseCameraSpace.position
+//        }
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
 
         telemetry.addData("Shooter speed", shooter.stateFlow.value.velocity)
+        telemetry.addData("Shooter hood", shooter.hood)
+        telemetry.addData("Sorter size", sorter.size)
+        telemetry.addData("Field Centric", !isRobotCentric)
+        telemetry.update()
     }
 
     private fun handleShooter() {
