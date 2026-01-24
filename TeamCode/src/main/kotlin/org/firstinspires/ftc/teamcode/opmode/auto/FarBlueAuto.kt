@@ -13,13 +13,14 @@ import kotlinx.coroutines.flow.map
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
+import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped
 import kotlin.math.PI
+import kotlin.math.atan2
 
 @OptIn(PathLinearExperimental::class)
 @Autonomous
@@ -32,16 +33,34 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     lateinit var patternJob: Job
     lateinit var shooterJob: Job
 
-    val startPose = Pose(60.0, 12.0, PI / 2)
+    val startPose = Pose(60.0 + 24.0, 7.0, PI / 2)
+    val goalPose = Pose(12.0, 144.0 - 12.0)
+    val scorePreloadPose = Pose(
+        72.0 + 12.0, 23.0, atan2(
+            goalPose.y - 23.0,
+            goalPose.x - 72.0 - 12.0
+        )
+    )
     val firstBallPose = Pose(24.0, 36.0, PI)
     val firstBallPositionPose = Pose(firstBallPose.x + 20.0, firstBallPose.y, PI)
     val secondBallPose = Pose(24.0, 60.0, PI)
     val scorePose = Pose(42.0, 102.0, Math.toRadians(135.0))
-    val goalPose = Pose(12.0, 144.0 - 12.0)
 
     val pattern = Array(3) { ArtefactType.PURPLE }
     @Volatile
     var fiducialId = 0
+    val scorePreload = pathChain(null) {
+        pathLinearHeading {
+            +startPose
+            +scorePreloadPose
+        }
+    }
+    val leavePathChain = pathChain(null) {
+        path {
+            +scorePreloadPose
+            +Pose(72.0 + 12.0, 36.0)
+        }
+    }
 
     val firstBallsPosition = pathChain(null) {
         pathLinearHeading(endTime = 0.8) {
@@ -119,22 +138,26 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         patternJob.cancel()
         super.start()
         pattern[fiducialId - 21] = ArtefactType.GREEN
-        shooter.alignToPose(startPose, goalPose)
-        shooter.hood = 0.85
-        shooterJob = shooter.shoot()
+//        shooter.hood = 0.85
+        shooterJob = shooter.shoot { goalPose.distanceFrom(scorePreloadPose) / 39.37 }
         opModeScope.launch {
+            follower.setMaxPower(0.5)
+            follower.followPath(scorePreload)
+            while (follower.isBusy)
+                ensureActive()
             launch { shootAll(shooter.stateFlow, sorter, shooterJob, *pattern) }
             val transferJob = launch {
                 shooter.stateFlow
                     .map { it.canShoot }
                     .distinctUntilChanged()
                     .collect {
+                        delay(1000L)
                         sorter.isLifting = it
                     }
             }
             shooterJob.join()
             transferJob.cancelAndJoin()
-            requestOpModeStop()
+            follower.followPath(leavePathChain)
         }
 //        opModeScope.launch {
 //            follower.followSuspend(firstBallsPosition)
@@ -154,9 +177,14 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     }
 
     override fun loop() {
+        follower.update()
         telemetry.addData("Pose", follower.pose)
         if (BuildConfig.DEBUG)
             drawDebug(follower)
     }
 
+    override fun stop() {
+        super.stop()
+        lastPose = follower.pose
+    }
 }

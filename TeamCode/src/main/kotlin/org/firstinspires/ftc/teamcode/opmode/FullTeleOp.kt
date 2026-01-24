@@ -6,7 +6,9 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -85,11 +87,19 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
     override fun start() {
         super.start()
-        follower.setStartingPose(startPose)
+        follower.setStartingPose(lastPose ?: startPose)
         follower.startTeleopDrive(true)
         opModeGraph.tickFlow
             .onEach {
                 handleSorter()
+            }
+            .launchIn(opModeScope)
+
+        shooter.stateFlow
+            .map { (_, canShoot) -> canShoot }
+            .filter { it }
+            .onEach {
+                gamepad2.rumble(200)
             }
             .launchIn(opModeScope)
 
