@@ -158,6 +158,8 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             shooterJob.join()
             transferJob.cancelAndJoin()
             follower.followPath(leavePathChain)
+            while (follower.isBusy)
+                ensureActive()
         }
 //        opModeScope.launch {
 //            follower.followSuspend(firstBallsPosition)
