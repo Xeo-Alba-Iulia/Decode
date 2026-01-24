@@ -61,6 +61,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
     abstract val goalPose: Pose
     abstract val startPose: Pose
+    abstract val limelightPipeline: Int
 
     // Speed control
     companion object {
@@ -79,7 +80,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
         observers += sorter
-        limelight.pipelineSwitch(1)
+        limelight.pipelineSwitch(limelightPipeline)
     }
 
     override fun start() {
@@ -163,7 +164,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed() || autoShoot) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = shooter.shoot()
+            currentShooterJob = shooter.shoot { goalPose.distanceFrom(follower.pose) / 39.37 }
         }
 
         if (autoShoot)

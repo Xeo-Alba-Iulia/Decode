@@ -8,4 +8,5 @@ import kotlin.math.PI
 class BlueTeleOp : FullTeleOp() {
     override val startPose = Pose(24.0 * 2 + 12.0, 12.0, PI / 2)
     override val goalPose = Pose(10.0, 144.0 - 10.0)
+    override val limelightPipeline = 1
 }
