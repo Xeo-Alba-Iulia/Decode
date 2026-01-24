@@ -41,13 +41,13 @@ class ShooterImpl(
         var parameters = BasicFeedforwardParameters(kS = 0.06, kV = 0.000005)
     }
 
-    val distances = listOf(0.91, 1.17, 1.48, 1.8, 2.2, 2.8, 3.18, 3.3)
-    val hoodLut = InterpLUT(distances, listOf(0.3031, 0.505, .57, .7284, .78, .8858, .95), true).apply {
-        createLUT()
-    }
+    val distances = listOf(0.91, 1.17, 1.48, 1.8, 2.2, 2.8, 3.18)
+//    val hoodLut = InterpLUT(distances, listOf(0.3031, 0.505, .57, .7284, .78, .8858, .95), true).apply {
+//        createLUT()
+//    }
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1750.0, 1850.0, 1950.0, 2000.0, 2200.0, 2440.0, 2500.0, 2550.0).map { it + 100.0 },
+        /* output = */ listOf(1750.0, 1850.0, 1950.0, 2000.0, 2200.0, 2440.0, 2500.0).map { it + 100.0 },
         /* safeMode = */ true
     ).createLUT()
 

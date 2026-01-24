@@ -240,4 +240,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         in 0.0..1.0 -> 0.1
         else -> error("Distance not in interval")
     }
+
+    override fun stop() {
+        super.stop()
+        lastPose = null
+    }
 }

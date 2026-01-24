@@ -139,7 +139,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         super.start()
         pattern[fiducialId - 21] = ArtefactType.GREEN
 //        shooter.hood = 0.85
-        shooterJob = shooter.shoot { goalPose.distanceFrom(scorePreloadPose) / 39.37 }
+        shooterJob = shooter.shoot { (goalPose.distanceFrom(scorePreloadPose) / 39.37) }
         opModeScope.launch {
             follower.setMaxPower(0.5)
             follower.followPath(scorePreload)
@@ -151,7 +151,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
                     .map { it.canShoot }
                     .distinctUntilChanged()
                     .collect {
-                        delay(1000L)
+//                        delay(1000L)
                         sorter.isLifting = it
                     }
             }
