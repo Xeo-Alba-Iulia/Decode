@@ -47,6 +47,7 @@ suspend fun shootAll(
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
         val count = sorter.size
+        if (count == 0) return@withLock
         sorter.prepareShoot(orderIterator.nextOrNull())
         var alreadyShot = 0
         shootFlow
