@@ -6,14 +6,10 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
-import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
@@ -67,11 +63,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
     // Speed control
     companion object {
-        const val HOOD_ADJUSTMENT_STEP = 0.01
-        const val ANGLE_ADJUSTMENT_STEP = -0.5
-        const val VELOCITY_ADJUSTMENT_STEP = 10.0
-        const val SORTER_POSITION_MULTIPLIER = 0.005
-        const val TURET_OFFSET_ADJUSTMENT_STEP = 1
+        @JvmField
+        var HOOD_ADJUSTMENT_STEP = 0.01
+        @JvmField
+        var ANGLE_ADJUSTMENT_STEP = -0.5
+        @JvmField
+        var VELOCITY_ADJUSTMENT_STEP = 10.0
+        @JvmField
+        var SORTER_POSITION_MULTIPLIER = -0.005
+        @JvmField
+        var TURET_OFFSET_ADJUSTMENT_STEP = 1
     }
 
     override fun init() {
@@ -88,6 +89,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     override fun start() {
         super.start()
         follower.setStartingPose(lastPose ?: startPose)
+        lastPose = null
         follower.startTeleopDrive(true)
         opModeGraph.tickFlow
             .onEach {
@@ -97,9 +99,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.stateFlow
             .map { (_, canShoot) -> canShoot }
+            .distinctUntilChanged()
             .filter { it }
             .onEach {
-                gamepad2.rumble(200)
+                gamepad2.rumble(100)
             }
             .launchIn(opModeScope)
 
@@ -121,14 +124,15 @@ abstract class FullTeleOp : CoroutineOpMode() {
     }
 
     override fun loop() {
+        telemetry.addData("canShoot", shooter.stateFlow.value.canShoot)
         follower.setTeleOpDrive(
-            /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric) -1 else 1,
-            /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric) -1 else 1,
+            /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
+            /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
             /* turn = */ -gamepad1.right_stick_x.toDouble(),
             /* isRobotCentric = */ isRobotCentric
         )
         follower.update()
-        drawDebug(follower)
+//        drawDebug(follower)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
@@ -157,7 +161,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
 //            distanceToGoal = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
         }
         telemetry.addData("AprilTag Distance", distanceToGoal)
-        shooter.hood = hoodLiftByDistance(distanceToGoal)
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
@@ -233,16 +236,5 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Adjust sorter position with triggers
         sorter.position += (gamepad2.right_trigger - gamepad2.left_trigger).toDouble() * SORTER_POSITION_MULTIPLIER
-    }
-    private fun hoodLiftByDistance(distance: Double) = when (distance) {
-        in 2.8..5.0 -> 0.55
-        in 1.0..2.8 -> 0.2
-        in 0.0..1.0 -> 0.1
-        else -> error("Distance not in interval")
-    }
-
-    override fun stop() {
-        super.stop()
-        lastPose = null
     }
 }
