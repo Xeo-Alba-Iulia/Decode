@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.InterpLUT
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import kotlin.math.abs
 
 @Config
 @ContributesBinding(OpModeScope::class)
@@ -35,10 +36,10 @@ class ShooterImpl(
         var MIN_LAUNCH_VELOCITY = 2200.0
 
         @JvmField
-        var coefficients = PIDCoefficients(0.015, kD = 0.0004)
+        var coefficients = PIDCoefficients(0.0152, kD = 0.0004)
 
         @JvmField
-        var parameters = BasicFeedforwardParameters(kS = 0.06, kV = 0.000005)
+        var parameters = BasicFeedforwardParameters(kS = 0.06, kV = 0.0000053)
     }
 
     val distances = listOf(0.91, 1.17, 1.48, 1.8, 2.2, 2.8, 3.18)
@@ -47,7 +48,7 @@ class ShooterImpl(
 //    }
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1750.0, 1850.0, 1950.0, 2000.0, 2200.0, 2440.0, 2500.0).map { it + 100.0 },
+    /* output = */ listOf(1750.0, 1850.0, 1900.0, 2020.0, 2250.0, 2440.0, 2500.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -95,17 +96,9 @@ class ShooterImpl(
                     controller.goal = KineticState(velocity = desiredVelocity)
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity
-                    RobotLog.vv("ShooterImpl", "Velocity: $velocity, target = $desiredVelocity")
+                    RobotLog.vv("ShooterImpl", "Velocity: $velocity")
                     motor.power = controller.calculate(KineticState(position, velocity))
-                    val diff = if (stateFlow.value.canShoot)
-                        stateFlow.value.velocity - velocity
-                    else
-                        desiredVelocity - velocity
-                    RobotLog.vv("ShooterImpl", "Diff: $diff, lastCanShoot: ${stateFlow.value.canShoot}")
-                    val canShoot = diff <= 100.0
-                    if (stateFlow.value.canShoot && !canShoot)
-                        RobotLog.vv("ShooterImpl", "WARN")
-                    stateFlow.value = Shooter.State(velocity, canShoot)
+                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
                 }
             } finally {
                 motor.power = 0.0

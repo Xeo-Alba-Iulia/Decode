@@ -2,11 +2,14 @@ package org.firstinspires.ftc.teamcode.shooter
 
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
+import com.qualcomm.robotcore.util.RobotLog
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.intake.zipWithNext
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -36,6 +39,7 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.
 
 private val shootCountMutex = Mutex()
 
+@OptIn(FlowPreview::class)
 suspend fun shootAll(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
@@ -51,11 +55,14 @@ suspend fun shootAll(
         sorter.prepareShoot(orderIterator.nextOrNull())
         var alreadyShot = 0
         shootFlow
-            .dropWhile { (_, canShoot) -> !canShoot }
-            .distinctUntilChanged { state1, state2 -> state1.canShoot == state2.canShoot }
-            .filter { !it.canShoot }
+            .map { it.velocity }
+            .zipWithNext()
+            .map { (prev, cur) -> prev - cur >= 100.0 }
+            .distinctUntilChanged()
+            .filter { it }
             .take(count)
             .collect {
+                RobotLog.dd("ShooterImpl", "Attempted next")
                 if (++alreadyShot == count) return@collect
                 sorter.prepareShoot(orderIterator.nextOrNull())
             }
