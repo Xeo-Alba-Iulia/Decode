@@ -48,7 +48,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
 
     val pattern = Array(3) { ArtefactType.PURPLE }
     @Volatile
-    var fiducialId = 0
+    var fiducialId = 21
     val scorePreload = pathChain(null) {
         pathLinearHeading {
             +startPose
@@ -126,6 +126,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
                 delay(100L)
             }
         }
+        drawDebug(follower)
     }
 
     override fun init_loop() {
