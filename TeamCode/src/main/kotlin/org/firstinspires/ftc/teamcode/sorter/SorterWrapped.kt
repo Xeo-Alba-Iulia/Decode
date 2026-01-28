@@ -18,7 +18,7 @@ import kotlin.time.measureTime
 @Config
 @SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
-class SorterWrapped(
+open class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
     isAuto: Boolean,
