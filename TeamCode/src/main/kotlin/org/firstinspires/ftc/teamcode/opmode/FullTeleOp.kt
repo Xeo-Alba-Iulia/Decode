@@ -62,6 +62,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val startPose: Pose
     abstract val limelightPipeline: Int
 
+    fun deadZone(value: Double, deadZone: Double): Double {
+        return if (kotlin.math.abs(value) < deadZone) 0.0 else (value - deadZone) * (1.0 / (1.0 - deadZone))
+    }
+
     // Speed control
     companion object {
         @JvmField
@@ -125,7 +129,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("canShoot", shooter.stateFlow.value.canShoot)
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
-            /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
+            /* strafe = */ deadZone(-gamepad1.left_stick_x.toDouble(), 0.15) * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
             /* turn = */ -gamepad1.right_stick_x.toDouble(),
             /* isRobotCentric = */ isRobotCentric
         )
