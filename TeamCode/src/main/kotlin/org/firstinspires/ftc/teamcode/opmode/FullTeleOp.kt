@@ -16,6 +16,8 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.absoluteValue
+import kotlin.math.sign
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -63,7 +65,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val limelightPipeline: Int
 
     fun deadZone(value: Double, deadZone: Double): Double {
-        return if (kotlin.math.abs(value) < deadZone) 0.0 else (value - deadZone) * (1.0 / (1.0 - deadZone))
+        val valueAbs = value.absoluteValue
+        val valueSgn = value.sign
+        return if (valueAbs < deadZone) 0.0 else (valueAbs - deadZone) * valueSgn * (1.0 / (1.0 - deadZone))
     }
 
     // Speed control
