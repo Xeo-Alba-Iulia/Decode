@@ -64,12 +64,8 @@ class ShooterImpl(
     init {
         hoodServo.position = 0.8
     }
-    override var velocity = MIN_LAUNCH_VELOCITY
-        set(value) {
-            field = value.coerceIn(0.0..3600.0)
-            if (stateFlow.value.velocity != 0.0)
-                controller.goal = KineticState(velocity = field)
-        }
+
+    override var velocity: Double? = null
 
     private val controller = controlSystem {
         velPid(coefficients)
@@ -92,13 +88,13 @@ class ShooterImpl(
             try {
                 tickFlow.collect {
                     val dist = currentDistance()
-                    val desiredVelocity = velocityLUT[dist]
+                    val desiredVelocity = velocity ?: velocityLUT[dist]
                     controller.goal = KineticState(velocity = desiredVelocity)
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity
-                    RobotLog.vv("ShooterImpl", "Velocity: $velocity")
+                    RobotLog.vv("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
                     motor.power = controller.calculate(KineticState(position, velocity))
-                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
+                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 60.0)
                 }
             } finally {
                 motor.power = 0.0

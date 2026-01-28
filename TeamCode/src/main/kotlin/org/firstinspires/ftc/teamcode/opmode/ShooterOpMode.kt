@@ -37,6 +37,7 @@ class ShooterOpMode : CoroutineOpMode() {
             }
             .launchIn(opModeGraph.opModeScope)
         limelight?.start()
+        shooter.velocity = 2200.0
     }
 
     override fun loop() {
@@ -49,7 +50,7 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         val diff = gamepad1.right_trigger - gamepad1.left_trigger
         if (diff != 0f)
-            shooter.velocity += diff
+            shooter.velocity = shooter.velocity!! + diff
         if (gamepad1.left_stick_y != 0f)
             shooter.hood += gamepad1.left_stick_y * (-0.001)
         when {

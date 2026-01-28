@@ -197,8 +197,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         // Adjust shooter velocity
-        if (gamepad2.y) shooter.velocity += VELOCITY_ADJUSTMENT_STEP
-        if (gamepad2.x) shooter.velocity -= VELOCITY_ADJUSTMENT_STEP
+//        if (gamepad2.y) shooter.velocity += VELOCITY_ADJUSTMENT_STEP
+//        if (gamepad2.x) shooter.velocity -= VELOCITY_ADJUSTMENT_STEP
 
         // Adjust hood position
         if (gamepad2.dpad_up) shooter.hood += HOOD_ADJUSTMENT_STEP
