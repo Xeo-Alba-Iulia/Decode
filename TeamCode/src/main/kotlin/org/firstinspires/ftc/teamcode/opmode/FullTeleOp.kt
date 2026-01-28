@@ -6,6 +6,7 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -106,19 +107,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope)
 
-//        intake.artefactFlow
-//            .onEach {
-//                telemetry.addData("ArtefactType", it)
-//            }
-//            .zipWithNext()
-//            .buffer(capacity = 2)
-//            .onEach { (previous, _) ->
-//                if (previous != null) {
-//                    delay(160L)
-//                    sorter.intake(previous)
-//                }
-//            }
-//            .launchIn(opModeScope)
+        intake.artefactFlow
+            .onEach {
+                telemetry.addData("ArtefactType", it)
+            }
+            .filterNotNull()
+            .onEach {
+                delay(50L)
+                sorter.intake(it)
+            }
+            .launchIn(opModeScope)
 
         limelight.start()
     }

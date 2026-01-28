@@ -1,26 +1,32 @@
 package org.firstinspires.ftc.teamcode.intake
 
 import com.acmerobotics.dashboard.config.Config
+import com.qualcomm.hardware.rev.RevColorSensorV3
 import com.qualcomm.robotcore.hardware.DcMotor
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor
+import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.*
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.teamcode.ArtefactType
 
 @Config
 @Inject
 class Intake(
     @Named("intakeMotor") private val motor: DcMotor,
-    private val sensor: NormalizedColorSensor,
-    private val opModeScope: CoroutineScope,
+    private val sensor: RevColorSensorV3,
+    opModeScope: CoroutineScope,
 ) {
+    data class State(
+        val alpha: Int,
+        val red: Int,
+        val green: Int,
+        val blue: Int,
+        val distanceCm: Double,
+    )
+
     private var _isRunning = false
     var isRunning
         get() = _isRunning
@@ -43,34 +49,55 @@ class Intake(
         sensor.gain = GAIN
     }
 
-    val colorFlow = runBlocking {
+    val stateFlow =
         flow {
             while (true) {
-                emit(sensor.normalizedColors)
-                delay(20L)
+                with(sensor) {
+                    emit(
+                        State(
+                            alpha(),
+                            red(),
+                            green(),
+                            blue(),
+                            getDistance(DistanceUnit.CM)
+                        )
+                    )
+                    delay(50L)
+                }
             }
-        }.stateIn(opModeScope)
-    }
+        }.shareIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), replay = 2)
+
+    val distanceFlow
+        get() =
+            stateFlow
+                .map { it.distanceCm <= 3.0 }
+                .distinctUntilChanged()
 
     val artefactFlow
-        get() = colorFlow.map {
-            when {
-                it.alpha >= 0.6 && it.red >= 0.33 -> ArtefactType.PURPLE
-                it.alpha >= 0.6 && it.red in 0.12..0.25 -> ArtefactType.GREEN
-                else -> null
-            }
-        }.distinctUntilChanged()
+        get() =
+            stateFlow
+                .map { (alpha, red, green, blue, distance) ->
+                    when {
+                        distance > 3.0 -> null
+                        red > RED_THRESHOLD && blue > BLUE_THRESHOLD -> ArtefactType.PURPLE
+                        red < RED_THRESHOLD && green > GREEN_THRESHOLD -> ArtefactType.GREEN
+                        else -> {
+                            RobotLog.dd("Intake", "Unknown artefact color: A=$alpha R=$red, G=$green, B=$blue")
+                            null
+                        }
+                    }
+                }.distinctUntilChanged()
 
     companion object {
         @JvmField
         var INTAKE_POWER = 0.7
         @JvmField
-        var RED_THRESHOLD = 0.44f
+        var RED_THRESHOLD = 45
         @JvmField
-        var GREEN_THRESHOLD = 0.5f
+        var GREEN_THRESHOLD = 13
         @JvmField
-        var BLUE_THRESHOLD = 0.45f
+        var BLUE_THRESHOLD = 0
         @JvmField
-        var GAIN = 3.4f
+        var GAIN = 15f
     }
 }

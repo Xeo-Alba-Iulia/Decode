@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
-import org.firstinspires.ftc.teamcode.intake.*
+import org.firstinspires.ftc.teamcode.intake.Intake
+import org.firstinspires.ftc.teamcode.intake.zipWithNext
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @TeleOp(group = "Systems")
@@ -37,8 +38,8 @@ open class SorterOpMode : CoroutineOpMode() {
             }
             .launchIn(opModeScope)
 
-        intake.colorFlow
-            .filter { (alpha, _, _, _) -> alpha >= 0.1 }
+        intake.stateFlow
+            .filter { (alpha) -> alpha >= 0.1 }
             .onEach {
                 val (alpha, red, green, blue) = it
                 dashTelemetry.addData("Alpha", alpha)

@@ -22,4 +22,7 @@ interface TestOpModeGraph {
 
     @Provides
     fun provideTelemetry(): Telemetry = error("Not available in tests")
+
+    @Provides
+    fun provideIsAutonomous(): Boolean = false
 }
