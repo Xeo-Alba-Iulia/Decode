@@ -17,7 +17,7 @@ import kotlin.math.atan2
 interface Shooter {
     var angleDegrees: Double
     var hood: Double
-    var velocity: Double
+    var velocity: Double?
 
     val stateFlow: StateFlow<State>
 
@@ -57,7 +57,7 @@ suspend fun shootAll(
         shootFlow
             .map { it.velocity }
             .zipWithNext()
-            .map { (prev, cur) -> prev - cur >= 100.0 }
+            .map { (prev, cur) -> prev - cur >= 120.0 }
             .distinctUntilChanged()
             .filter { it }
             .take(count)

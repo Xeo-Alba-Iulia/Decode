@@ -70,7 +70,7 @@ class Intake(
     val distanceFlow
         get() =
             stateFlow
-                .map { it.distanceCm <= 3.0 }
+                .map { it.distanceCm <= 5.0 }
                 .distinctUntilChanged()
 
     val artefactFlow

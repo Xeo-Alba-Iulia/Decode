@@ -62,7 +62,7 @@ class ShooterImpl(
     override var hood = 0.0
 
     init {
-        hoodServo.position = 0.85
+        hoodServo.position = 0.8
     }
     override var velocity = MIN_LAUNCH_VELOCITY
         set(value) {

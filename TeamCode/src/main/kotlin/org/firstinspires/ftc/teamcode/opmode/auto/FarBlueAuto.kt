@@ -4,17 +4,20 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
-import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import com.qualcomm.robotcore.util.RobotLog
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
+import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -35,37 +38,29 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
 
     val startPose = Pose(60.0, 7.0, PI / 2)
     val goalPose = Pose(12.0, 144.0 - 12.0)
-    val scorePreloadPose = Pose(
+    val scorePose = Pose(
         60.0, 20.0, atan2(
             goalPose.y - 20.0,
             goalPose.x - 60.0
         )
     )
-    val firstBallPose = Pose(24.0, 36.0, PI)
+    val firstBallPose = Pose(20.0, 36.0, PI)
     val firstBallPositionPose = Pose(firstBallPose.x + 20.0, firstBallPose.y, PI)
     val secondBallPose = Pose(24.0, 60.0, PI)
-    val scorePose = Pose(42.0, 102.0, Math.toRadians(135.0))
 
     val pattern = Array(3) { ArtefactType.PURPLE }
     @Volatile
     var fiducialId = 21
-    val scorePreload = pathChain(null) {
+    val scorePreload = pathChain {
         pathLinearHeading {
             +startPose
-            +scorePreloadPose
+            +scorePose
         }
     }
-    val leavePathChain = pathChain(null) {
-        path {
-            +scorePreloadPose
-            +Pose(60.0, 36.0)
-        }
-    }
-
     val firstBallsPosition = pathChain(null) {
         pathLinearHeading(endTime = 0.8) {
-            +startPose
-            +Pose(startPose.x, firstBallPose.y)
+            +scorePose
+            +Pose(scorePose.x, firstBallPose.y)
             +firstBallPositionPose
         }
     }
@@ -76,9 +71,8 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         }
     }
     val scoreFirstBalls = pathChain(null) {
-        pathLinearHeading(0.8) {
+        pathFacingPoint(goalPose) {
             +firstBallPose
-            +Pose(80.0, 60.0)
             +scorePose
         }
     }
@@ -127,6 +121,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             }
         }
         drawDebug(follower)
+        shooter.hood = 0.8
     }
 
     override fun init_loop() {
@@ -135,19 +130,17 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         Thread.sleep(100L)
     }
 
+    private fun distanceFun() = goalPose.distanceFrom(scorePose) / 39.37
+
     override fun start() {
         patternJob.cancel()
         super.start()
         pattern[fiducialId - 21] = ArtefactType.GREEN
-//        shooter.hood = 0.85
-        shooterJob = shooter.shoot { (goalPose.distanceFrom(scorePreloadPose) / 39.37) }
+        shooterJob = shooter.shoot(::distanceFun)
         opModeScope.launch {
-            follower.setMaxPower(0.5)
-            follower.followPath(scorePreload)
-            while (follower.isBusy)
-                ensureActive()
+            follower.followSuspend(scorePreload, maxPower = 0.7)
             launch { shootAll(shooter.stateFlow, sorter, shooterJob, *pattern) }
-            val transferJob = launch {
+            var transferJob = launch {
                 shooter.stateFlow
                     .map { it.canShoot }
                     .distinctUntilChanged()
@@ -157,37 +150,56 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
                     }
             }
             shooterJob.join()
-            transferJob.cancelAndJoin()
-            follower.followPath(leavePathChain)
-            while (follower.isBusy)
-                ensureActive()
+            transferJob.cancel()
+            follower.followSuspend(firstBallsPosition)
+            val pathJob = launch { follower.followSuspend(firstBalls, maxPower = 0.3) }
+            intake.isRunning = true
+            val sorterJob = launch {
+                val ballsList = listOf(
+                    ArtefactType.GREEN,
+                    ArtefactType.PURPLE,
+                    ArtefactType.PURPLE,
+                )
+                intake
+                    .distanceFlow
+                    .filter { it }
+                    .take(3)
+                    .withIndex()
+                    .map { it.index }
+                    .collect {
+                        sorter.intake(ballsList[it])
+                    }
+            }
+            pathJob.join()
+            sorterJob.cancel()
+            intake.isRunning = false
+            shooterJob = shooter.shoot(::distanceFun)
+            follower.followSuspend(scoreFirstBalls)
+            launch { shootAll(shooter.stateFlow, sorter, shooterJob) }
+            transferJob = launch {
+                shooter.stateFlow
+                    .map { it.canShoot }
+                    .distinctUntilChanged()
+                    .collect {
+//                        delay(1000L)
+                        sorter.isLifting = it
+                    }
+            }
+            shooterJob.join()
+            transferJob.cancel()
+            requestOpModeStop()
         }
-//        opModeScope.launch {
-//            follower.followSuspend(firstBallsPosition)
-//            follower.followSuspend(firstBalls, maxPower = 0.3)
-//            delay(150L)
-//            sorter.intake(ArtefactType.GREEN)
-//            intake.isRunning = false
-//            follower.followSuspend(scoreFirstBalls)
-//            delay(500L)
-//            follower.followSuspend(secondBallsPosition)
-//            intake.isRunning = true
-//            follower.followSuspend(secondBalls, maxPower = 0.3)
-//            sorter.intake(ArtefactType.PURPLE)
-//            intake.isRunning = false
-//            follower.followSuspend(scoreSecondBalls)
-//        }
     }
 
     override fun loop() {
-        follower.update()
-        telemetry.addData("Pose", follower.pose)
-        if (BuildConfig.DEBUG)
-            drawDebug(follower)
+//        telemetry.addData("Pose", follower.pose)
+//        if (BuildConfig.DEBUG)
+//            drawDebug(follower)
     }
 
     override fun stop() {
         super.stop()
+        RobotLog.dd("Auto", "Stop ran")
         lastPose = follower.pose
     }
 }
