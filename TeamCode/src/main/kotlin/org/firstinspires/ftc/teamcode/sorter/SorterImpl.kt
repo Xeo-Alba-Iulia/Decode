@@ -33,7 +33,7 @@ class SorterImpl(
 
     override var position by servo::position
 
-    private val artefacts = arrayOfNulls<ArtefactType>(3)
+    override val artefacts = arrayOfNulls<ArtefactType>(3)
 
     private var currentIntakeSlot: Int = -1
 

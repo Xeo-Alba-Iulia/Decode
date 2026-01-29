@@ -3,12 +3,9 @@ package org.firstinspires.ftc.teamcode.sorter
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
-import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
-import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
-import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
@@ -16,7 +13,7 @@ import kotlin.math.abs
 import kotlin.time.measureTime
 
 @Config
-@SingleIn(OpModeScope::class)
+//@SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
 open class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
@@ -39,7 +36,7 @@ open class SorterWrapped(
 
     override var position by servo::position
 
-    val artefacts: Array<ArtefactType?> =
+    override val artefacts: Array<ArtefactType?> =
         if (isAuto)
             arrayOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
         else
@@ -89,8 +86,9 @@ open class SorterWrapped(
                     true
                 } ?: false
         }
-        RobotLog.dd("Sorter", "prepareShoot took $usedTime")
-        delay((abs(servo.position - oldPosition) * SPEED).toLong())
+        println("SorterWrapped prepareShoot took $usedTime")
+//        RobotLog.dd("Sorter", "prepareShoot took $usedTime")
+//        delay((abs(servo.position - oldPosition) * SPEED).toLong())
         return wasSuccessful
     }
 

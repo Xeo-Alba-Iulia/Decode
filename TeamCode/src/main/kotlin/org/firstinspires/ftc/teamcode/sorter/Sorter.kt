@@ -52,4 +52,6 @@ interface Sorter : OpModeObserver {
     val isFull get() = size == 3
 
     var position: Double
+
+    val artefacts: Array<ArtefactType?>
 }

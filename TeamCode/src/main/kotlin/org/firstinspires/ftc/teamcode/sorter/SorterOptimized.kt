@@ -1,23 +1,25 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import com.qualcomm.robotcore.hardware.Servo
-import com.qualcomm.robotcore.util.RobotLog
+import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
+import dev.zacsweers.metro.binding
 import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import java.util.*
 import kotlin.math.abs
 import kotlin.time.measureTime
 
 @Inject
-//@ContributesBinding(OpModeScope::class, binding<Sorter>(), [SorterImpl::class, SorterWrapped::class])
+@ContributesBinding(OpModeScope::class, binding<Sorter>(), [SorterImpl::class, SorterWrapped::class])
 class SorterOptimized(
     @Named("sorterServo") servo: Servo,
     transfer: Transfer,
     isAuto: Boolean,
 ) : SorterWrapped(servo, transfer, isAuto) {
-    val closestPosition = List(3) { artefactIdx ->
-        buildMap {
+    val closestPosition = Array(3) { artefactIdx ->
+        val map = buildMap {
             val positions = (0..5)
                 .map {
                     OFFSET - HALF_ROTATION + HALF_ROTATION * artefactIdx * 2 / 3 + 2 * it * HALF_ROTATION
@@ -31,24 +33,31 @@ class SorterOptimized(
                     put((mid * 1000.0).toInt(), b)
                 }
         }.toSortedMap() as NavigableMap
+        DoubleArray(1001) { map.floorEntry(it)!!.value }
+    }
+
+    val distances = Array(3) { artefactIdx ->
+        DoubleArray(1001) { posIdx ->
+            abs(posIdx / 1000.0 - closestPosition[artefactIdx][posIdx])
+        }
     }
 
     override suspend fun prepareShoot(type: ArtefactType?): Boolean {
         val result: Boolean
-        val oldPosition = position
+        val oldPosition = (position * 1000.0).toInt()
         val usedTime = measureTime {
             result = artefacts
                 .indices
                 .filter { type?.equals(artefacts[it]) ?: (artefacts[it] != null) }
-                .map { it to closestPosition[it].floorEntry((oldPosition * 1000.0).toInt())!!.value }
-                .minByOrNull { (_, pos) -> abs(oldPosition - pos) }
-                ?.let { (idx, pos) ->
-                    position = pos
-                    artefacts[idx] = null
+                .minByOrNull { distances[it][oldPosition] }
+                ?.let {
+                    position = closestPosition[it][oldPosition]
+                    artefacts[it] = null
                     true
                 } ?: false
         }
-        RobotLog.dd("SorterOptimized", "prepareShoot took $usedTime")
+        println("SorterOptimized prepareShoot took $usedTime")
+//        RobotLog.dd("SorterOptimized", "prepareShoot took $usedTime")
         return result
     }
 

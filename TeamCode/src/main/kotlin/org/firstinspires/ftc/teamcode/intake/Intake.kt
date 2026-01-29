@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode.intake
 
 import com.acmerobotics.dashboard.config.Config
+import com.qualcomm.hardware.rev.RevColorSensorV3
 import com.qualcomm.robotcore.hardware.DcMotor
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 @Inject
 class Intake(
     @Named("intakeMotor") private val motor: DcMotor,
-    private val sensor: NormalizedColorSensor,
+    private val sensor: RevColorSensorV3,
     private val opModeScope: CoroutineScope,
 ) {
     private var _isRunning = false
