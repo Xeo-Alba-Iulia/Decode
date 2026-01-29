@@ -14,6 +14,8 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
     excludes = [CoroutineProviders::class, ElevatorProviders::class, IntakeProviders::class]
 )
 interface TestOpModeGraph {
+    val sorterOptimized: SorterOptimized
+    val sorterWrapped: SorterWrapped
     val sorterImpl: SorterImpl
     val sorter: Sorter
 
@@ -24,5 +26,5 @@ interface TestOpModeGraph {
     fun provideTelemetry(): Telemetry = error("Not available in tests")
 
     @Provides
-    fun provideIsAutonomous(): Boolean = false
+    fun provideIsAuto(): Boolean = false
 }

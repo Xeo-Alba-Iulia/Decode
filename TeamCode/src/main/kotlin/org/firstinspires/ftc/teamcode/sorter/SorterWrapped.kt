@@ -3,12 +3,9 @@ package org.firstinspires.ftc.teamcode.sorter
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
-import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
-import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
-import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
@@ -16,9 +13,9 @@ import kotlin.math.abs
 import kotlin.time.measureTime
 
 @Config
-@SingleIn(OpModeScope::class)
+//@SingleIn(OpModeScope::class)
 @ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
-class SorterWrapped(
+open class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
     isAuto: Boolean,
@@ -39,7 +36,7 @@ class SorterWrapped(
 
     override var position by servo::position
 
-    private var artefacts: Array<ArtefactType?> =
+    override val artefacts: Array<ArtefactType?> =
         if (isAuto)
             arrayOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
         else
@@ -58,7 +55,6 @@ class SorterWrapped(
     override suspend fun intake(type: ArtefactType) {
         if (currentIntakeSlot == -1) return
         artefacts[currentIntakeSlot] = type
-        size++
         currentIntakeSlot = -1
         if (!isFull) prepareIntake()
     }
@@ -87,19 +83,19 @@ class SorterWrapped(
                 }?.let { (idx, position) ->
                     servo.position = position
                     artefacts[idx] = null
-                    size--
                     true
                 } ?: false
         }
-        RobotLog.dd("Sorter", "prepareShoot took $usedTime")
-        delay((abs(servo.position - oldPosition) * SPEED).toLong())
+        println("SorterWrapped prepareShoot took $usedTime")
+//        RobotLog.dd("Sorter", "prepareShoot took $usedTime")
+//        delay((abs(servo.position - oldPosition) * SPEED).toLong())
         return wasSuccessful
     }
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
-    override var size = if (isAuto) 3 else 0
-        private set
+    override val size
+        get() = artefacts.count { it != null }
 
     override fun toString() = "SorterWrapped(artefacts = ${artefacts.contentToString()}, position = $position)"
 }
