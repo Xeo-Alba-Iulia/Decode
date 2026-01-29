@@ -16,8 +16,8 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 @Config
 @Inject
 class Intake(
-    @Named("intakeMotor") private val motor: DcMotor,
-    @Named("intakeServo") private val servo: CRServo,
+    @Named("intake") private val motor: DcMotor,
+    @Named("intake") private val servo: CRServo,
     private val sensor: RevColorSensorV3,
     opModeScope: CoroutineScope,
 ) {

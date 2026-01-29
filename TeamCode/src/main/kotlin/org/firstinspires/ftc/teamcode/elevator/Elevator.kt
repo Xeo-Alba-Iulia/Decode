@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode.elevator
 
 import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
 import dev.nextftc.control.feedback.PIDCoefficients
 import dev.nextftc.control.feedforward.GravityFeedforwardParameters
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -20,13 +20,13 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 @SingleIn(OpModeScope::class)
 @Inject
 class Elevator(
-    private val motors: List<DcMotorEx>,
+    @Named("elevator") private val motor: DcMotorEx,
     private val opModeScope: CoroutineScope,
     private val tickFlow: SharedFlow<Unit>,
 ) : OpModeObserver {
     companion object {
         @JvmField
-        var HEIGHT = 2000.0
+        var HEIGHT = 150.0
         @JvmField
         var POWER = 0.8
         @JvmField
@@ -36,15 +36,15 @@ class Elevator(
     }
 
     var height = HEIGHT
-    var power = 0.0
+    var power
+        get() = motor.power
         set(value) {
-            field = value.coerceIn(-0.5..POWER)
-            motors.forEach { it.power = field }
+            motor.power = value.coerceIn(-POWER, POWER)
         }
 
     private val controller = controlSystem {
         posPid(coefficients)
-        elevatorFF(feedforward)
+        armFF(feedforward)
     }
 
     fun lift(height: Double = this.height): Job {
@@ -54,8 +54,8 @@ class Elevator(
                 tickFlow.collect {
                     power = controller.calculate(
                         KineticState(
-                            position = motors.first().currentPosition.toDouble(),
-                            velocity = motors.first().velocity
+                            position = motor.currentPosition.toDouble(),
+                            velocity = motor.velocity
                         )
                     )
                 }
@@ -64,6 +64,4 @@ class Elevator(
             }
         }
     }
-
-    override suspend fun onStart(opMode: OpMode) {}
 }

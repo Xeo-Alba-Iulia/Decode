@@ -14,11 +14,11 @@ interface IntakeProviders {
     val intake: Intake
 
     @Provides
-    @Named("intakeMotor")
+    @Named("intake")
     fun provideIntakeMotor(map: HardwareMap): DcMotor = map.dcMotor["intake"]
 
     @Provides
-    @Named("intakeServo")
+    @Named("intake")
     fun provideIntakeServo(map: HardwareMap): CRServo = map.getCast("intake servo")
 
     @Provides
