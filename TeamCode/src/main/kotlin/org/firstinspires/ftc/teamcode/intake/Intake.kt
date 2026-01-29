@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.intake
 
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.hardware.rev.RevColorSensorV3
+import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.Inject
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 @Inject
 class Intake(
     @Named("intakeMotor") private val motor: DcMotor,
+    @Named("intakeServo") private val servo: CRServo,
     private val sensor: RevColorSensorV3,
     opModeScope: CoroutineScope,
 ) {
@@ -34,6 +36,7 @@ class Intake(
             _isOuttake = false
             _isRunning = value
             motor.power = if (value) INTAKE_POWER else 0.0
+            servo.power = if (value) SERVO_POWER else 0.0
         }
 
     private var _isOuttake = false
@@ -43,6 +46,7 @@ class Intake(
             _isOuttake = value
             _isRunning = false
             motor.power = if (value) -INTAKE_POWER else 0.0
+            servo.power = if (value) -SERVO_POWER else 0.0
         }
 
     init {
@@ -78,7 +82,7 @@ class Intake(
             stateFlow
                 .map { (alpha, red, green, blue, distance) ->
                     when {
-                        distance > 3.0 -> null
+                        distance > 5.0 -> null
                         red > RED_THRESHOLD && blue > BLUE_THRESHOLD -> ArtefactType.PURPLE
                         red < RED_THRESHOLD && green > GREEN_THRESHOLD -> ArtefactType.GREEN
                         else -> {
@@ -91,6 +95,8 @@ class Intake(
     companion object {
         @JvmField
         var INTAKE_POWER = 0.7
+        @JvmField
+        var SERVO_POWER = 0.5
         @JvmField
         var RED_THRESHOLD = 45
         @JvmField
