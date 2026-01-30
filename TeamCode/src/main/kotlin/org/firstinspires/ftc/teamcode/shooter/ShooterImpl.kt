@@ -94,7 +94,7 @@ class ShooterImpl(
                     val velocity = encoder.velocity
                     RobotLog.vv("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
                     motor.power = controller.calculate(KineticState(position, velocity))
-                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 60.0)
+                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
                 }
             } finally {
                 motor.power = 0.0

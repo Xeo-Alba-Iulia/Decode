@@ -46,7 +46,6 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     )
     val firstBallPose = Pose(20.0, 36.0, PI)
     val firstBallPositionPose = Pose(firstBallPose.x + 20.0, firstBallPose.y, PI)
-    val secondBallPose = Pose(24.0, 60.0, PI)
 
     val pattern = Array(3) { ArtefactType.PURPLE }
     @Volatile
@@ -73,25 +72,6 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     val scoreFirstBalls = pathChain(null) {
         pathFacingPoint(goalPose) {
             +firstBallPose
-            +scorePose
-        }
-    }
-    val secondBallsPosition = pathChain(null) {
-        pathConstantHeading(PI) {
-            +scorePose
-            +Pose(scorePose.x, secondBallPose.y)
-        }
-    }
-    val secondBalls = pathChain(null) {
-        pathConstantHeading(PI) {
-            +Pose(scorePose.x, secondBallPose.y)
-            +secondBallPose
-        }
-    }
-    val scoreSecondBalls = pathChain(null) {
-        pathLinearHeading {
-            +secondBallPose
-            +Pose(54.0, 72.0)
             +scorePose
         }
     }
@@ -145,12 +125,12 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
                     .map { it.canShoot }
                     .distinctUntilChanged()
                     .collect {
-//                        delay(1000L)
                         sorter.isLifting = it
                     }
             }
             shooterJob.join()
             transferJob.cancel()
+            sorter.isLifting = false
             follower.followSuspend(firstBallsPosition)
             val pathJob = launch { follower.followSuspend(firstBalls, maxPower = 0.3) }
             intake.isRunning = true
@@ -172,11 +152,11 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             }
             pathJob.join()
             sorterJob.cancel()
-            intake.isRunning = false
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
             launch { shootAll(shooter.stateFlow, sorter, shooterJob) }
-            transferJob = launch {
+            intake.isRunning = false
+            launch {
                 shooter.stateFlow
                     .map { it.canShoot }
                     .distinctUntilChanged()
@@ -185,8 +165,6 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
                         sorter.isLifting = it
                     }
             }
-            shooterJob.join()
-            transferJob.cancel()
             requestOpModeStop()
         }
     }

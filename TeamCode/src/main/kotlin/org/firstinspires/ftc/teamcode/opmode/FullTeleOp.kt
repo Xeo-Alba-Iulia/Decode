@@ -172,8 +172,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
         limelight.latestResult.fiducialResults.singleOrNull()?.let {
             if (gamepad1.crossWasPressed())
                 turretOffset -= it.targetXDegrees
-            val position = it.targetPoseCameraSpace.position
-//            distanceToGoal = sqrt(position.x.pow(2) + position.y.pow(2) + position.z.pow(2))
         }
         telemetry.addData("AprilTag Distance", distanceToGoal)
 
@@ -209,7 +207,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
             currentShooterJob?.cancel()
         }
 
-        // Adjust shooter velocity
 //        if (gamepad2.y) shooter.velocity += VELOCITY_ADJUSTMENT_STEP
 //        if (gamepad2.x) shooter.velocity -= VELOCITY_ADJUSTMENT_STEP
 
