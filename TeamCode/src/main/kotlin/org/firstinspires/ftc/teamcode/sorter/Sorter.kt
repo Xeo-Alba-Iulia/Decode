@@ -17,7 +17,7 @@ interface Sorter : OpModeObserver {
      * @see isFull
      * @see isEmpty
      */
-    suspend fun prepareIntake()
+    fun prepareIntake()
 
     /**
      * Sets the type of artefact that was put in the intake.
@@ -29,7 +29,7 @@ interface Sorter : OpModeObserver {
      * [OpMode][com.qualcomm.robotcore.eventloop.opmode.OpMode.start]
      * @see [isFull]
      */
-    suspend fun intake(type: ArtefactType)
+    fun intake(type: ArtefactType)
 
     /**
      * Supplies an artefact to be picked up by the shooter
@@ -39,7 +39,7 @@ interface Sorter : OpModeObserver {
      * @see isEmpty
      */
     @IgnorableReturnValue
-    suspend fun prepareShoot(type: ArtefactType? = null): Boolean
+    fun prepareShoot(type: ArtefactType? = null): Boolean
 
     var isLifting: Boolean
 

@@ -7,11 +7,9 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
-import kotlinx.coroutines.delay
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
-import kotlin.time.Duration.Companion.seconds
 
 @Config
 @SingleIn(OpModeScope::class)
@@ -40,29 +38,27 @@ class SorterImpl(
     override var size = 0
         private set
 
-    suspend fun intakePosition(index: Int) {
+    fun intakePosition(index: Int) {
         servo.position = INTAKE_POSITIONS[index]
-        delay(0.5.seconds)
     }
 
-    suspend fun shooterPosition(index: Int) {
+    fun shooterPosition(index: Int) {
         servo.position = SHOOTER_POSITIONS[index]
-        delay(0.3.seconds)
     }
 
-    override suspend fun prepareIntake() {
+    override fun prepareIntake() {
         require(!isFull) { "Sorter is full" }
         currentIntakeSlot = artefacts.indexOfFirst { it == null }.also { intakePosition(it) }
     }
 
-    override suspend fun intake(type: ArtefactType) {
+    override fun intake(type: ArtefactType) {
         require(currentIntakeSlot != -1) { "Sorter not prepared for intake" }
         artefacts[currentIntakeSlot] = type
         size++
         if (!isFull) prepareIntake() else currentIntakeSlot = -1
     }
 
-    override suspend fun prepareShoot(type: ArtefactType?): Boolean {
+    override fun prepareShoot(type: ArtefactType?): Boolean {
         require(!isEmpty) { "Sorter is empty" }
         currentIntakeSlot = -1
 

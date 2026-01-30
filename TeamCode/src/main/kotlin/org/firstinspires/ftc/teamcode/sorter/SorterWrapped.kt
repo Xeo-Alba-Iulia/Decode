@@ -45,14 +45,14 @@ open class SorterWrapped(
     @Volatile
     private var currentIntakeSlot: Int = -1
 
-    override suspend fun prepareIntake() {
+    override fun prepareIntake() {
         if (isFull) return
         currentIntakeSlot = artefacts.indexOfFirst { it == null }.also {
             servo.position = OFFSET + it * HALF_ROTATION * 2.0 / 3.0
         }
     }
 
-    override suspend fun intake(type: ArtefactType) {
+    override fun intake(type: ArtefactType) {
         if (currentIntakeSlot == -1) return
         artefacts[currentIntakeSlot] = type
         currentIntakeSlot = -1
@@ -62,7 +62,7 @@ open class SorterWrapped(
     /* TODO: This can be heavily optimized if needed by precomputing positions
        From testing after warmup this takes 6-8ms when it has a match, and 500μs without one
     */
-    override suspend fun prepareShoot(type: ArtefactType?): Boolean {
+    override fun prepareShoot(type: ArtefactType?): Boolean {
         val wasSuccessful: Boolean
         val oldPosition = servo.position
         val usedTime = measureTime {

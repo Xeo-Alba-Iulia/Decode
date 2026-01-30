@@ -42,7 +42,7 @@ class SorterOptimized(
         }
     }
 
-    override suspend fun prepareShoot(type: ArtefactType?): Boolean {
+    override fun prepareShoot(type: ArtefactType?): Boolean {
         val result: Boolean
         val oldPosition = (position * 1000.0).toInt()
         val usedTime = measureTime {
