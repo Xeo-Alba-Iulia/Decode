@@ -115,16 +115,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope)
 
-        intake.artefactFlow
-            .onEach {
-                telemetry.addData("ArtefactType", it)
-            }
-            .filterNotNull()
-            .onEach {
-                delay(50L)
-                sorter.intake(it)
-            }
-            .launchIn(opModeScope)
+//        intake.artefactFlow
+//            .onEach {
+//                telemetry.addData("ArtefactType", it)
+//            }
+//            .filterNotNull()
+//            .onEach {
+//                delay(50L)
+//                sorter.intake(it)
+//            }
+//            .launchIn(opModeScope)
 
         limelight.start()
     }
@@ -144,6 +144,15 @@ abstract class FullTeleOp : CoroutineOpMode() {
             gamepad1.circleWasPressed() -> intake.isOuttake = true
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
+
+        // Manual intake servo control (only works if intake is not running/outtaking)
+        if (!intake.isRunning && !intake.isOuttake) {
+            when {
+                gamepad1.squareWasPressed() -> intake.isServoRunning = true
+                gamepad1.squareWasReleased() -> intake.isServoRunning = false
+            }
+        }
+
         handleShooter()
         telemetry.addData("Pose", follower.pose)
 

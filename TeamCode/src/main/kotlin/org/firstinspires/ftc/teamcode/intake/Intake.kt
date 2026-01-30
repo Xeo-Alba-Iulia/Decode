@@ -49,6 +49,12 @@ class Intake(
             servo.power = if (value) -SERVO_POWER else 0.0
         }
 
+    var isServoRunning = false
+        set(value) {
+            field = value
+            servo.power = if (value) SERVO_POWER else 0.0
+        }
+
     init {
         sensor.gain = GAIN
     }
