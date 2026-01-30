@@ -17,11 +17,11 @@ import kotlin.math.atan2
 interface Shooter {
     var angleDegrees: Double
     var hood: Double
-    var velocity: Double?
+    var velocity: Double
 
     val stateFlow: StateFlow<State>
 
-    fun shoot(currentDistance: () -> Double = { 2.2 }): Job
+    fun shoot(currentDistance: () -> Double = { 0.0 }): Job
 
     data class State(val velocity: Double, val canShoot: Boolean)
 }

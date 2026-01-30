@@ -221,7 +221,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
     }
 
-    private suspend fun handleSorter() {
+    private fun handleSorter() {
         // Intake artefacts (using stick buttons to avoid conflicts)
         when {
             gamepad2.rightBumperWasPressed() -> sorter.intake(ArtefactType.PURPLE)
