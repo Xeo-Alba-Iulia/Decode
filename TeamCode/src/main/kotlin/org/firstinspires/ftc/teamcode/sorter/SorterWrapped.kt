@@ -27,9 +27,6 @@ open class SorterWrapped(
 
         @JvmField
         var OFFSET = 0.015
-
-        @JvmField
-        var SPEED = 1000.0
     }
 
     override var isLifting by transfer::isRunning
@@ -79,7 +76,7 @@ open class SorterWrapped(
                         }
                     }
                 }.minByOrNull { (_, position) ->
-                    abs(servo.position - position)
+                    abs(oldPosition - position)
                 }?.let { (idx, position) ->
                     servo.position = position
                     artefacts[idx] = null
