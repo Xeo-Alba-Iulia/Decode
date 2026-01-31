@@ -47,7 +47,6 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     val firstBallPose = Pose(20.0, 36.0, PI)
     val firstBallPositionPose = Pose(firstBallPose.x + 20.0, firstBallPose.y, PI)
 
-    val pattern = Array(3) { ArtefactType.PURPLE }
     @Volatile
     var fiducialId = 21
     val scorePreload = pathChain {
@@ -115,12 +114,17 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     override fun start() {
         patternJob.cancel()
         super.start()
-        pattern[fiducialId - 21] = ArtefactType.GREEN
+        val pattern = when (fiducialId) {
+            21 -> listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
+            22 -> listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
+            23 -> listOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
+            else -> error("Invalid fiducialId: $fiducialId")
+        }
         shooterJob = shooter.shoot(::distanceFun)
         opModeScope.launch {
             follower.followSuspend(scorePreload, maxPower = 0.7)
-            launch { shootAll(shooter.stateFlow, sorter, shooterJob, *pattern) }
-            var transferJob = launch {
+            launch { shootAll(shooter.stateFlow, sorter, shooterJob, pattern) }
+            val transferJob = launch {
                 shooter.stateFlow
                     .map { it.canShoot }
                     .distinctUntilChanged()

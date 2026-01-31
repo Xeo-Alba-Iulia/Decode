@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.shooter
 
+import android.util.Log
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
@@ -44,10 +45,12 @@ suspend fun shootAll(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
     shooterJob: Job? = null,
-    vararg shootOrder: ArtefactType,
+    shootOrder: List<ArtefactType> = emptyList(),
 ) {
     fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
     if (shootCountMutex.isLocked) return
+    if (shootOrder.isNotEmpty() || shootOrder.size != sorter.size)
+        Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
         val count = sorter.size
