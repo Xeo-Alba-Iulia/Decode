@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
@@ -83,6 +84,7 @@ class Intake(
                 .map { it.distanceCm <= 5.0 }
                 .distinctUntilChanged()
 
+    @OptIn(FlowPreview::class)
     val artefactFlow
         get() =
             stateFlow
@@ -96,7 +98,9 @@ class Intake(
                             null
                         }
                     }
-                }.distinctUntilChanged()
+                }.debounce(110L)
+                .filterNotNull()
+                .distinctUntilChanged()
 
     companion object {
         @JvmField
