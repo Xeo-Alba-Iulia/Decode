@@ -6,6 +6,7 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -15,8 +16,6 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.absoluteValue
-import kotlin.math.sign
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -63,20 +62,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val startPose: Pose
     abstract val limelightPipeline: Int
 
-    fun deadZone(value: Double, deadZone: Double): Double {
-        val valueAbs = value.absoluteValue
-        val valueSgn = value.sign
-        return if (valueAbs < deadZone) 0.0 else (valueAbs - deadZone) * valueSgn * (1.0 / (1.0 - deadZone))
-    }
-
     // Speed control
     companion object {
         @JvmField
         var HOOD_ADJUSTMENT_STEP = 0.01
         @JvmField
         var ANGLE_ADJUSTMENT_STEP = -0.5
-        @JvmField
-        var VELOCITY_ADJUSTMENT_STEP = 10.0
         @JvmField
         var SORTER_POSITION_MULTIPLIER = -0.005
         @JvmField
@@ -112,11 +103,25 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .onEach { gamepad2.rumble(100) }
             .launchIn(opModeScope)
 
-        intake.artefactFlow
-            .onEach { telemetry.addData("ArtefactType", it) }
+        intake.distanceFlow
+            .onEach { RobotLog.dd("FullTeleOp", "Intake artefact: $it") }
+            .filter { it }
             .transform { if (intake.isRunning) emit(it) }
-            .onEach { sorter.intake(it) }
+            .onEach { sorter.intake(ArtefactType.PURPLE) }
             .launchIn(opModeScope)
+
+        opModeScope.launch {
+            var lastIsFull = false
+            while (true) {
+                val isFull = sorter.isFull
+                if (isFull && !lastIsFull) {
+                    intake.isRunning = false
+                    intake.isServoRunning = true
+                }
+                lastIsFull = isFull
+                delay(150L)
+            }
+        }
 
         limelight.start()
     }
@@ -125,7 +130,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         telemetry.addData("canShoot", shooter.stateFlow.value.canShoot)
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
-            /* strafe = */ deadZone(-gamepad1.left_stick_x.toDouble(), 0.15) * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
+            /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
             /* turn = */ -gamepad1.right_stick_x.toDouble(),
             /* isRobotCentric = */ isRobotCentric
         )
@@ -160,7 +165,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
-        val distanceToGoal = goalPose.distanceFrom(follower.pose) / 40.0
+        val distanceToGoal = goalPose.distanceFrom(follower.pose) / 39.37
         limelight.latestResult.fiducialResults.singleOrNull()?.let {
             if (gamepad1.crossWasPressed())
                 turretOffset -= it.targetXDegrees

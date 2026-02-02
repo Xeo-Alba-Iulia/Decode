@@ -73,7 +73,7 @@ class Intake(
                             getDistance(DistanceUnit.CM)
                         )
                     )
-                    delay(50L)
+                    delay(40L)
                 }
             }
         }.shareIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), replay = 2)
@@ -81,16 +81,16 @@ class Intake(
     val distanceFlow
         get() =
             stateFlow
-                .map { it.distanceCm <= 5.0 }
+                .map { it.alpha >= 75.0 }
                 .distinctUntilChanged()
 
     @OptIn(FlowPreview::class)
     val artefactFlow
         get() =
             stateFlow
-                .map { (alpha, red, green, blue, distance) ->
+                .map { (alpha, red, green, blue) ->
                     when {
-                        distance > 5.0 -> null
+                        alpha >= 75.0 -> null
                         red > RED_THRESHOLD && blue > BLUE_THRESHOLD -> ArtefactType.PURPLE
                         red < RED_THRESHOLD && green > GREEN_THRESHOLD -> ArtefactType.GREEN
                         else -> {
@@ -98,7 +98,7 @@ class Intake(
                             null
                         }
                     }
-                }.debounce(110L)
+                }.debounce(75L)
                 .filterNotNull()
                 .distinctUntilChanged()
 
@@ -106,7 +106,7 @@ class Intake(
         @JvmField
         var INTAKE_POWER = 0.7
         @JvmField
-        var SERVO_POWER = 0.5
+        var SERVO_POWER = 1.0
         @JvmField
         var RED_THRESHOLD = 45
         @JvmField

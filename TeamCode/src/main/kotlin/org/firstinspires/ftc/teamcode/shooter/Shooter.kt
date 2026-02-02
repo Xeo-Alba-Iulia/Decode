@@ -49,7 +49,7 @@ suspend fun shootAll(
 ) {
     fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
     if (shootCountMutex.isLocked) return
-    if (shootOrder.isEmpty() || shootOrder.size != sorter.size)
+    if (shootOrder.isNotEmpty() && shootOrder.size != sorter.size)
         Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
@@ -58,6 +58,7 @@ suspend fun shootAll(
         sorter.prepareShoot(orderIterator.nextOrNull())
         var alreadyShot = 0
         shootFlow
+            .onEach { sorter.isLifting = it.canShoot }
             .map { it.velocity }
             .zipWithNext()
             .map { (prev, cur) -> prev - cur >= 120.0 }

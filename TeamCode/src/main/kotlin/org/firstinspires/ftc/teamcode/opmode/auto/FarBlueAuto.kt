@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
+import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.PathLinearExperimental
@@ -44,7 +45,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             goalPose.x - 60.0
         )
     )
-    val firstBallPose = Pose(20.0, 36.0, PI)
+    val firstBallPose = Pose(10.0, 36.0, PI)
     val firstBallPositionPose = Pose(firstBallPose.x + 20.0, firstBallPose.y, PI)
 
     @Volatile
@@ -158,7 +159,13 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             sorterJob.cancel()
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
-            launch { shootAll(shooter.stateFlow, sorter, shooterJob) }
+            launch {
+                runCatching {
+                    shootAll(shooter.stateFlow, sorter, shooterJob)
+                }.onFailure {
+                    Log.e("FarBlueAuto", "ShootAll problem")
+                }
+            }
             intake.isRunning = false
             launch {
                 shooter.stateFlow
