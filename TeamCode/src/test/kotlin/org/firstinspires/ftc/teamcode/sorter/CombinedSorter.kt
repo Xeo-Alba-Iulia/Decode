@@ -4,9 +4,9 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import kotlin.math.abs
 
 class CombinedSorter(vararg val sorters: Sorter) : Sorter {
-    override suspend fun prepareIntake() = sorters.forEach { it.prepareIntake() }
-    override suspend fun intake(type: ArtefactType) = sorters.forEach { it.intake(type) }
-    override suspend fun prepareShoot(type: ArtefactType?) = sorters.all { it.prepareShoot(type) }
+    override fun prepareIntake() = sorters.forEach { it.prepareIntake() }
+    override fun intake(type: ArtefactType) = sorters.forEach { it.intake(type) }
+    override fun prepareShoot(type: ArtefactType?) = sorters.all { it.prepareShoot(type) }
     override var isLifting = false
     override val size: Int
         get() {
