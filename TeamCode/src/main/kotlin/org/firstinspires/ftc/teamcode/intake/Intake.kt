@@ -30,6 +30,8 @@ class Intake(
         val distanceCm: Double,
     )
 
+    var isDebug = false
+
     private var _isRunning = false
     var isRunning
         get() = _isRunning
@@ -63,8 +65,8 @@ class Intake(
     val stateFlow =
         flow {
             while (true) {
-                with(sensor) {
-                    emit(
+                if (isRunning || isDebug)
+                    emit(with(sensor) {
                         State(
                             alpha(),
                             red(),
@@ -72,9 +74,8 @@ class Intake(
                             blue(),
                             getDistance(DistanceUnit.CM)
                         )
-                    )
-                    delay(40L)
-                }
+                    })
+                delay(40L)
             }
         }.shareIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), replay = 2)
 
@@ -108,11 +109,11 @@ class Intake(
         @JvmField
         var SERVO_POWER = 1.0
         @JvmField
-        var RED_THRESHOLD = 45
+        var RED_THRESHOLD = 200
         @JvmField
-        var GREEN_THRESHOLD = 13
+        var GREEN_THRESHOLD = 100
         @JvmField
-        var BLUE_THRESHOLD = 0
+        var BLUE_THRESHOLD = 100
         @JvmField
         var GAIN = 15f
     }

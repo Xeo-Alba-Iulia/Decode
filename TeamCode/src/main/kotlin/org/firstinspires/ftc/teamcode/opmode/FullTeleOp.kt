@@ -103,11 +103,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .onEach { gamepad2.rumble(100) }
             .launchIn(opModeScope)
 
-        intake.distanceFlow
+        intake.artefactFlow
             .onEach { RobotLog.dd("FullTeleOp", "Intake artefact: $it") }
-            .filter { it }
-            .transform { if (intake.isRunning) emit(it) }
-            .onEach { sorter.intake(ArtefactType.PURPLE) }
+            .onEach { sorter.intake(it) }
             .launchIn(opModeScope)
 
         opModeScope.launch {
