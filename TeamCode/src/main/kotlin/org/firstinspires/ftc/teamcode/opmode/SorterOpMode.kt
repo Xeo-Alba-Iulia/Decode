@@ -29,7 +29,7 @@ open class SorterOpMode : CoroutineOpMode() {
             .launchIn(opModeScope)
 
         intake.stateFlow
-            .filter { (alpha) -> alpha >= 0.1 }
+            .filter { (alpha) -> alpha >= 70.0 }
             .onEach { (alpha, red, green, blue) ->
                 dashTelemetry.addData("Alpha", alpha)
                 dashTelemetry.addData("Red", red)
@@ -64,10 +64,9 @@ open class SorterOpMode : CoroutineOpMode() {
             }
 
             when {
-                gamepad1.squareWasPressed() -> true
-                gamepad1.squareWasReleased() -> false
-                else -> null
-            }?.let { sorter.isLifting = it }
+                gamepad1.squareWasPressed() -> sorter.isLifting = true
+                gamepad1.squareWasReleased() -> sorter.isLifting = false
+            }
 
             sorter.position += (gamepad1.right_trigger - gamepad1.left_trigger).toDouble() * 0.001
         }
