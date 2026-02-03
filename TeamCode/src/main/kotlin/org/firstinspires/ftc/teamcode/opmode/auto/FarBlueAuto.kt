@@ -45,8 +45,8 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             goalPose.x - 60.0
         )
     )
-    val firstBallPose = Pose(10.0, 36.0, PI)
-    val firstBallPositionPose = Pose(firstBallPose.x + 20.0, firstBallPose.y, PI)
+    val firstBallPose = Pose(13.0, 36.0, PI)
+    val firstBallPositionPose = Pose(firstBallPose.x + 25.0, firstBallPose.y, PI)
 
     @Volatile
     var fiducialId = 21
@@ -70,7 +70,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         }
     }
     val scoreFirstBalls = pathChain(null) {
-        pathFacingPoint(goalPose) {
+        pathLinearHeading(endTime = 0.8) {
             +firstBallPose
             +scorePose
         }
@@ -110,7 +110,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         Thread.sleep(100L)
     }
 
-    private fun distanceFun() = goalPose.distanceFrom(scorePose) / 39.37
+    private fun distanceFun() = 3.5
 
     override fun start() {
         patternJob.cancel()
@@ -136,9 +136,9 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             shooterJob.join()
             transferJob.cancel()
             sorter.isLifting = false
-            follower.followSuspend(firstBallsPosition)
-            val pathJob = launch { follower.followSuspend(firstBalls, maxPower = 0.3) }
             intake.isRunning = true
+            follower.followSuspend(firstBallsPosition)
+            val pathJob = launch { follower.followSuspend(firstBalls, maxPower = 0.35) }
             val sorterJob = launch {
                 val ballsList = listOf(
                     ArtefactType.GREEN,
@@ -161,7 +161,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             follower.followSuspend(scoreFirstBalls)
             launch {
                 runCatching {
-                    shootAll(shooter.stateFlow, sorter, shooterJob)
+                    shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
                 }.onFailure {
                     Log.e("FarBlueAuto", "ShootAll problem")
                 }
@@ -176,7 +176,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
                         sorter.isLifting = it
                     }
             }
-            requestOpModeStop()
+//            requestOpModeStop()
         }
     }
 

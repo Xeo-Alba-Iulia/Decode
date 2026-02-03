@@ -4,7 +4,6 @@ import android.util.Log
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -40,7 +39,6 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.
 
 private val shootCountMutex = Mutex()
 
-@OptIn(FlowPreview::class)
 suspend fun shootAll(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
@@ -51,11 +49,13 @@ suspend fun shootAll(
     if (shootCountMutex.isLocked) return
     if (shootOrder.isNotEmpty() && shootOrder.size != sorter.size)
         Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
+    Log.d("ShooterImpl", "shootOrder: $shootOrder")
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
         val count = sorter.size
         if (count == 0) return@withLock
-        sorter.prepareShoot(orderIterator.nextOrNull())
+        val type = orderIterator.nextOrNull()
+        sorter.prepareShoot(type)
         var alreadyShot = 0
         shootFlow
             .onEach { sorter.isLifting = it.canShoot }
@@ -65,10 +65,12 @@ suspend fun shootAll(
             .distinctUntilChanged()
             .filter { it }
             .take(count)
+            .onStart { RobotLog.dd("ShooterImpl", "Starting with $type") }
             .collect {
-                RobotLog.dd("ShooterImpl", "Attempted next")
                 if (++alreadyShot == count) return@collect
-                sorter.prepareShoot(orderIterator.nextOrNull())
+                val type = orderIterator.nextOrNull()
+                RobotLog.dd("ShooterImpl", "Attempted next: $type")
+                sorter.prepareShoot(type)
             }
         sorter.prepareIntake()
         shooterJob?.cancel()
