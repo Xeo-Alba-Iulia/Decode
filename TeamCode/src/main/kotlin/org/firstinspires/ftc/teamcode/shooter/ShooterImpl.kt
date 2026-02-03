@@ -62,7 +62,7 @@ class ShooterImpl(
         hoodServo.position = 0.8
     }
 
-    override var velocity = 0.0
+    override var velocityOffset = 0.0
 
     private val controller = controlSystem {
         velPid(coefficients)
@@ -84,7 +84,7 @@ class ShooterImpl(
         opModeScope.launch {
             try {
                 tickFlow.collect {
-                    val desiredVelocity = velocity + velocityLUT[currentDistance()]
+                    val desiredVelocity = velocityOffset + velocityLUT[currentDistance()]
                     controller.goal = KineticState(velocity = desiredVelocity)
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity

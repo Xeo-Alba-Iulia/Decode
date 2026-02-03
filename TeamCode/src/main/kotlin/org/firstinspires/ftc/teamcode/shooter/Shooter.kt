@@ -17,7 +17,7 @@ import kotlin.math.atan2
 interface Shooter {
     var angleDegrees: Double
     var hood: Double
-    var velocity: Double
+    var velocityOffset: Double
 
     val stateFlow: StateFlow<State>
 

@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode.opmode
 import com.acmerobotics.dashboard.FtcDashboard
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.util.RobotLog
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -12,7 +10,6 @@ import kotlinx.coroutines.runBlocking
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
-import org.firstinspires.ftc.teamcode.intake.zipWithNext
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @TeleOp(group = "Systems")
@@ -28,20 +25,12 @@ open class SorterOpMode : CoroutineOpMode() {
         observers += sorter
 
         intake.artefactFlow
-            .zipWithNext()
-            .buffer(capacity = 2)
-            .onEach { (previous, _) ->
-                if (previous != null) {
-                    delay(200L)
-                    sorter.intake(previous)
-                }
-            }
+            .onEach { sorter.intake(it) }
             .launchIn(opModeScope)
 
         intake.stateFlow
             .filter { (alpha) -> alpha >= 0.1 }
-            .onEach {
-                val (alpha, red, green, blue) = it
+            .onEach { (alpha, red, green, blue) ->
                 dashTelemetry.addData("Alpha", alpha)
                 dashTelemetry.addData("Red", red)
                 dashTelemetry.addData("Green", green)

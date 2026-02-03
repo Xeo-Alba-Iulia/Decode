@@ -29,8 +29,8 @@ import kotlin.coroutines.cancellation.CancellationException
  * GAMEPAD 2 (Sisteme):
  * - A: Start shooting sequence
  * - B: Stop shooting sequence
- * - X: Decrease shooter velocity
- * - Y: Increase shooter velocity
+ * - X: Decrease shooter velocityOffset
+ * - Y: Increase shooter velocityOffset
  * - Dpad Up/Down: Adjust hood position
  * - Dpad Left/Right: Adjust shooter angle
  * - Left Bumper: Prepare shoot (purple artefact)
@@ -204,8 +204,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
             currentShooterJob?.cancel()
         }
 
-//        if (gamepad2.y) shooter.velocity += VELOCITY_ADJUSTMENT_STEP
-//        if (gamepad2.x) shooter.velocity -= VELOCITY_ADJUSTMENT_STEP
+//        if (gamepad2.y) shooter.velocityOffset += VELOCITY_ADJUSTMENT_STEP
+//        if (gamepad2.x) shooter.velocityOffset -= VELOCITY_ADJUSTMENT_STEP
 
         // Adjust hood position
         if (gamepad2.dpad_up) shooter.hood += HOOD_ADJUSTMENT_STEP
