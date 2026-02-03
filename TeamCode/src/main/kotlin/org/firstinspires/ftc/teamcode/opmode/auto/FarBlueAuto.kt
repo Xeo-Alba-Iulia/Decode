@@ -3,16 +3,18 @@ package org.firstinspires.ftc.teamcode.opmode.auto
 import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
+import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
+import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.util.RobotLog
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.selects.onTimeout
+import kotlinx.coroutines.selects.select
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
@@ -25,6 +27,8 @@ import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(PathLinearExperimental::class)
 @Autonomous
@@ -73,6 +77,12 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         pathLinearHeading(endTime = 0.8) {
             +firstBallPose
             +scorePose
+            callbacks {
+                temporalCallback(650.milliseconds) {
+                    intake.isRunning = false
+                    intake.isServoRunning = true
+                }
+            }
         }
     }
 
@@ -112,6 +122,22 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
 
     private fun distanceFun() = 3.5
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun followAndIntake(pathChain: PathChain, pickupPattern: List<ArtefactType>) = coroutineScope {
+        select<Unit> {
+            launch {
+                val iter = pickupPattern.iterator()
+                intake.distanceFlow
+                    .filter { it }
+                    .take(3)
+                    .collect { sorter.intake(iter.next()) }
+            }.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
+            launch { follower.followSuspend(pathChain, maxPower = 0.37) }
+                .onJoin { Log.e(TAG, "Only picked up ${sorter.size} artefacts") }
+            onTimeout(2.seconds) { throw RuntimeException("Path didn't finish") }
+        }
+    }
+
     override fun start() {
         patternJob.cancel()
         super.start()
@@ -124,71 +150,30 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
         shooterJob = shooter.shoot(::distanceFun)
         opModeScope.launch {
             follower.followSuspend(scorePreload, maxPower = 0.7)
-            launch { shootAll(shooter.stateFlow, sorter, shooterJob, pattern) }
-            val transferJob = launch {
-                shooter.stateFlow
-                    .map { it.canShoot }
-                    .distinctUntilChanged()
-                    .collect {
-                        sorter.isLifting = it
-                    }
-            }
-            shooterJob.join()
-            transferJob.cancel()
-            sorter.isLifting = false
+            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
             follower.followSuspend(firstBallsPosition)
-            val pathJob = launch { follower.followSuspend(firstBalls, maxPower = 0.35) }
-            val sorterJob = launch {
-                val ballsList = listOf(
-                    ArtefactType.GREEN,
-                    ArtefactType.PURPLE,
-                    ArtefactType.PURPLE,
-                )
-                intake
-                    .distanceFlow
-                    .filter { it }
-                    .take(3)
-                    .withIndex()
-                    .map { it.index }
-                    .collect {
-                        sorter.intake(ballsList[it])
-                    }
-            }
-            pathJob.join()
-            sorterJob.cancel()
+            followAndIntake(firstBalls, listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE))
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
-            launch {
-                runCatching {
-                    shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
-                }.onFailure {
-                    Log.e("FarBlueAuto", "ShootAll problem")
-                }
-            }
-            intake.isRunning = false
-            launch {
-                shooter.stateFlow
-                    .map { it.canShoot }
-                    .distinctUntilChanged()
-                    .collect {
-//                        delay(1000L)
-                        sorter.isLifting = it
-                    }
-            }
-//            requestOpModeStop()
+            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            requestOpModeStop()
         }
     }
 
     override fun loop() {
-//        telemetry.addData("Pose", follower.pose)
-//        if (BuildConfig.DEBUG)
-//            drawDebug(follower)
+        telemetry.addData("Pose", follower.pose)
+        if (BuildConfig.DEBUG)
+            drawDebug(follower)
     }
 
     override fun stop() {
         super.stop()
-        RobotLog.dd("Auto", "Stop ran")
+        RobotLog.dd(TAG, "Stop ran")
         lastPose = follower.pose
+    }
+
+    companion object {
+        const val TAG = "FarBlueAuto"
     }
 }

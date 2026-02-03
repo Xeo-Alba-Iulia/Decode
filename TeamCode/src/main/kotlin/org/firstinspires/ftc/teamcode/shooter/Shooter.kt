@@ -52,11 +52,10 @@ suspend fun shootAll(
     Log.d("ShooterImpl", "shootOrder: $shootOrder")
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
-        val count = sorter.size
+        val count = sorter.size - 1
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
         sorter.prepareShoot(type)
-        var alreadyShot = 0
         shootFlow
             .onEach { sorter.isLifting = it.canShoot }
             .map { it.velocity }
@@ -66,13 +65,15 @@ suspend fun shootAll(
             .filter { it }
             .take(count)
             .onStart { RobotLog.dd("ShooterImpl", "Starting with $type") }
-            .collect {
-                if (++alreadyShot == count) return@collect
+            .withIndex()
+            .map { it.index }
+            .collect { idx ->
+                if (idx == count) return@collect
                 val type = orderIterator.nextOrNull()
                 RobotLog.dd("ShooterImpl", "Attempted next: $type")
                 sorter.prepareShoot(type)
             }
-        sorter.prepareIntake()
         shooterJob?.cancel()
+        sorter.prepareIntake()
     }
 }

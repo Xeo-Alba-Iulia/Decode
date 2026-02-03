@@ -33,9 +33,6 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        var MIN_LAUNCH_VELOCITY = 2200.0
-
-        @JvmField
         var coefficients = PIDCoefficients(0.0152, kD = 0.0004)
 
         @JvmField
