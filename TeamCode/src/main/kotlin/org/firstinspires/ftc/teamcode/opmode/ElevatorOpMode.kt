@@ -15,7 +15,6 @@ class ElevatorOpMode : CoroutineOpMode() {
     override fun init() {
         elevator = opModeGraph.elevator
         telemetry = opModeGraph.telemetry
-        elevator.power = -0.2
     }
 
     override fun loop() {
