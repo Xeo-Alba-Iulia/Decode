@@ -26,21 +26,15 @@ class Elevator(
 ) : OpModeObserver {
     companion object {
         @JvmField
-        var HEIGHT = 150.0
+        var HEIGHT = 1200.0
         @JvmField
-        var POWER = 0.8
-        @JvmField
-        var coefficients = PIDCoefficients(0.0)
+        var coefficients = PIDCoefficients(kP = 0.01, kD = 0.0001)
         @JvmField
         var feedforward = GravityFeedforwardParameters()
     }
 
     var height = HEIGHT
-    var power
-        get() = motor.power
-        set(value) {
-            motor.power = value.coerceIn(-POWER, POWER)
-        }
+    var power by motor::power
 
     private val controller = controlSystem {
         posPid(coefficients)
