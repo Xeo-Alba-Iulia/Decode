@@ -28,7 +28,11 @@ class Intake(
         val green: Int,
         val blue: Int,
         val distanceCm: Double,
-    )
+    ) {
+        companion object {
+            val ZERO = State(0, 0, 0, 0, 0.0)
+        }
+    }
 
     var isDebug = false
 
@@ -75,15 +79,17 @@ class Intake(
                             getDistance(DistanceUnit.CM)
                         )
                     })
-                delay(40L)
+                delay(10L)
             }
-        }.shareIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), replay = 2)
+        }.stateIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), State.ZERO)
 
+    @OptIn(FlowPreview::class)
     val distanceFlow
         get() =
             stateFlow
-                .map { it.alpha >= 75.0 }
+                .map { (alpha) -> alpha >= ALPHA_THRESHOLD }
                 .distinctUntilChanged()
+                .debounce(40L)
 
     @OptIn(FlowPreview::class)
     val artefactFlow
@@ -91,17 +97,17 @@ class Intake(
             stateFlow
                 .map { (alpha, red, green, blue) ->
                     when {
-                        alpha >= 75.0 -> null
-                        red > RED_THRESHOLD && blue > BLUE_THRESHOLD -> ArtefactType.PURPLE
-                        red < RED_THRESHOLD && green > GREEN_THRESHOLD -> ArtefactType.GREEN
+                        alpha < ALPHA_THRESHOLD -> null
+                        red > 150.0 && blue >= 300.0 -> ArtefactType.PURPLE
+                        red <= 150.0 && green >= 100.0 -> ArtefactType.GREEN
                         else -> {
                             RobotLog.dd("Intake", "Unknown artefact color: A=$alpha R=$red, G=$green, B=$blue")
                             null
                         }
                     }
-                }.debounce(75L)
+                }.distinctUntilChanged()
+                .debounce(40L)
                 .filterNotNull()
-                .distinctUntilChanged()
 
     companion object {
         @JvmField
@@ -109,11 +115,7 @@ class Intake(
         @JvmField
         var SERVO_POWER = 1.0
         @JvmField
-        var RED_THRESHOLD = 200
-        @JvmField
-        var GREEN_THRESHOLD = 100
-        @JvmField
-        var BLUE_THRESHOLD = 100
+        var ALPHA_THRESHOLD = 50.0
         @JvmField
         var GAIN = 15f
     }
