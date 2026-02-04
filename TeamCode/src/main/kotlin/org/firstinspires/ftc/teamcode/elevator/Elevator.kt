@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
 import dev.nextftc.control.feedback.PIDCoefficients
-import dev.nextftc.control.feedforward.GravityFeedforwardParameters
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
@@ -29,8 +28,6 @@ class Elevator(
         var HEIGHT = 1200.0
         @JvmField
         var coefficients = PIDCoefficients(kP = 0.01, kD = 0.0001)
-        @JvmField
-        var feedforward = GravityFeedforwardParameters()
     }
 
     var height = HEIGHT
@@ -38,7 +35,6 @@ class Elevator(
 
     private val controller = controlSystem {
         posPid(coefficients)
-        armFF(feedforward)
     }
 
     fun lift(height: Double = this.height): Job {
