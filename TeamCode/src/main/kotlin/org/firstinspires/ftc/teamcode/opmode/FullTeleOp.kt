@@ -64,6 +64,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val startPose: Pose
     abstract val limelightPipeline: Int
 
+    var heightIterator: Iterator<Double> = HEIGHT_LIST.iterator()
+
     // Speed control
     companion object {
         @JvmField
@@ -74,6 +76,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         var SORTER_POSITION_MULTIPLIER = -0.005
         @JvmField
         var TURET_OFFSET_ADJUSTMENT_STEP = 1
+
+        @JvmField
+        var HEIGHT_LIST = mutableListOf(1200.0, 800.0, 0.0)
 
         const val TAG = "TeleOp"
     }
@@ -139,8 +144,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
 
-        if (gamepad1.squareWasPressed())
-            elevator.lift()
+        if (gamepad1.squareWasPressed()) {
+            if (!heightIterator.hasNext()) heightIterator = HEIGHT_LIST.iterator()
+            elevator.lift(heightIterator.next())
+        }
 
         handleShooter()
         telemetry.addData("Pose", follower.pose)

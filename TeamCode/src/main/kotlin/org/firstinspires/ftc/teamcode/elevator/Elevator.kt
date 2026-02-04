@@ -10,6 +10,7 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.OpModeObserver
@@ -30,6 +31,9 @@ class Elevator(
         var coefficients = PIDCoefficients(kP = 0.01, kD = 0.0001)
     }
 
+    @Volatile
+    private var liftJob: Job? = null
+
     var height = HEIGHT
     var power by motor::power
 
@@ -37,9 +41,10 @@ class Elevator(
         posPid(coefficients)
     }
 
-    fun lift(height: Double = this.height): Job {
-        controller.goal = KineticState(position = height)
-        return opModeScope.launch {
+    fun lift(height: Double = this.height) {
+        liftJob?.cancel("New liftJob launched")
+        liftJob = opModeScope.launch {
+            controller.goal = KineticState(position = height)
             try {
                 tickFlow.collect {
                     power = controller.calculate(
