@@ -53,7 +53,6 @@ class ShooterImpl(
         set(value) {
             field = value.coerceIn(-80.0..80.0)
             rotationServo.position = 0.5 - field / 160.0
-            RobotLog.dd("Shooter angle degrees", field.toString())
         }
 
     override var hood = 0.0

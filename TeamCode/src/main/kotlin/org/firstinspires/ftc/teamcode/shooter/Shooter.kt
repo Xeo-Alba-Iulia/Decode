@@ -18,9 +18,7 @@ interface Shooter {
     var angleDegrees: Double
     var hood: Double
     var velocityOffset: Double
-
     val stateFlow: StateFlow<State>
-
     fun shoot(currentDistance: () -> Double = { 0.0 }): Job
 
     data class State(val velocity: Double, val canShoot: Boolean)
@@ -52,7 +50,7 @@ suspend fun shootAll(
     Log.d("ShooterImpl", "shootOrder: $shootOrder")
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
-        val count = sorter.size - 1
+        val count = sorter.size
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
         sorter.prepareShoot(type)
