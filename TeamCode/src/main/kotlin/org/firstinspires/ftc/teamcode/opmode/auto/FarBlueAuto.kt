@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(PathLinearExperimental::class)
 @Autonomous
-class FarBlueAuto : CoroutineOpMode(isAuto = true) {
+class FarBlueAuto : CoroutineOpMode() {
     lateinit var follower: Follower
     lateinit var intake: Intake
     lateinit var sorter: Sorter
@@ -51,6 +51,33 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
     )
     val firstBallPose = Pose(13.0, 36.0, PI)
     val firstBallPositionPose = Pose(firstBallPose.x + 25.0, firstBallPose.y, PI)
+
+    val cornerBallPreposition = Pose(12.0, 18.0, Math.toDegrees(200.0))
+    val cornerBallPose = Pose(9.0, 9.0, PI)
+
+    val cornerPath = pathChain {
+        pathLinearHeading(0.9) {
+            +scorePose
+            +cornerBallPreposition
+            callbacks {
+                temporalCallback(1.seconds) { intake.isRunning = true }
+            }
+        }
+        pathLinearHeading {
+            +cornerBallPreposition
+            +cornerBallPose
+        }
+    }
+
+    val scoreFromCornerPath = pathChain {
+        pathLinearHeading {
+            +cornerBallPose
+            +scorePose
+            callbacks {
+                temporalCallback(500.milliseconds) { intake.isServoRunning = true }
+            }
+        }
+    }
 
     @Volatile
     var fiducialId = 21
@@ -78,10 +105,7 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             +firstBallPose
             +scorePose
             callbacks {
-                temporalCallback(650.milliseconds) {
-                    intake.isRunning = false
-                    intake.isServoRunning = true
-                }
+                temporalCallback(650.milliseconds) { intake.isServoRunning = true }
             }
         }
     }
@@ -157,7 +181,9 @@ class FarBlueAuto : CoroutineOpMode(isAuto = true) {
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
-            requestOpModeStop()
+            followAndIntake(cornerPath, listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE))
+            shooterJob = shooter.shoot(::distanceFun)
+            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
         }
     }
 

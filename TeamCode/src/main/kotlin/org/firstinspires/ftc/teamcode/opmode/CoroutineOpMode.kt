@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.cancel
@@ -9,8 +10,8 @@ import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 
 abstract class CoroutineOpMode(
     protected val observers: MutableList<OpModeObserver> = mutableListOf(),
-    isAuto: Boolean = false
 ) : OpMode() {
+    val isAuto = this::class.java.annotations.count { it is Autonomous } >= 1
     val opModeGraph by lazy { createGraphFactory<OpModeGraph.Factory>().create(this, isAuto) }
     protected val opModeScope = opModeGraph.opModeScope
 
