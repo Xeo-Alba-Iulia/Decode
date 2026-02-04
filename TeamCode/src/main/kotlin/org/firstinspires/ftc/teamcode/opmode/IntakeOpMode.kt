@@ -1,30 +1,21 @@
 package org.firstinspires.ftc.teamcode.opmode
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.intake.Intake
-import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @TeleOp(group = "Systems")
 open class IntakeOpMode : CoroutineOpMode() {
-    @Suppress("PROPERTY_HIDES_JAVA_FIELD")
-    lateinit var telemetry: Telemetry
     lateinit var intake: Intake
-    lateinit var sorter: Sorter
+    lateinit var dashTelemetry: Telemetry
 
     override fun init() {
-        telemetry = opModeGraph.telemetry
-        intake = opModeGraph.intake
+        intake = opModeGraph.intake.apply { isDebug = true }
+        dashTelemetry = opModeGraph.telemetry
+        dashTelemetry.addData("State", intake.stateFlow::value)
 //        sorter = opModeGraph.sorter.also {
 //            opModeScope.launch { it.prepareIntake() }
 //        }
-        intake.stateFlow
-            .onEach {
-                telemetry.addData("Sensor", it)
-            }
-            .launchIn(opModeScope)
 
 //        intake.artefactFlow
 //            .onEach {
@@ -42,9 +33,10 @@ open class IntakeOpMode : CoroutineOpMode() {
     override fun loop() {
         when {
             gamepad1.aWasPressed() -> intake.isRunning = true
-            gamepad1.bWasPressed() -> intake.isRunning = false
+            gamepad1.aWasReleased() -> intake.isRunning = false
+            gamepad1.bWasPressed() -> intake.isOuttake = true
+            gamepad1.bWasReleased() -> intake.isOuttake = false
         }
-//        telemetry.addData("Sorter", sorter)
-        telemetry.update()
+        dashTelemetry.update()
     }
 }

@@ -1,16 +1,17 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.elevator.Elevator
 import org.firstinspires.ftc.teamcode.intake.Intake
+import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
@@ -50,6 +51,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var sorter: Sorter
     lateinit var follower: Follower
     lateinit var limelight: Limelight3A
+    lateinit var elevator: Elevator
 
     // Drive state
     private var isRobotCentric = false
@@ -72,6 +74,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         var SORTER_POSITION_MULTIPLIER = -0.005
         @JvmField
         var TURET_OFFSET_ADJUSTMENT_STEP = 1
+
+        const val TAG = "TeleOp"
     }
 
     override fun init() {
@@ -81,6 +85,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
+        elevator = opModeGraph.elevator
         observers += sorter
         limelight.pipelineSwitch(limelightPipeline)
     }
@@ -90,23 +95,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower.setStartingPose(lastPose ?: startPose)
         lastPose = null
         follower.startTeleopDrive(true)
-        opModeGraph.tickFlow
-            .onEach {
-                handleSorter()
-            }
-            .launchIn(opModeScope)
-
         shooter.stateFlow
             .map { (_, canShoot) -> canShoot }
             .distinctUntilChanged()
             .filter { it }
             .onEach { gamepad2.rumble(100) }
-            .launchIn(opModeScope)
+            .launchIn(opModeScope + Dispatchers.IO)
 
         intake.artefactFlow
-            .onEach { RobotLog.dd("FullTeleOp", "Intake artefact: $it") }
-            .onEach { sorter.intake(it) }
-            .launchIn(opModeScope)
+            .onEach { Log.d("Intake", "Detected artefact: $it") }
+            .launchIn(opModeScope + Dispatchers.IO)
 
         opModeScope.launch {
             var lastIsFull = false
@@ -125,6 +123,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     }
 
     override fun loop() {
+        handleSorter()
         telemetry.addData("canShoot", shooter.stateFlow.value.canShoot)
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
@@ -133,20 +132,15 @@ abstract class FullTeleOp : CoroutineOpMode() {
             /* isRobotCentric = */ isRobotCentric
         )
         follower.update()
-//        drawDebug(follower)
+        drawDebug(follower)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
 
-        // Manual intake servo control (only works if intake is not running/outtaking)
-        if (!intake.isRunning && !intake.isOuttake) {
-            when {
-                gamepad1.squareWasPressed() -> intake.isServoRunning = true
-                gamepad1.squareWasReleased() -> intake.isServoRunning = false
-            }
-        }
+        if (gamepad1.squareWasPressed())
+            elevator.lift()
 
         handleShooter()
         telemetry.addData("Pose", follower.pose)
@@ -175,8 +169,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         telemetry.addData("Shooter speed", shooter.stateFlow.value.velocity)
         telemetry.addData("Shooter hood", shooter.hood)
-        telemetry.addData("Sorter size", sorter.size)
-        telemetry.addData("Field Centric", !isRobotCentric)
+        telemetry.addData("Sorter", sorter)
         telemetry.update()
     }
 

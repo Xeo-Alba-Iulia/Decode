@@ -4,7 +4,6 @@ import android.util.Log
 import com.acmerobotics.dashboard.FtcDashboard
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.util.RobotLog
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.robotcore.external.Telemetry
@@ -21,7 +20,7 @@ open class SorterOpMode : CoroutineOpMode() {
     override fun init() {
         dashTelemetry = FtcDashboard.getInstance().telemetry
         sorter = opModeGraph.sorter
-        intake = opModeGraph.intake
+        intake = opModeGraph.intake.apply { isDebug = true }
         observers += sorter
 
         intake.artefactFlow
@@ -32,7 +31,7 @@ open class SorterOpMode : CoroutineOpMode() {
             .launchIn(opModeScope)
 
         intake.stateFlow
-            .filter { (alpha) -> alpha >= 70.0 }
+//            .filter { (alpha) -> alpha >= 50.0 }
             .onEach { (alpha, red, green, blue) ->
                 dashTelemetry.addData("Alpha", alpha)
                 dashTelemetry.addData("Red", red)

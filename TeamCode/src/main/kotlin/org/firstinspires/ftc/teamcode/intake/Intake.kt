@@ -41,6 +41,7 @@ class Intake(
         get() = _isRunning
         set(value) {
             _isOuttake = false
+            _isServoRunning = false
             _isRunning = value
             motor.power = if (value) INTAKE_POWER else 0.0
             servo.power = if (value) SERVO_POWER else 0.0
@@ -52,13 +53,19 @@ class Intake(
         set(value) {
             _isOuttake = value
             _isRunning = false
+            _isServoRunning = false
             motor.power = if (value) -INTAKE_POWER else 0.0
             servo.power = if (value) -SERVO_POWER else 0.0
         }
 
-    var isServoRunning = false
+    private var _isServoRunning = false
+    var isServoRunning
+        get() = _isServoRunning
         set(value) {
-            field = value
+            _isServoRunning = value
+            _isRunning = false
+            _isOuttake = false
+            motor.power = 0.0
             servo.power = if (value) SERVO_POWER else 0.0
         }
 
