@@ -23,7 +23,7 @@ import kotlin.math.abs
 @Config
 @ContributesBinding(OpModeScope::class)
 class ShooterImpl(
-    @Named("shooterMotor") private val motor: DcMotorEx,
+    @Named("shooter") private val motors: List<DcMotorEx>,
     @Named("shooterHoodServo") private val hoodServo: Servo,
     @Named("shooterRotationServo") private val rotationServo: Servo,
     @Named("shooterEncoder") private val encoder: DcMotorEx,
@@ -55,11 +55,7 @@ class ShooterImpl(
             rotationServo.position = 0.5 - field / 160.0
         }
 
-    override var hood = 0.0
-
-    init {
-        hoodServo.position = 0.8
-    }
+    override var hood by hoodServo::position
 
     override var velocityOffset = 0.0
 
@@ -88,11 +84,11 @@ class ShooterImpl(
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity
                     RobotLog.vv("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
-                    motor.power = controller.calculate(KineticState(position, velocity))
+                    motors.forEach { it.power = controller.calculate(KineticState(position, velocity)) }
                     stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
                 }
             } finally {
-                motor.power = 0.0
+                motors.forEach { it.power = 0.0 }
                 stateFlow.value = Shooter.State(0.0, false)
             }
         }

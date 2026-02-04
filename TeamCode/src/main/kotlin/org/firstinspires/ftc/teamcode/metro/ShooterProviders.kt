@@ -31,6 +31,17 @@ interface ShooterProviders {
     fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
 
     @Provides
+    @Named("shooterSecondary")
+    fun provideSecondShooterMotor(map: HardwareMap): DcMotorEx = map.getCast("shooter1")
+
+    @Provides
+    @Named("shooter")
+    fun provideShooterMotors(
+        @Named("shooterMotor") motor1: DcMotorEx,
+        @Named("shooterSecondary") motor2: DcMotorEx,
+    ): List<DcMotorEx> = listOf(motor1, motor2)
+
+    @Provides
     fun provideLimelight(map: HardwareMap): Limelight3A = map.getAll(Limelight3A::class.java).single()
 
     @Binds
