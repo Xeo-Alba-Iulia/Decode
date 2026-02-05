@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.metro
 
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.hardware.DcMotorEx
+import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.Binds
@@ -28,11 +29,15 @@ interface ShooterProviders {
 
     @Provides
     @Named("shooterMotor")
-    fun provideShooterMotor(map: HardwareMap): DcMotorEx = map.dcMotor["shooter"] as DcMotorEx
+    fun provideShooterMotor(map: HardwareMap): DcMotorEx = (map.dcMotor["shooter"] as DcMotorEx).apply {
+        direction = DcMotorSimple.Direction.REVERSE
+    }
 
     @Provides
     @Named("shooterSecondary")
-    fun provideSecondShooterMotor(map: HardwareMap): DcMotorEx = map.getCast("shooter1")
+    fun provideSecondShooterMotor(map: HardwareMap): DcMotorEx = map.getCast<DcMotorEx>("shooter1").apply {
+        direction = DcMotorSimple.Direction.REVERSE
+    }
 
     @Provides
     @Named("shooter")

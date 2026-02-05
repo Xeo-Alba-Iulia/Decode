@@ -56,7 +56,6 @@ class ShooterImpl(
         }
 
     override var hood by hoodServo::position
-
     override var velocityOffset = 0.0
 
     private val controller = controlSystem {
