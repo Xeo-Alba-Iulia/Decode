@@ -33,7 +33,6 @@ class Elevator(
         var coefficients = PIDCoefficients(kP = 0.01, kD = 0.0001)
     }
 
-    @Volatile
     private var liftJob: Job? = null
 
     val positionFlow: StateFlow<Double>
@@ -47,7 +46,11 @@ class Elevator(
         posPid(coefficients)
     }
 
-    fun lift(height: Double = this.height) = synchronized(this) {
+    /**
+     * Lifts the elevator to the specified height.
+     * Not safe to call from more than one thread at a time.
+     */
+    fun lift(height: Double = this.height) {
         liftJob?.cancel("New liftJob launched")
         liftJob = opModeScope.launch {
             controller.goal = KineticState(position = height)
