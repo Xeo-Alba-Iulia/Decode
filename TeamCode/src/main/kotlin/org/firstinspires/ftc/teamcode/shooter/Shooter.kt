@@ -5,7 +5,10 @@ import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -54,23 +57,32 @@ suspend fun shootAll(
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
         sorter.prepareShoot(type)
-        shootFlow
-            .onEach { sorter.isLifting = it.canShoot }
-            .map { it.velocity }
-            .zipWithNext()
-            .map { (prev, cur) -> prev - cur >= 120.0 }
-            .distinctUntilChanged()
-            .filter { it }
-            .take(count)
-            .onStart { RobotLog.dd("ShooterImpl", "Starting with $type") }
-            .withIndex()
-            .map { it.index }
-            .collect { idx ->
-                if (idx == count) return@collect
-                val type = orderIterator.nextOrNull()
-                RobotLog.dd("ShooterImpl", "Attempted next: $type")
-                sorter.prepareShoot(type)
+        val collectorJob = coroutineScope {
+            launch {
+                shootFlow
+                    .onEach { sorter.isLifting = it.canShoot }
+                    .map { it.velocity }
+                    .zipWithNext()
+                    .map { (prev, cur) -> prev - cur >= 120.0 }
+                    .distinctUntilChanged()
+                    .filter { it }
+                    .take(count)
+                    .onStart { RobotLog.dd("ShooterImpl", "Starting with $type") }
+                    .withIndex()
+                    .map { it.index }
+                    .collect { idx ->
+                        if (idx == count) return@collect
+                        val type = orderIterator.nextOrNull()
+                        RobotLog.dd("ShooterImpl", "Attempted next: $type")
+                        sorter.prepareShoot(type)
+                    }
             }
+        }
+        select {
+            collectorJob.onJoin {}
+            shooterJob?.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
+        }
+        sorter.isLifting = false
         shooterJob?.cancel()
         sorter.prepareIntake()
     }
