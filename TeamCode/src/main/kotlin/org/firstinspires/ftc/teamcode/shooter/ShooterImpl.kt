@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode.shooter
 
+import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.Servo
-import com.qualcomm.robotcore.util.RobotLog
 import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
 import dev.nextftc.control.feedback.PIDCoefficients
@@ -40,12 +40,9 @@ class ShooterImpl(
     }
 
     val distances = listOf(0.91, 1.17, 1.48, 1.8, 2.2, 2.8, 3.18, 3.3)
-//    val hoodLut = InterpLUT(distances, listOf(0.3031, 0.505, .57, .7284, .78, .8858, .95), true).apply {
-//        createLUT()
-//    }
     val velocityLUT: InterpLUT = InterpLUT(
-        /* input = */ distances,
-    /* output = */ listOf(1750.0, 1850.0, 1900.0, 2020.0, 2250.0, 2440.0, 2500.0, 2560.0),
+        /* input = */distances,
+        /* output = */ listOf(1750.0, 1850.0, 1900.0, 2020.0, 2250.0, 2440.0, 2500.0, 2560.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -74,6 +71,8 @@ class ShooterImpl(
     final override val stateFlow: StateFlow<Shooter.State>
         field = MutableStateFlow(Shooter.State(0.0, false))
 
+    private fun setPower(power: Double) = motors.forEach { it.power = power }
+
     override fun shoot(currentDistance: () -> Double): Job =
         opModeScope.launch {
             try {
@@ -82,12 +81,12 @@ class ShooterImpl(
                     controller.goal = KineticState(velocity = desiredVelocity)
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity
-                    RobotLog.vv("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
-                    motors.forEach { it.power = controller.calculate(KineticState(position, velocity)) }
+                    Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
+                    setPower(controller.calculate(KineticState(position, velocity)))
                     stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
                 }
             } finally {
-                motors.forEach { it.power = 0.0 }
+                setPower(0.0)
                 stateFlow.value = Shooter.State(0.0, false)
             }
         }
