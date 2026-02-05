@@ -11,7 +11,9 @@ import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
@@ -34,22 +36,28 @@ class Elevator(
     @Volatile
     private var liftJob: Job? = null
 
+    val positionFlow: StateFlow<Double>
+        field = MutableStateFlow(0.0)
+
     var height = HEIGHT
     var power by motor::power
+
 
     private val controller = controlSystem {
         posPid(coefficients)
     }
 
-    fun lift(height: Double = this.height) {
+    fun lift(height: Double = this.height) = synchronized(this) {
         liftJob?.cancel("New liftJob launched")
         liftJob = opModeScope.launch {
             controller.goal = KineticState(position = height)
             try {
                 tickFlow.collect {
+                    val position = motor.currentPosition.toDouble()
+                    positionFlow.value = position
                     power = controller.calculate(
                         KineticState(
-                            position = motor.currentPosition.toDouble(),
+                            position = position,
                             velocity = motor.velocity
                         )
                     )
