@@ -32,11 +32,12 @@ open class SorterOpMode : CoroutineOpMode() {
 
         intake.stateFlow
 //            .filter { (alpha) -> alpha >= 50.0 }
-            .onEach { (alpha, red, green, blue) ->
+            .onEach { (alpha, red, green, blue, dist) ->
                 dashTelemetry.addData("Alpha", alpha)
                 dashTelemetry.addData("Red", red)
                 dashTelemetry.addData("Green", green)
                 dashTelemetry.addData("Blue", blue)
+                dashTelemetry.addData("Distance", dist)
                 dashTelemetry.update()
             }
             .launchIn(opModeScope)

@@ -5,6 +5,7 @@ import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -50,7 +51,7 @@ suspend fun shootAll(
     if (shootCountMutex.isLocked) return
     if (shootOrder.isNotEmpty() && shootOrder.size != sorter.size)
         Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
-    Log.d("ShooterImpl", "shootOrder: $shootOrder")
+    Log.d("Shooter", "shootOrder: $shootOrder")
     val orderIterator = shootOrder.iterator()
     shootCountMutex.withLock {
         val count = sorter.size
@@ -67,19 +68,25 @@ suspend fun shootAll(
                     .distinctUntilChanged()
                     .filter { it }
                     .take(count)
-                    .onStart { RobotLog.dd("ShooterImpl", "Starting with $type") }
+                    .onStart { RobotLog.dd("Shooter", "Starting with $type") }
                     .withIndex()
                     .map { it.index }
                     .collect { idx ->
                         if (idx == count) return@collect
                         val type = orderIterator.nextOrNull()
-                        RobotLog.dd("ShooterImpl", "Attempted next: $type")
-                        sorter.prepareShoot(type)
+                        RobotLog.dd("Shooter", "Attempted next: $type")
+                        if (!sorter.prepareShoot(type)) {
+                            RobotLog.ee("Shooter", "Failed to get artefact, attempting any")
+                            if (!sorter.prepareShoot(null)) {
+                                RobotLog.ee("Shooter", "Shooter was emptied faster than expected, stopping")
+                                cancel("Shooter emptied before shooting $count, check wasShot detection")
+                            }
+                        }
                     }
             }
         }
         select {
-            collectorJob.onJoin {}
+            collectorJob.onJoin { RobotLog.vv("Shooter", "shootAll ended after shooting $count") }
             shooterJob?.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
         }
         sorter.isLifting = false

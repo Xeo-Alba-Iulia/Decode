@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode.opmode
 
 import android.util.Log
+import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.config.Config
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
@@ -84,7 +86,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     }
 
     override fun init() {
-        telemetry = opModeGraph.telemetry
+//        telemetry = opModeGraph.telemetry
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter
         sorter = opModeGraph.sorter
@@ -109,6 +111,14 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         intake.artefactFlow
             .onEach { Log.d("Intake", "Detected artefact: $it") }
+            .onEach { sorter.intake(it) }
+            .launchIn(opModeScope + Dispatchers.IO)
+
+        intake.stateFlow
+            .onEach {
+                val packet = TelemetryPacket().apply { put("Intake State", it) }
+                FtcDashboard.getInstance().sendTelemetryPacket(packet)
+            }
             .launchIn(opModeScope + Dispatchers.IO)
 
         opModeScope.launch {
@@ -129,7 +139,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
     override fun loop() {
         handleSorter()
-        telemetry.addData("canShoot", shooter.stateFlow.value.canShoot)
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
             /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
@@ -150,7 +159,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         handleShooter()
-        telemetry.addData("Pose", follower.pose)
 
         if (gamepad2.dpad_right) {
             turretOffset -= TURET_OFFSET_ADJUSTMENT_STEP
@@ -159,9 +167,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
             turretOffset += TURET_OFFSET_ADJUSTMENT_STEP
         }
 
-        telemetry.addData("Turret Offset", turretOffset)
-        telemetry.addData("shooter Angle", shooter.angleDegrees)
-
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
         val distanceToGoal = goalPose.distanceFrom(follower.pose) / 39.37
@@ -169,15 +174,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
             if (gamepad1.crossWasPressed())
                 turretOffset -= it.targetXDegrees
         }
-        telemetry.addData("AprilTag Distance", distanceToGoal)
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
-
-        telemetry.addData("Shooter speed", shooter.stateFlow.value.velocity)
-        telemetry.addData("Shooter hood", shooter.hood)
-        telemetry.addData("Sorter", sorter)
-        telemetry.update()
     }
 
     private fun handleShooter() {

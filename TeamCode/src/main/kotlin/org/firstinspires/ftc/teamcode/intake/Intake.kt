@@ -94,7 +94,7 @@ class Intake(
     val distanceFlow
         get() =
             stateFlow
-                .map { (alpha) -> alpha >= ALPHA_THRESHOLD }
+                .map { it.distanceCm <= 2.6 }
                 .distinctUntilChanged()
                 .debounce(40L)
 
@@ -102,11 +102,11 @@ class Intake(
     val artefactFlow
         get() =
             stateFlow
-                .map { (alpha, red, green, blue) ->
+                .map { (alpha, red, green, blue, dist) ->
                     when {
-                        alpha < ALPHA_THRESHOLD -> null
-                        red > 150.0 && blue >= 300.0 -> ArtefactType.PURPLE
-                        red <= 150.0 && green >= 100.0 -> ArtefactType.GREEN
+                        dist > 2.6 -> null
+                        alpha in 500..green && red * 2.8 < green -> ArtefactType.GREEN
+                        alpha > 500 && green < alpha + 100.0 && red * 2.0 > green -> ArtefactType.PURPLE
                         else -> {
                             RobotLog.dd("Intake", "Unknown artefact color: A=$alpha R=$red, G=$green, B=$blue")
                             null
@@ -122,7 +122,7 @@ class Intake(
         @JvmField
         var SERVO_POWER = 1.0
         @JvmField
-        var ALPHA_THRESHOLD = 50.0
+        var ALPHA_THRESHOLD = 250.0
         @JvmField
         var GAIN = 15f
     }

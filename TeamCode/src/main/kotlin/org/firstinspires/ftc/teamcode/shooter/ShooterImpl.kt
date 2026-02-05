@@ -87,7 +87,7 @@ class ShooterImpl(
                 }
             } finally {
                 setPower(0.0)
-                stateFlow.value = Shooter.State(0.0, false)
+//                stateFlow.value = Shooter.State(0.0, false)
             }
         }
 }
