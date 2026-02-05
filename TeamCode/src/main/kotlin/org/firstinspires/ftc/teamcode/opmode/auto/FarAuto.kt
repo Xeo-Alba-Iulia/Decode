@@ -8,13 +8,13 @@ import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.hardware.limelightvision.Limelight3A
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
+import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
@@ -27,12 +27,12 @@ import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(PathLinearExperimental::class)
-@Autonomous
-class FarBlueAuto : CoroutineOpMode() {
+abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     lateinit var follower: Follower
     lateinit var intake: Intake
     lateinit var sorter: Sorter
@@ -41,19 +41,27 @@ class FarBlueAuto : CoroutineOpMode() {
     lateinit var patternJob: Job
     lateinit var shooterJob: Job
 
-    val startPose = Pose(60.0, 7.0, PI / 2)
-    val goalPose = Pose(12.0, 144.0 - 12.0)
-    val scorePose = Pose(
+    private val isMirrored = alliance == Alliance.RED
+
+    // helper to mirror a pose only when needed
+    private fun mirrorAlliance(p: Pose): Pose = if (isMirrored) p.mirror() else p
+
+    // raw poses (defined for the blue alliance), then mirrored when needed
+    val startPose: Pose = mirrorAlliance(Pose(60.0, 7.0, PI / 2))
+    val rawGoalPose = Pose(12.0, 144.0 - 12.0)
+    val rawScorePose = Pose(
         60.0, 20.0, atan2(
-            goalPose.y - 20.0,
-            goalPose.x - 60.0
+            rawGoalPose.y - 20.0,
+            rawGoalPose.x - 60.0
         )
     )
-    val firstBallPose = Pose(13.0, 36.0, PI)
-    val firstBallPositionPose = Pose(firstBallPose.x + 25.0, firstBallPose.y, PI)
+    val scorePose: Pose = mirrorAlliance(rawScorePose)
+    val rawFirstBallPose = Pose(13.0, 36.0, PI)
+    val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
+    val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 25.0, rawFirstBallPose.y, PI))
 
-    val cornerBallPreposition = Pose(12.0, 18.0, Math.toDegrees(200.0))
-    val cornerBallPose = Pose(9.0, 9.0, PI)
+    val cornerBallPreposition: Pose = mirrorAlliance(Pose(12.0, 18.0, Math.toDegrees(200.0)))
+    val cornerBallPose: Pose = mirrorAlliance(Pose(9.0, 9.0, PI))
 
     val cornerPath = pathChain {
         pathLinearHeading(0.9) {
@@ -147,7 +155,11 @@ class FarBlueAuto : CoroutineOpMode() {
     private fun distanceFun() = 3.5
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun followAndIntake(pathChain: PathChain, pickupPattern: List<ArtefactType>) = coroutineScope {
+    private suspend fun followAndIntake(
+        pathChain: PathChain,
+        pickupPattern: List<ArtefactType>,
+        timeout: Duration = 3.seconds
+    ) = coroutineScope {
         select<Unit> {
             launch {
                 val iter = pickupPattern.iterator()
@@ -158,7 +170,7 @@ class FarBlueAuto : CoroutineOpMode() {
             }.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
             launch { follower.followSuspend(pathChain, maxPower = 0.37) }
                 .onJoin { Log.e(TAG, "Only picked up ${sorter.size} artefacts") }
-            onTimeout(2.seconds) { throw RuntimeException("Path didn't finish") }
+            onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
         }
     }
 
@@ -181,8 +193,9 @@ class FarBlueAuto : CoroutineOpMode() {
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
-            followAndIntake(cornerPath, listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE))
+            followAndIntake(cornerPath, listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE), 5.seconds)
             shooterJob = shooter.shoot(::distanceFun)
+            follower.followSuspend(scoreFromCornerPath)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
         }
     }
@@ -200,6 +213,6 @@ class FarBlueAuto : CoroutineOpMode() {
     }
 
     companion object {
-        const val TAG = "FarBlueAuto"
+        const val TAG = "Auto"
     }
 }
