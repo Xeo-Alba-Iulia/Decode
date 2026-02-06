@@ -2,10 +2,7 @@ package org.firstinspires.ftc.teamcode.opmode
 
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.sorter.Transfer
@@ -31,11 +28,6 @@ class ShooterOpMode : CoroutineOpMode() {
     }
 
     override fun start() {
-        shooter.stateFlow
-            .onEach {
-                RobotLog.dd(ShooterOpMode::class.simpleName, "Shooter State: $it")
-            }
-            .launchIn(opModeGraph.opModeScope)
         limelight?.start()
         shooter.velocityOffset = 2200.0
     }

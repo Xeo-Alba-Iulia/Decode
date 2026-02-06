@@ -23,7 +23,7 @@ interface Shooter {
     var hood: Double
     var velocityOffset: Double
     val stateFlow: StateFlow<State>
-    fun shoot(currentDistance: () -> Double = { 0.0 }): Job
+    fun shoot(currentDistance: () -> Double? = { null }): Job
 
     data class State(val velocity: Double, val canShoot: Boolean)
 }

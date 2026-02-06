@@ -33,10 +33,10 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        var coefficients = PIDCoefficients(0.0152, kD = 0.0004)
+        var coefficients = PIDCoefficients(0.001)
 
         @JvmField
-        var parameters = BasicFeedforwardParameters(kS = 0.06, kV = 0.0000053)
+        var parameters = BasicFeedforwardParameters(kS = 0.15, kV = 0.00033)
     }
 
     val distances = listOf(0.91, 1.17, 1.48, 1.8, 2.2, 2.8, 3.18, 3.3)
@@ -73,11 +73,12 @@ class ShooterImpl(
 
     private fun setPower(power: Double) = motors.forEach { it.power = power }
 
-    override fun shoot(currentDistance: () -> Double): Job =
+    override fun shoot(currentDistance: () -> Double?): Job =
         opModeScope.launch {
             try {
                 tickFlow.collect {
-                    val desiredVelocity = velocityOffset + velocityLUT[currentDistance()]
+                    val desiredVelocity =
+                        (currentDistance()?.let { velocityLUT[it] } ?: 0.0) + velocityOffset
                     controller.goal = KineticState(velocity = desiredVelocity)
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity
@@ -87,7 +88,7 @@ class ShooterImpl(
                 }
             } finally {
                 setPower(0.0)
-//                stateFlow.value = Shooter.State(0.0, false)
+                stateFlow.value = Shooter.State(0.0, false)
             }
         }
 }
