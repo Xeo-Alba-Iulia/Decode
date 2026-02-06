@@ -58,13 +58,8 @@ class ShooterImpl(
     private val controller = controlSystem {
         velPid(coefficients)
         basicFF(parameters)
-        // 3.18: 2500, 0.95
-        // 2.9m: 2440, 0.8858
-        // 2.2m: 2200, 0.78
-        // 1.8m: 2000, 0.7284
-        // 1.48: 1950, 0.57
-        // 1.17: 1850, 0.505
-        // 0.91: 1750, 0.3031
+        // 0.966: 1540 0.0
+        // 1.3: 1760 0.1941
     }
 
     @Suppress("RedundantModalityModifier")
