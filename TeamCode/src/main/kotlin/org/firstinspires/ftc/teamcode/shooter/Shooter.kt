@@ -5,18 +5,18 @@ import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.ArtefactType
-import org.firstinspires.ftc.teamcode.intake.zipWithNext
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.time.Duration.Companion.milliseconds
 
 interface Shooter {
     var angleDegrees: Double
@@ -48,6 +48,12 @@ suspend fun shootAll(
     shootOrder: List<ArtefactType> = emptyList(),
 ) {
     fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
+    fun Sorter.shootOrDefault(type: ArtefactType?) {
+        if (!prepareShoot(type)) {
+            RobotLog.ee("Shooter", "Failed to prepare artefact $type, shooting default")
+            prepareShoot()
+        }
+    }
     if (shootCountMutex.isLocked) return
     if (shootOrder.isNotEmpty() && shootOrder.size != sorter.size)
         Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
@@ -57,40 +63,41 @@ suspend fun shootAll(
         val count = sorter.size
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
-        sorter.prepareShoot(type)
+        sorter.shootOrDefault(type)
+        sorter.isLifting = true
         val collectorJob = coroutineScope {
-            launch {
+            async {
+                var shotCount = 0
                 shootFlow
-                    .onEach { sorter.isLifting = it.canShoot }
-                    .map { it.velocity }
-                    .zipWithNext()
-                    .map { (prev, cur) -> prev - cur >= 120.0 }
+                    .map { it.canShoot }
+                    .dropWhile { !it }
                     .distinctUntilChanged()
                     .filter { it }
-                    .take(count)
-                    .onStart { RobotLog.dd("Shooter", "Starting with $type") }
+                    .takeWhile { !sorter.isEmpty }
                     .withIndex()
                     .map { it.index }
-                    .collect { idx ->
-                        if (idx == count) return@collect
-                        val type = orderIterator.nextOrNull()
-                        RobotLog.dd("Shooter", "Attempted next: $type")
-                        if (!sorter.prepareShoot(type)) {
-                            RobotLog.ee("Shooter", "Failed to get artefact, attempting any")
-                            if (!sorter.prepareShoot(null)) {
-                                RobotLog.ee("Shooter", "Shooter was emptied faster than expected, stopping")
-                                cancel("Shooter emptied before shooting $count, check wasShot detection")
-                            }
-                        }
+                    .onStart { RobotLog.dd("Shooter", "Starting with $type") }
+                    .onEach { delay(400.milliseconds) }
+                    .onCompletion {
+                        delay(400.milliseconds)
+                        sorter.prepareIntake()
+                        if (it != null) throw it
+                        ++shotCount
                     }
+                    .collect {
+                        val nextType = orderIterator.nextOrNull()
+                        sorter.shootOrDefault(nextType)
+                        ++shotCount
+                    }
+                shotCount
             }
         }
         select {
-            collectorJob.onJoin { RobotLog.vv("Shooter", "shootAll ended after shooting $count") }
+            collectorJob.onAwait { RobotLog.vv("Shooter", "shootAll ended after shooting $it") }
             shooterJob?.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
         }
         sorter.isLifting = false
         shooterJob?.cancel()
-        sorter.prepareIntake()
+        collectorJob.cancel()
     }
 }
