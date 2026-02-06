@@ -39,11 +39,17 @@ class ShooterImpl(
         var parameters = BasicFeedforwardParameters(kS = 0.15, kV = 0.00033)
     }
 
-    val distances = listOf(0.91, 1.17, 1.48, 1.8, 2.2, 2.8, 3.18, 3.3)
+    val distances = listOf(0.966, 1.34, 2.0, 2.28, 3.0)
     val velocityLUT: InterpLUT = InterpLUT(
-        /* input = */distances,
-        /* output = */ listOf(1750.0, 1850.0, 1900.0, 2020.0, 2250.0, 2440.0, 2500.0, 2560.0),
+        /* input = */ distances,
+        /* output = */ listOf(1540.0, 1700.0, 1900.0, 1860.0, 2170.0),
         /* safeMode = */ true
+    ).createLUT()
+
+    val hoodLUT: InterpLUT = InterpLUT(
+        distances,
+        listOf(0.0, 0.12, 0.33, 0.31, 0.313),
+        true
     ).createLUT()
 
     override var angleDegrees = 0.0
@@ -59,7 +65,10 @@ class ShooterImpl(
         velPid(coefficients)
         basicFF(parameters)
         // 0.966: 1540 0.0
-        // 1.3: 1760 0.1941
+        // 1.34: 1700 0.1
+        // 2.0: 1900 0.33
+        // 2.28: 1860 0.31
+        // 3.00: 2150 0.313
     }
 
     @Suppress("RedundantModalityModifier")
@@ -72,8 +81,10 @@ class ShooterImpl(
         opModeScope.launch {
             try {
                 tickFlow.collect {
+                    val curDist = currentDistance()
                     val desiredVelocity =
-                        (currentDistance()?.let { velocityLUT[it] } ?: 0.0) + velocityOffset
+                        (curDist?.let { velocityLUT[it] } ?: 0.0) + velocityOffset
+                    curDist?.let { hood = hoodLUT[it] }
                     controller.goal = KineticState(velocity = desiredVelocity)
                     val position = encoder.currentPosition.toDouble()
                     val velocity = encoder.velocity
