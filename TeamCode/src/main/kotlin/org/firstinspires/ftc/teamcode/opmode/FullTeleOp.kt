@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -112,6 +113,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         intake.artefactFlow
             .onEach { Log.d("Intake", "Detected artefact: $it") }
             .onEach { sorter.intake(it) }
+            .onEach { delay(150.milliseconds) }
             .launchIn(opModeScope + Dispatchers.IO)
 
         intake.stateFlow
