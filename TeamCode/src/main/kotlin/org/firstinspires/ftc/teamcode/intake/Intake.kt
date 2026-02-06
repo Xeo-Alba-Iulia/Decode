@@ -1,8 +1,7 @@
 package org.firstinspires.ftc.teamcode.intake
 
 import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.hardware.rev.RevColorSensorV3
-import com.qualcomm.robotcore.hardware.CRServo
+import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.Inject
@@ -18,8 +17,7 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 @Inject
 class Intake(
     @Named("intake") private val motor: DcMotor,
-    @Named("intake") private val servo: CRServo,
-    private val sensor: RevColorSensorV3,
+    private val sensor: ColorRangeSensor,
     opModeScope: CoroutineScope,
 ) {
     data class State(
@@ -30,7 +28,7 @@ class Intake(
         val distanceCm: Double,
     ) {
         companion object {
-            val ZERO = State(0, 0, 0, 0, 0.0)
+            val ZERO = State(0, 0, 0, 0, 17.0)
         }
     }
 
@@ -44,7 +42,6 @@ class Intake(
             _isServoRunning = false
             _isRunning = value
             motor.power = if (value) INTAKE_POWER else 0.0
-            servo.power = if (value) SERVO_POWER else 0.0
         }
 
     private var _isOuttake = false
@@ -55,7 +52,6 @@ class Intake(
             _isRunning = false
             _isServoRunning = false
             motor.power = if (value) -INTAKE_POWER else 0.0
-            servo.power = if (value) -SERVO_POWER else 0.0
         }
 
     private var _isServoRunning = false
@@ -65,8 +61,7 @@ class Intake(
             _isServoRunning = value
             _isRunning = false
             _isOuttake = false
-            motor.power = 0.0
-            servo.power = if (value) SERVO_POWER else 0.0
+            motor.power = if (value) SERVO_POWER else 0.0
         }
 
     init {
@@ -90,13 +85,11 @@ class Intake(
             }
         }.stateIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), State.ZERO)
 
-    @OptIn(FlowPreview::class)
     val distanceFlow
         get() =
             stateFlow
-                .map { it.distanceCm <= 2.6 }
+                .map { it.distanceCm <= MAX_DISTANCE }
                 .distinctUntilChanged()
-                .debounce(40L)
 
     @OptIn(FlowPreview::class)
     val artefactFlow
@@ -104,26 +97,28 @@ class Intake(
             stateFlow
                 .map { (alpha, red, green, blue, dist) ->
                     when {
-                        dist > 2.6 -> null
-                        alpha in 500..green && red * 2.8 < green -> ArtefactType.GREEN
-                        alpha > 500 && green < alpha + 100.0 && red * 2.0 > green -> ArtefactType.PURPLE
+                        dist > MAX_DISTANCE -> null
+                        alpha > ALPHA_THRESHOLD && alpha > green && green > blue && blue > red -> ArtefactType.GREEN
+                        alpha > ALPHA_THRESHOLD && alpha > blue && blue > red && red > green -> ArtefactType.PURPLE
                         else -> {
                             RobotLog.dd("Intake", "Unknown artefact color: A=$alpha R=$red, G=$green, B=$blue")
                             null
                         }
                     }
                 }.distinctUntilChanged()
-                .debounce(40L)
+                .debounce(30L)
                 .filterNotNull()
 
     companion object {
         @JvmField
+        var MAX_DISTANCE = 8.0
+        @JvmField
         var INTAKE_POWER = 0.7
         @JvmField
-        var SERVO_POWER = 1.0
+        var SERVO_POWER = 0.4
         @JvmField
-        var ALPHA_THRESHOLD = 250.0
+        var ALPHA_THRESHOLD = 350.0
         @JvmField
-        var GAIN = 15f
+        var GAIN = 2f
     }
 }

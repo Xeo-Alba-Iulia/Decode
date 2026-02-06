@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import android.util.Log
 import com.acmerobotics.dashboard.FtcDashboard
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.intake.Intake
 
@@ -11,23 +14,25 @@ open class IntakeOpMode : CoroutineOpMode() {
     lateinit var dashTelemetry: Telemetry
 
     override fun init() {
-        intake = opModeGraph.intake.apply { isDebug = true }
         dashTelemetry = FtcDashboard.getInstance().telemetry
-//        sorter = opModeGraph.sorter.also {
-//            opModeScope.launch { it.prepareIntake() }
-//        }
+        intake = opModeGraph.intake.apply { isDebug = true }
 
-//        intake.artefactFlow
-//            .onEach {
-//                telemetry.addData("ArtefactType", it)
-//            }
-//            .zipWithNext()
-//            .onEach { (previous, _) ->
-//                if (previous != null) {
-//                    sorter.intake(previous)
-//                }
-//            }
-//            .launchIn(opModeScope)
+        intake.artefactFlow
+            .onEach {
+                Log.d("SorterOpMode", "Detected $it")
+                Log.d("SorterOpMode", "stateFlow is: ${intake.stateFlow}")
+            }.launchIn(opModeScope)
+
+        intake.stateFlow
+//            .filter { (alpha) -> alpha >= 50.0 }
+            .onEach { (alpha, red, green, blue, dist) ->
+                dashTelemetry.addData("Alpha", alpha)
+                dashTelemetry.addData("Red", red)
+                dashTelemetry.addData("Green", green)
+                dashTelemetry.addData("Blue", blue)
+                dashTelemetry.addData("Distance", dist)
+                dashTelemetry.update()
+            }.launchIn(opModeScope)
     }
 
     override fun loop() {
@@ -37,7 +42,5 @@ open class IntakeOpMode : CoroutineOpMode() {
             gamepad1.bWasPressed() -> intake.isOuttake = true
             gamepad1.bWasReleased() -> intake.isOuttake = false
         }
-        dashTelemetry.addData("Intake state", intake.stateFlow.value)
-        dashTelemetry.update()
     }
 }
