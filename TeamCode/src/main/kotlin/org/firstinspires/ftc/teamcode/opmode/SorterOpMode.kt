@@ -26,9 +26,8 @@ open class SorterOpMode : CoroutineOpMode() {
         intake.artefactFlow
             .onEach {
                 Log.d("SorterOpMode", "Detected $it")
-                Log.d("SorterOpMode", "stateFlow is: ${intake.stateFlow}")
-            }
-            .launchIn(opModeScope)
+                Log.d("SorterOpMode", "stateFlow is: ${intake.stateFlow.value}")
+            }.launchIn(opModeScope)
 
         intake.stateFlow
 //            .filter { (alpha) -> alpha >= 50.0 }
@@ -39,8 +38,7 @@ open class SorterOpMode : CoroutineOpMode() {
                 dashTelemetry.addData("Blue", blue)
                 dashTelemetry.addData("Distance", dist)
                 dashTelemetry.update()
-            }
-            .launchIn(opModeScope)
+            }.launchIn(opModeScope)
     }
 
     override fun loop() {
