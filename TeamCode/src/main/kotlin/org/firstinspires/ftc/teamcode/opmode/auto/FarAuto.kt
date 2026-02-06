@@ -1,19 +1,18 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
 import android.util.Log
+import com.acmerobotics.dashboard.FtcDashboard
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
+import com.pedropathing.paths.HeadingInterpolator
 import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
-import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.selects.onTimeout
-import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
@@ -56,33 +55,39 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         )
     )
     val scorePose: Pose = mirrorAlliance(rawScorePose)
-    val rawFirstBallPose = Pose(13.0, 36.0, PI)
+    val rawFirstBallPose = Pose(11.5, 36.0, PI)
     val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
-    val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 25.0, rawFirstBallPose.y, PI))
+    val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
 
-    val cornerBallPreposition: Pose = mirrorAlliance(Pose(12.0, 18.0, Math.toDegrees(200.0)))
-    val cornerBallPose: Pose = mirrorAlliance(Pose(9.0, 9.0, PI))
+    val cornerBallPreposition: Pose = mirrorAlliance(Pose(13.0, 18.0, 7 * PI / 6))
+    val cornerBallPose: Pose = mirrorAlliance(Pose(11.0, 10.0, 5 * PI / 6))
 
-    val cornerPath = pathChain {
-        pathLinearHeading(0.9) {
-            +scorePose
-            +cornerBallPreposition
-            callbacks {
-                temporalCallback(1.seconds) { intake.isRunning = true }
-            }
-        }
-        pathLinearHeading {
-            +cornerBallPreposition
-            +cornerBallPose
-        }
-    }
+    lateinit var cornerPath: PathChain
 
     val scoreFromCornerPath = pathChain {
         pathLinearHeading {
             +cornerBallPose
             +scorePose
+        }
+    }
+
+    val lastBallPositionPath = pathChain {
+        pathLinearHeading {
+            +cornerBallPose
+            +cornerBallPose.withX(cornerBallPose.x + 7.0)
             callbacks {
-                temporalCallback(500.milliseconds) { intake.isServoRunning = true }
+                temporalCallback(Duration.ZERO) { intake.isRunning = false }
+            }
+        }
+    }
+
+    val lastBallCollectPath = pathChain {
+        pathLinearHeading {
+            +cornerBallPose.withY(cornerBallPose.y + 7.0)
+            +Pose(cornerBallPose.x + 7.0, cornerBallPose.y + 7.0)
+            +cornerBallPose.withHeading(PI)
+            callbacks {
+                temporalCallback(200.milliseconds) { intake.isRunning = true }
             }
         }
     }
@@ -95,26 +100,12 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             +scorePose
         }
     }
-    val firstBallsPosition = pathChain(null) {
-        pathLinearHeading(endTime = 0.8) {
-            +scorePose
-            +Pose(scorePose.x, firstBallPose.y)
-            +firstBallPositionPose
-        }
-    }
-    val firstBalls = pathChain(null) {
-        pathLinearHeading {
-            +firstBallPositionPose
-            +firstBallPose
-        }
-    }
+    lateinit var firstBalls: PathChain
     val scoreFirstBalls = pathChain(null) {
         pathLinearHeading(endTime = 0.8) {
             +firstBallPose
             +scorePose
-            callbacks {
-                temporalCallback(650.milliseconds) { intake.isServoRunning = true }
-            }
+            callbacks { addCallback { follower.setMaxPower(1.0) } }
         }
     }
 
@@ -143,7 +134,56 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         drawDebug(follower)
-        shooter.hood = 0.8
+        intake.artefactFlow
+            .onEach { Log.d("Intake", "Detected artefact: $it") }
+            .onEach { sorter.intake(it) }
+            .launchIn(opModeScope + Dispatchers.IO)
+
+        intake.stateFlow
+            .onEach {
+                val packet = TelemetryPacket().apply { put("Intake State", it) }
+                FtcDashboard.getInstance().sendTelemetryPacket(packet)
+            }
+            .launchIn(opModeScope + Dispatchers.IO)
+
+        cornerPath = pathChain(follower, decelerationType = PathChain.DecelerationType.NONE) {
+            pathLinearHeading(0.9) {
+                +scorePose
+                +cornerBallPreposition
+                callbacks { parametricCallback(0.6) { follower.setMaxPower(0.5) } }
+            }
+            path(
+                interpolator = HeadingInterpolator.piecewise(
+                    HeadingInterpolator.PiecewiseNode(
+                        0.0,
+                        0.6,
+                        HeadingInterpolator.constant(cornerBallPreposition.heading)
+                    ),
+                    HeadingInterpolator.PiecewiseNode(
+                        0.6, 1.0, HeadingInterpolator.linear(
+                            cornerBallPreposition.heading,
+                            cornerBallPose.heading
+                        )
+                    )
+                )
+            ) {
+                +cornerBallPreposition
+                +cornerBallPose
+                callbacks { addCallback { follower.setMaxPower(0.5) } }
+            }
+        }
+        firstBalls = pathChain(follower) {
+            pathLinearHeading(endTime = 0.8) {
+                +scorePose
+                +Pose(scorePose.x, firstBallPose.y)
+                +firstBallPositionPose
+                callbacks { parametricCallback(0.5) { follower.setMaxPower(0.5) } }
+            }
+            pathLinearHeading {
+                +firstBallPositionPose
+                +firstBallPose
+            }
+        }
     }
 
     override fun init_loop() {
@@ -154,24 +194,40 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
 
     private fun distanceFun() = 3.5
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun followAndIntake(
         pathChain: PathChain,
         pickupPattern: List<ArtefactType>,
         timeout: Duration = 3.seconds
-    ) = coroutineScope {
-        select<Unit> {
-            launch {
-                val iter = pickupPattern.iterator()
-                intake.distanceFlow
-                    .filter { it }
+    ) {
+        merge(
+            flow {
+                intake.artefactFlow
                     .take(3)
-                    .collect { sorter.intake(iter.next()) }
-            }.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
-            launch { follower.followSuspend(pathChain, maxPower = 0.37) }
-                .onJoin { Log.e(TAG, "Only picked up ${sorter.size} artefacts") }
-            onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
+                    .collect { sorter.intake(it) }
+                Log.d(TAG, "Got all 3 balls")
+                emit(Unit)
+            },
+            flow {
+                follower.followSuspend(pathChain)
+                delay(250.milliseconds)
+                Log.e(TAG, "Path finished prematurely")
+                emit(Unit)
+            },
+            flow {
+                delay(timeout)
+                Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts")
+                emit(Unit)
+            }
+        ).first()
+    }
+
+    private suspend fun outputAll(pattern: List<ArtefactType?>) {
+        val iter = pattern.iterator()
+        while (!sorter.isEmpty && iter.hasNext()) {
+            sorter.prepareShoot(iter.next())
+            delay(1.25.seconds)
         }
+        sorter.prepareIntake()
     }
 
     override fun start() {
@@ -185,25 +241,38 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         shooterJob = shooter.shoot(::distanceFun)
         opModeScope.launch {
-            follower.followSuspend(scorePreload, maxPower = 0.7)
+            follower.followSuspend(scorePreload)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
-            follower.followSuspend(firstBallsPosition)
-            followAndIntake(firstBalls, listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE))
+            followAndIntake(
+                firstBalls,
+                listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE),
+                timeout = 8.seconds
+            )
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
-            followAndIntake(cornerPath, listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE), 5.seconds)
+            val intakeJob = launch {
+                intake.artefactFlow
+                    .take(3)
+                    .collect { sorter.intake(it) }
+            }
+            follower.followSuspend(cornerPath)
+            follower.followSuspend(lastBallPositionPath, maxPower = 0.5)
+            follower.followSuspend(lastBallCollectPath, maxPower = 0.5)
+            follower.setMaxPower(1.0)
             shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFromCornerPath)
+            intake.isRunning = false
+            intakeJob.cancel()
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
         }
     }
 
     override fun loop() {
-        telemetry.addData("Pose", follower.pose)
-        if (BuildConfig.DEBUG)
-            drawDebug(follower)
+//        telemetry.addData("Pose", follower.pose)
+//        if (BuildConfig.DEBUG)
+//            drawDebug(follower)
     }
 
     override fun stop() {
