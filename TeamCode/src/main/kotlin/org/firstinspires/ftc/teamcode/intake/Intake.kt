@@ -98,8 +98,8 @@ class Intake(
                 .map { (alpha, red, green, blue, dist) ->
                     when {
                         dist > MAX_DISTANCE -> null
-                        alpha > ALPHA_THRESHOLD && alpha > green && green > blue && blue > red -> ArtefactType.GREEN
-                        alpha > ALPHA_THRESHOLD && alpha > blue && blue > red && red > green -> ArtefactType.PURPLE
+                        alpha > ALPHA_THRESHOLD && green > blue && blue > red -> ArtefactType.GREEN
+                        alpha > ALPHA_THRESHOLD && blue > red && red > green -> ArtefactType.PURPLE
                         else -> {
                             RobotLog.dd("Intake", "Unknown artefact color: A=$alpha R=$red, G=$green, B=$blue")
                             null

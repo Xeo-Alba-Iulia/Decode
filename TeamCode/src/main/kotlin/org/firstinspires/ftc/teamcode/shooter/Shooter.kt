@@ -49,7 +49,7 @@ suspend fun shootAll(
 ) {
     fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
     fun Sorter.shootOrDefault(type: ArtefactType?) {
-        if (!prepareShoot(type)) {
+        if (!prepareShoot(type) && type != null) {
             RobotLog.ee("Shooter", "Failed to prepare artefact $type, shooting default")
             prepareShoot()
         }

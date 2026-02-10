@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped
@@ -48,6 +49,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     // raw poses (defined for the blue alliance), then mirrored when needed
     val startPose: Pose = mirrorAlliance(Pose(60.0, 7.0, PI / 2))
     val rawGoalPose = Pose(12.0, 144.0 - 12.0)
+    val goalPose = mirrorAlliance(rawGoalPose)
     val rawScorePose = Pose(
         60.0, 20.0, atan2(
             rawGoalPose.y - 20.0,
@@ -60,7 +62,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
 
     val cornerBallPreposition: Pose = mirrorAlliance(Pose(13.0, 18.0, 7 * PI / 6))
-    val cornerBallPose: Pose = mirrorAlliance(Pose(11.0, 10.0, 5 * PI / 6))
+    val cornerBallPose: Pose = mirrorAlliance(Pose(12.0, 10.0, 5 * PI / 6))
 
     lateinit var cornerPath: PathChain
 
@@ -239,9 +241,9 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             23 -> listOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
             else -> error("Invalid fiducialId: $fiducialId")
         }
-        shooterJob = shooter.shoot(::distanceFun)
         opModeScope.launch {
             follower.followSuspend(scorePreload)
+            shooterJob = shooter.shoot(::distanceFun)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
             followAndIntake(
@@ -249,8 +251,10 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                 listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE),
                 timeout = 8.seconds
             )
-            shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFirstBalls)
+            delay(200.milliseconds)
+            shooter.alignToPose(follower.pose, goalPose, 0.0)
+            shooterJob = shooter.shoot(::distanceFun)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             val intakeJob = launch {
                 intake.artefactFlow
@@ -261,10 +265,12 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(lastBallPositionPath, maxPower = 0.5)
             follower.followSuspend(lastBallCollectPath, maxPower = 0.5)
             follower.setMaxPower(1.0)
-            shooterJob = shooter.shoot(::distanceFun)
             follower.followSuspend(scoreFromCornerPath)
             intake.isRunning = false
             intakeJob.cancel()
+            delay(200.milliseconds)
+            shooter.alignToPose(follower.pose, goalPose, 0.0)
+            shooterJob = shooter.shoot(::distanceFun)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
         }
     }

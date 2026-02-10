@@ -171,7 +171,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
-        val distanceToGoal = goalPose.distanceFrom(follower.pose) / 39.37
         limelight.latestResult.fiducialResults.singleOrNull()?.let {
             if (gamepad1.crossWasPressed())
                 turretOffset -= it.targetXDegrees
@@ -232,11 +231,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         // Prepare intake
-        if (gamepad2.startWasPressed()) {
+        if (gamepad2.startWasPressed())
             sorter.prepareIntake()
-        }
 
-        // Using left trigger as boolean for lifting
         when {
             gamepad2.squareWasPressed() -> sorter.isLifting = true
             gamepad2.squareWasReleased() -> sorter.isLifting = false

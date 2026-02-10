@@ -12,7 +12,7 @@ abstract class CoroutineOpMode(
     protected val observers: MutableList<OpModeObserver> = mutableListOf(),
 ) : OpMode() {
     val isAuto = this::class.java.annotations.count { it is Autonomous } >= 1
-    val opModeGraph by lazy { createGraphFactory<OpModeGraph.Factory>().create(this, isAuto) }
+    val opModeGraph = createGraphFactory<OpModeGraph.Factory>().create(this, isAuto)
     protected val opModeScope = opModeGraph.opModeScope
 
     override fun start() {
