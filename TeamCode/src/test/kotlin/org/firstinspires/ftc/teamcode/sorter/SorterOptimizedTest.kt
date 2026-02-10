@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import dev.zacsweers.metro.createGraph
-import kotlinx.coroutines.test.runTest
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -20,7 +19,7 @@ class SorterOptimizedTest {
     }
 
     @Test
-    fun `Sorter Optimized and Sorter Wrapped behave the same`() = runTest {
+    fun `Sorter Optimized and Sorter Wrapped behave the same`() {
         // Implement test logic to compare behaviors of sorterOptimized and sorterWrapped
         // This is a placeholder for actual test implementation
         sorter.prepareIntake()

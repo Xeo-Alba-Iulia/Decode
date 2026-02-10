@@ -37,9 +37,7 @@ class SorterOptimized(
     }
 
     val distances = Array(3) { artefactIdx ->
-        DoubleArray(1001) { posIdx ->
-            abs(posIdx / 1000.0 - closestPosition[artefactIdx][posIdx])
-        }
+        DoubleArray(1001) { posIdx -> abs(posIdx / 1000.0 - closestPosition[artefactIdx][posIdx]) }
     }
 
     override fun prepareShoot(type: ArtefactType?): Boolean {
