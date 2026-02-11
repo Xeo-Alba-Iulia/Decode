@@ -39,16 +39,16 @@ class ShooterImpl(
         var parameters = BasicFeedforwardParameters(kS = 0.15, kV = 0.00033)
     }
 
-    val distances = listOf(0.966, 1.34, 2.0, 2.28, 3.0)
+    val distances = listOf(0.966, 1.34, 2.0, 2.28, 3.0, 3.2)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1540.0, 1700.0, 1900.0, 1860.0, 2150.0),
+        /* output = */ listOf(1540.0, 1700.0, 1900.0, 1860.0, 2150.0, 2160.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
         distances,
-        listOf(0.0, 0.12, 0.33, 0.31, 0.303),
+        listOf(0.0, 0.12, 0.33, 0.31, 0.303, 0.29),
         true
     ).createLUT()
 
@@ -90,7 +90,7 @@ class ShooterImpl(
                     val velocity = encoder.velocity
                     Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
                     setPower(controller.calculate(KineticState(position, velocity)))
-                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
+                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 60.0)
                 }
             } finally {
                 setPower(0.0)

@@ -125,13 +125,21 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         opModeScope.launch {
             var lastIsFull = false
+            var lastIsEmpty = true
             while (true) {
                 val isFull = sorter.isFull
-                if (isFull && !lastIsFull) {
-                    intake.isRunning = false
-                    intake.isServoRunning = true
+                val isEmpty = sorter.isEmpty
+                when {
+                    isFull && !lastIsFull -> {
+                        intake.isServoRunning = true
+                    }
+
+                    isEmpty && !lastIsEmpty -> {
+                        intake.isRunning = true
+                    }
                 }
                 lastIsFull = isFull
+                lastIsEmpty = isEmpty
                 delay(150L)
             }
         }

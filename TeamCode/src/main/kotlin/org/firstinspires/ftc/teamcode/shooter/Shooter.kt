@@ -16,7 +16,6 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.atan2
-import kotlin.time.Duration.Companion.milliseconds
 
 interface Shooter {
     var angleDegrees: Double
@@ -64,22 +63,27 @@ suspend fun shootAll(
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
         sorter.shootOrDefault(type)
-        sorter.isLifting = true
         val collectorJob = coroutineScope {
             async {
+                var isFirst = true
                 var shotCount = 0
                 shootFlow
                     .map { it.canShoot }
                     .dropWhile { !it }
                     .distinctUntilChanged()
                     .filter { it }
+                    .onEach {
+                        if (isFirst) {
+                            sorter.isLifting = true
+                            delay(400L)
+                            isFirst = false
+                        }
+                    }
                     .takeWhile { !sorter.isEmpty }
                     .withIndex()
                     .map { it.index }
                     .onStart { RobotLog.dd("Shooter", "Starting with $type") }
-                    .onEach { delay(400.milliseconds) }
                     .onCompletion {
-                        delay(400.milliseconds)
                         sorter.prepareIntake()
                         if (it != null) throw it
                         ++shotCount
