@@ -62,46 +62,49 @@ suspend fun shootAll(
         val count = sorter.size
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
-        sorter.shootOrDefault(type)
-        val collectorJob = coroutineScope {
-            async {
-                var isFirst = true
-                var shotCount = 0
-                shootFlow
-                    .map { it.canShoot }
-                    .dropWhile { !it }
-                    .distinctUntilChanged()
-                    .filter { it }
-                    .onEach {
-                        if (isFirst) {
-                            sorter.isLifting = true
-                            delay(400L)
-                            isFirst = false
+        try {
+            sorter.shootOrDefault(type)
+            val collectorJob = coroutineScope {
+                async {
+                    var isFirst = true
+                    var shotCount = 0
+                    shootFlow
+                        .map { it.canShoot }
+                        .dropWhile { !it }
+                        .distinctUntilChanged()
+                        .filter { it }
+                        .onEach {
+                            if (isFirst) {
+                                sorter.isLifting = true
+                                delay(400L)
+                                isFirst = false
+                            }
                         }
-                    }
-                    .takeWhile { !sorter.isEmpty }
-                    .withIndex()
-                    .map { it.index }
-                    .onStart { RobotLog.dd("Shooter", "Starting with $type") }
-                    .onCompletion {
-                        sorter.prepareIntake()
-                        if (it != null) throw it
-                        ++shotCount
-                    }
-                    .collect {
-                        val nextType = orderIterator.nextOrNull()
-                        sorter.shootOrDefault(nextType)
-                        ++shotCount
-                    }
-                shotCount
+                        .takeWhile { !sorter.isEmpty }
+                        .withIndex()
+                        .map { it.index }
+                        .onStart { RobotLog.dd("Shooter", "Starting with $type") }
+                        .onCompletion {
+                            sorter.prepareIntake()
+                            if (it != null) throw it
+                            ++shotCount
+                        }
+                        .collect {
+                            val nextType = orderIterator.nextOrNull()
+                            sorter.shootOrDefault(nextType)
+                            ++shotCount
+                        }
+                    shotCount
+                }
             }
+            select {
+                collectorJob.onAwait { RobotLog.vv("Shooter", "shootAll ended after shooting $it") }
+                shooterJob?.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
+            }
+            collectorJob.cancel()
+        } finally {
+            sorter.isLifting = false
+            shooterJob?.cancel()
         }
-        select {
-            collectorJob.onAwait { RobotLog.vv("Shooter", "shootAll ended after shooting $it") }
-            shooterJob?.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
-        }
-        sorter.isLifting = false
-        shooterJob?.cancel()
-        collectorJob.cancel()
     }
 }
