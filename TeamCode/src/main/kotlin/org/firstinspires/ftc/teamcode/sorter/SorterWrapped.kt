@@ -53,6 +53,7 @@ open class SorterWrapped(
         if (currentIntakeSlot == -1) return
         artefacts[currentIntakeSlot] = type
         currentIntakeSlot = -1
+        size++
         if (!isFull) prepareIntake()
     }
 
@@ -80,6 +81,7 @@ open class SorterWrapped(
                 }?.let { (idx, position) ->
                     servo.position = position
                     artefacts[idx] = null
+                    size--
                     true
                 } ?: false
         }
@@ -91,8 +93,8 @@ open class SorterWrapped(
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
-    override val size
-        get() = artefacts.count { it != null }
+    override var size = 0
+        protected set
 
     override fun toString() = "SorterWrapped(artefacts = ${artefacts.contentToString()}, position = $position)"
 }

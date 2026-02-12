@@ -9,7 +9,6 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import java.util.*
 import kotlin.math.abs
-import kotlin.time.measureTime
 
 @Inject
 @ContributesBinding(OpModeScope::class, binding<Sorter>(), [SorterImpl::class, SorterWrapped::class])
@@ -41,22 +40,18 @@ class SorterOptimized(
     }
 
     override fun prepareShoot(type: ArtefactType?): Boolean {
-        val result: Boolean
+        if (isEmpty) return false
         val oldPosition = (position * 1000.0).toInt()
-        val usedTime = measureTime {
-            result = artefacts
+        return artefacts
                 .indices
                 .filter { type?.equals(artefacts[it]) ?: (artefacts[it] != null) }
                 .minByOrNull { distances[it][oldPosition] }
                 ?.let {
                     position = closestPosition[it][oldPosition]
                     artefacts[it] = null
+                    size--
                     true
                 } ?: false
-        }
-        println("SorterOptimized prepareShoot took $usedTime")
-//        RobotLog.dd("SorterOptimized", "prepareShoot took $usedTime")
-        return result
     }
 
     override fun toString() = "SorterOptimized(artefacts = ${artefacts.contentToString()}, position = $position)"
