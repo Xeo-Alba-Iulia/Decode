@@ -48,7 +48,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private suspend fun followAndIntake(
         timeout: Duration = 5.seconds,
         followFunction: suspend () -> Unit
-    ) = coroutineScope {
+    ): Unit = coroutineScope {
         intake.isRunning = true
         val intakeJob = launch { intake.artefactFlow.take(3 - sorter.size).collect { sorter.intake(it) } }
         val followerJob = launch { followFunction() }
@@ -145,7 +145,12 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
             }
             shooter.angleDegrees = 0.0
-            shootAll(shooter.stateFlow, sorter, shooter.shoot { distance }, patternList)
+            shootAll(shooter.stateFlow, sorter, shooter.shoot { distance })
+            followAndIntake(collectBalls)
+            follower.followSuspend(freeGate)
+            val shooterJob = shooter.shoot { distance }
+            follower.followSuspend(scoreBalls)
+            shootAll(shooter.stateFlow, sorter, shooterJob, patternList)
         }
     }
 

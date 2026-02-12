@@ -70,18 +70,12 @@ class Intake(
 
     val stateFlow =
         flow {
-            while (true) {
-                if (isRunning || isDebug)
-                    emit(with(sensor) {
-                        State(
-                            alpha(),
-                            red(),
-                            green(),
-                            blue(),
-                            getDistance(DistanceUnit.CM)
-                        )
-                    })
-                delay(10L)
+            with(sensor) {
+                while (true) {
+                    if (isRunning || isDebug)
+                        emit(State(alpha(), red(), green(), blue(), getDistance(DistanceUnit.CM)))
+                    delay(10L)
+                }
             }
         }.stateIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), State.ZERO)
 

@@ -9,7 +9,7 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @DependencyGraph(OpModeScope::class)
@@ -17,7 +17,7 @@ interface OpModeGraph {
     val opMode: OpMode
     val telemetry: Telemetry
 
-    val shooter: Shooter
+    val shooter: ShooterImpl
     val sorter: Sorter
 
     @Provides
