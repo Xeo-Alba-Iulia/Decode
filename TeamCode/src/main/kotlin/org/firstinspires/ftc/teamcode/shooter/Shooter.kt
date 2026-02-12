@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
@@ -43,7 +42,7 @@ private val shootCountMutex = Mutex()
 suspend fun shootAll(
     shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
-    shooterJob: Job? = null,
+    shooterJob: Job,
     shootOrder: List<ArtefactType> = emptyList(),
 ) {
     fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
@@ -64,32 +63,22 @@ suspend fun shootAll(
         val type = orderIterator.nextOrNull()
         try {
             sorter.shootOrDefault(type)
+            sorter.isLifting = true
             val collectorJob = coroutineScope {
                 async {
-                    var isFirst = true
                     var shotCount = 0
                     shootFlow
                         .map { it.canShoot }
-                        .dropWhile { !it }
                         .distinctUntilChanged()
                         .filter { it }
-                        .onEach {
-                            if (isFirst) {
-                                sorter.isLifting = true
-                                delay(400L)
-                                isFirst = false
-                            }
-                        }
-                        .takeWhile { !sorter.isEmpty }
-                        .withIndex()
-                        .map { it.index }
-                        .onStart { RobotLog.dd("Shooter", "Starting with $type") }
+                        .take(count)
                         .onCompletion {
                             sorter.prepareIntake()
                             if (it != null) throw it
                             ++shotCount
                         }
                         .collect {
+                            RobotLog.dd("Shooter", "Shot $shotCount, preparing next shot")
                             val nextType = orderIterator.nextOrNull()
                             sorter.shootOrDefault(nextType)
                             ++shotCount
@@ -99,12 +88,12 @@ suspend fun shootAll(
             }
             select {
                 collectorJob.onAwait { RobotLog.vv("Shooter", "shootAll ended after shooting $it") }
-                shooterJob?.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
+                shooterJob.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
             }
             collectorJob.cancel()
         } finally {
             sorter.isLifting = false
-            shooterJob?.cancel()
+            shooterJob.cancel()
         }
     }
 }
