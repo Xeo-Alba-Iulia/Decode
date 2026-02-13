@@ -10,9 +10,10 @@ import org.firstinspires.ftc.teamcode.metro.OpModeGraph
 
 abstract class CoroutineOpMode(
     protected val observers: MutableList<OpModeObserver> = mutableListOf(),
+    isAuto: Boolean? = null
 ) : OpMode() {
-    val isAuto = this::class.java.annotations.count { it is Autonomous } >= 1
-    val opModeGraph = createGraphFactory<OpModeGraph.Factory>().create(this, isAuto)
+    val isAuto = isAuto ?: (this::class.java.annotations.count { it is Autonomous } >= 1)
+    val opModeGraph = createGraphFactory<OpModeGraph.Factory>().create(this, this.isAuto)
     protected val opModeScope = opModeGraph.opModeScope
 
     override fun start() {

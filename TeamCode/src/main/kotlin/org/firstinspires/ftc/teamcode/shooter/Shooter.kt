@@ -5,10 +5,8 @@ import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -57,43 +55,24 @@ suspend fun shootAll(
         Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
     Log.d("Shooter", "shootOrder: $shootOrder")
     val orderIterator = shootOrder.iterator()
+
     shootCountMutex.withLock {
         val count = sorter.size
         if (count == 0) return@withLock
         val type = orderIterator.nextOrNull()
-        try {
-            sorter.shootOrDefault(type)
-            sorter.isLifting = true
-            val collectorJob = coroutineScope {
-                async {
-                    var shotCount = 0
-                    shootFlow
-                        .map { it.canShoot }
-                        .distinctUntilChanged()
-                        .filter { it }
-                        .take(count)
-                        .onCompletion {
-                            sorter.prepareIntake()
-                            if (it != null) throw it
-                            ++shotCount
-                        }
-                        .collect {
-                            RobotLog.dd("Shooter", "Shot $shotCount, preparing next shot")
-                            val nextType = orderIterator.nextOrNull()
-                            sorter.shootOrDefault(nextType)
-                            ++shotCount
-                        }
-                    shotCount
-                }
-            }
-            select {
-                collectorJob.onAwait { RobotLog.vv("Shooter", "shootAll ended after shooting $it") }
-                shooterJob.onJoin { RobotLog.ww("Shooter", "Shooter job ended in shootAll") }
-            }
-            collectorJob.cancel()
-        } finally {
-            sorter.isLifting = false
-            shooterJob.cancel()
+        sorter.shootOrDefault(type)
+        sorter.isLifting = true
+        delay(400L)
+        shootFlow.map { it.canShoot }.filter { it }.first()
+        for (i in 1..<count) {
+            sorter.shootOrDefault(orderIterator.nextOrNull())
+            RobotLog.dd("Shooter", "Shot $i balls")
+            delay(400L)
         }
+        delay(400L)
+        sorter.prepareIntake()
+        delay(100L)
+        sorter.isLifting = false
+        shooterJob.cancel()
     }
 }

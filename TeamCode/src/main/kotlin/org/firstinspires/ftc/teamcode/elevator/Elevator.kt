@@ -8,13 +8,9 @@ import dev.nextftc.control.feedback.PIDCoefficients
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
@@ -24,7 +20,6 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 class Elevator(
     @Named("elevator") private val motor: DcMotorEx,
     private val opModeScope: CoroutineScope,
-    private val tickFlow: SharedFlow<Unit>,
 ) : OpModeObserver {
     companion object {
         @JvmField
@@ -55,7 +50,7 @@ class Elevator(
         liftJob = opModeScope.launch {
             controller.goal = KineticState(position = height)
             try {
-                tickFlow.collect {
+                while (true) {
                     val position = motor.currentPosition.toDouble()
                     positionFlow.value = position
                     power = controller.calculate(
@@ -64,6 +59,7 @@ class Elevator(
                             velocity = motor.velocity
                         )
                     )
+                    delay(50L)
                 }
             } finally {
                 power = 0.0
