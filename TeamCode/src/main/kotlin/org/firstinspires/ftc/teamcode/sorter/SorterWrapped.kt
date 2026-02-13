@@ -25,7 +25,7 @@ open class SorterWrapped(
         var HALF_ROTATION = 0.285
 
         @JvmField
-        var OFFSET = 0.015
+        var OFFSET = 0.024
     }
 
     override var isLifting by transfer::isRunning
@@ -95,7 +95,7 @@ open class SorterWrapped(
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
-    override var size = 0
+    override var size = if (isAuto) 3 else 0
         protected set
 
     override fun toString() = "SorterWrapped(artefacts = ${artefacts.contentToString()}, position = $position)"
