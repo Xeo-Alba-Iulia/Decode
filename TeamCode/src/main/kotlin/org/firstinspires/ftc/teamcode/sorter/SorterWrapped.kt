@@ -10,7 +10,6 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
-import kotlin.time.measureTime
 
 @Config
 //@SingleIn(OpModeScope::class)
@@ -39,6 +38,18 @@ open class SorterWrapped(
         else
             arrayOfNulls(3)
 
+    protected fun setSlot(index: Int, type: ArtefactType) {
+        require(artefacts[index] == null)
+        artefacts[index] = type
+        size++
+    }
+
+    protected fun removeSlot(index: Int) {
+        require(artefacts[index] != null)
+        artefacts[index] = null
+        size--
+    }
+
     @Volatile
     private var currentIntakeSlot: Int = -1
 
@@ -51,9 +62,8 @@ open class SorterWrapped(
 
     override fun intake(type: ArtefactType) {
         if (currentIntakeSlot == -1) return
-        artefacts[currentIntakeSlot] = type
+        setSlot(currentIntakeSlot, type)
         currentIntakeSlot = -1
-        size++
         if (!isFull) prepareIntake()
     }
 
@@ -61,10 +71,8 @@ open class SorterWrapped(
        From testing after warmup this takes 6-8ms when it has a match, and 500μs without one
     */
     override fun prepareShoot(type: ArtefactType?): Boolean {
-        val wasSuccessful: Boolean
         val oldPosition = servo.position
-        val usedTime = measureTime {
-            wasSuccessful = artefacts.asSequence().withIndex()
+        return artefacts.asSequence().withIndex()
                 .filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
                 .map(IndexedValue<*>::index)
                 .flatMap {
@@ -80,15 +88,9 @@ open class SorterWrapped(
                     abs(oldPosition - position)
                 }?.let { (idx, position) ->
                     servo.position = position
-                    artefacts[idx] = null
-                    size--
+                removeSlot(idx)
                     true
                 } ?: false
-        }
-        println("SorterWrapped prepareShoot took $usedTime")
-//        RobotLog.dd("Sorter", "prepareShoot took $usedTime")
-//        delay((abs(servo.position - oldPosition) * SPEED).toLong())
-        return wasSuccessful
     }
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
