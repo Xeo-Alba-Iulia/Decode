@@ -16,9 +16,9 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
+import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
@@ -59,59 +59,51 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         followerJob.cancel()
         opModeScope.launch {
-            delay(300.milliseconds)
+            delay(500.milliseconds)
             intakeJob.cancel()
             intake.isServoRunning = true
         }
     }
 
-    private val obeliskPose = Pose(72.0, 144.0)
-    private val startPose = mirrorAlliance(Pose(19.0, 121.0, Math.toRadians(54.0)))
-    private val rawGoalPose = Pose(141.5 - 13.0, 13.0)
-    private val rawScorePose: Pose = Pose(51.0, 84.0).run {
-        withHeading(
-            atan2(
-                rawGoalPose.x - startPose.x,
-                rawGoalPose.y - startPose.y
-            )
-        )
-    }
-    private val scorePose = mirrorAlliance(rawScorePose)
-    private val firstBallsCollectPose = mirrorAlliance(Pose(21.0, 84.0, PI))
-    private val freeGoalPose = mirrorAlliance(Pose(15.0, 72.0, PI))
+    private val startPose = Pose(32.0, 135.0)
+    private val goalPose = Pose(13.0, 141.5 - 13.0)
+    private val scorePose: Pose = Pose(54.0, 86.0).run { withHeading(atan2(goalPose.y - y, goalPose.x - x)) }
+    private val firstBallsCollectPose = Pose(18.0, 84.0, PI)
+    private val freeGoalPose = Pose(16.0, 72.0, PI / 2)
 
     private val scorePreload = pathChain {
-        pathLinearHeading {
+        pathLinearHeading(endTime = .8) {
             +startPose
             +scorePose
         }
     }
 
     private val collectBalls = pathChain {
-        path {
+        pathLinearHeading(endTime = 0.45) {
             +scorePose
+            +Pose(scorePose.x, firstBallsCollectPose.y)
             +firstBallsCollectPose
         }
     }
     private val freeGate = pathChain {
-        pathConstantHeading(PI) {
+        pathLinearHeading(endTime = 0.8) {
             +firstBallsCollectPose
-            +Pose(firstBallsCollectPose.x, freeGoalPose.y)
+            +Pose(firstBallsCollectPose.x + 12.0, freeGoalPose.y + 5.0)
             +freeGoalPose
         }
     }
     private val scoreBalls = pathChain {
-        pathConstantHeading(scorePose.heading) {
+        pathLinearHeading {
             +freeGoalPose
             +scorePose
         }
     }
 
     override fun init() {
-        follower = opModeGraph.follower
+        follower = opModeGraph.follower.apply { setStartingPose(startPose) }
         sorter = opModeGraph.sorter.apply { position = 0.5 }
         intake = opModeGraph.intake
-        shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
+        shooter = opModeGraph.shooter.apply { angleDegrees = -15.0 }
         limelight = opModeGraph.limelight
         telemetry = opModeGraph.telemetry
         limelight?.pipelineSwitch(0)
@@ -119,22 +111,27 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
 
     override fun start() {
-        val distance = rawGoalPose.distanceFrom(rawScorePose) / 39.37
+        val distance = goalPose.distanceFrom(scorePose) / 39.37
+        intake.isServoRunning = true
         opModeScope.launch {
-            val patternId = async {
-                var id = 0
-                while (id == 0) {
-                    limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
-                        id = it.fiducialId
+            val job: Job
+            val pattern = coroutineScope {
+                val patternId = async {
+                    var id = 0
+                    while (id == 0) {
+                        limelight?.latestResult?.fiducialResults?.singleOrNull()?.let { id = it.fiducialId }
+                        delay(50.milliseconds)
                     }
-                    shooter.alignToPose(follower.pose, obeliskPose)
-                    delay(50.milliseconds)
+                    Log.d(TAG, "Detected pattern ID: $id")
+                    id
                 }
-                Log.d(TAG, "Detected pattern ID: $id")
-                id
+                follower.followSuspend(scorePreload)
+                job = shooter.shoot { distance }
+                launch { delay(500.milliseconds) }
+                val result = withTimeoutOrNull(1.seconds) { patternId.await() }
+                shooter.angleDegrees = 0.0
+                result
             }
-            follower.followSuspend(scorePreload)
-            val pattern = withTimeoutOrNull(1.seconds) { patternId.await() }
             val patternList = when (pattern) {
                 21 -> listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
                 22 -> listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
@@ -144,15 +141,19 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     emptyList()
                 }
             }
-            shooter.angleDegrees = 0.0
-            shootAll(shooter.stateFlow, sorter, shooter.shoot { distance })
+//            shooter.alignToPose(follower.pose, goalPose)
+            shootAll(shooter.stateFlow, sorter, job)
+            follower.setMaxPower(0.45)
             followAndIntake(collectBalls)
-            follower.followSuspend(freeGate)
-            val shooterJob = shooter.shoot { distance }
+            follower.setMaxPower(1.0)
+            follower.followSuspend(freeGate, maxPower = .7)
             follower.followSuspend(scoreBalls)
-            shootAll(shooter.stateFlow, sorter, shooterJob, patternList)
+//            shooter.alignToPose(follower.pose, goalPose)
+            shootAll(shooter.stateFlow, sorter, shooter.shoot { distance }, patternList)
         }
     }
 
-    override fun loop() {}
+    override fun loop() {
+        drawDebug(follower)
+    }
 }

@@ -62,7 +62,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
 
     val cornerBallPreposition: Pose = mirrorAlliance(Pose(13.0, 18.0, 7 * PI / 6))
-    val cornerBallPose: Pose = mirrorAlliance(Pose(12.0, 10.0, 5 * PI / 6))
+    val cornerBallPose: Pose = mirrorAlliance(Pose(12.7, 9.2, 5 * PI / 6))
 
     lateinit var cornerPath: PathChain
 
@@ -205,7 +205,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             flow {
                 intake.artefactFlow
                     .take(3)
-                    .collect { sorter.intake(it) }
+                    .collect { sorter.intake(it); delay(150.milliseconds) }
                 Log.d(TAG, "Got all 3 balls")
                 emit(Unit)
             },
@@ -234,6 +234,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
 
     override fun start() {
         patternJob.cancel()
+        sorter.isLifting = true
         super.start()
         val pattern = when (fiducialId) {
             21 -> listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
@@ -244,6 +245,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch {
             follower.followSuspend(scorePreload)
             shooterJob = shooter.shoot(::distanceFun)
+            delay(500.milliseconds)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
             followAndIntake(
@@ -255,6 +257,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose, 0.0)
             shooterJob = shooter.shoot(::distanceFun)
+            delay(500.milliseconds)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             val intakeJob = launch {
                 intake.artefactFlow
@@ -271,6 +274,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose, 0.0)
             shooterJob = shooter.shoot(::distanceFun)
+            delay(500.milliseconds)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
         }
     }

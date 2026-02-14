@@ -132,11 +132,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 when {
                     isFull && !lastIsFull -> {
                         intake.isServoRunning = true
+                        gamepad1.rumble(500)
                     }
 
-                    isEmpty && !lastIsEmpty -> {
-                        intake.isRunning = true
-                    }
+                    isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
                 lastIsFull = isFull
                 lastIsEmpty = isEmpty
