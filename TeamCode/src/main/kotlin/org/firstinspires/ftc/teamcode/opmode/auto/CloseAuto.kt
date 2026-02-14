@@ -7,6 +7,7 @@ import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.hardware.limelightvision.Limelight3A
+import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.selects.onTimeout
@@ -20,7 +21,7 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.shootAuto
+import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -51,7 +52,13 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         followFunction: suspend () -> Unit
     ): Unit = coroutineScope {
         intake.isRunning = true
-        val intakeJob = launch { intake.artefactFlow.take(3 - sorter.size).collect { sorter.intake(it); delay(130L) } }
+        val intakeJob = launch {
+            intake.artefactFlow.take(3 - sorter.size).collect {
+                sorter.intake(it)
+                RobotLog.dd(TAG, "Intaked $it, sorter now has ${sorter.size} artefacts")
+                delay(130L)
+            }
+        }
         val followerJob = launch { followFunction() }
         select {
             intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
@@ -104,7 +111,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
     private val scoreBalls1 = pathChain {
         pathLinearHeading {
-            +freeGoalPose
+            +firstBallsCollectPose
             +scorePose
         }
     }
@@ -173,23 +180,23 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 22 -> listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
                 23 -> listOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
                 else -> {
-                    Log.e(TAG, "Failed to detect pattern, defaulting to empty")
-                    emptyList()
+                    Log.e(TAG, "Failed to detect pattern, defaulting to first pattern")
+                    listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
                 }
             }
-            shootAuto(shooter.stateFlow, sorter, job)
+            shootAll(shooter.stateFlow, sorter, job, patternList)
             follower.setMaxPower(0.5)
             followAndIntake(collectBalls1)
             follower.setMaxPower(1.0)
-            follower.followSuspend(freeGate, maxPower = .7)
+//            follower.followSuspend(freeGate, maxPower = .7)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls1)
-            shootAuto(shooter.stateFlow, sorter, job, patternList)
+            shootAll(shooter.stateFlow, sorter, job, patternList)
             followAndIntake(collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls2)
-            shootAuto(shooter.stateFlow, sorter, job, patternList)
+            shootAll(shooter.stateFlow, sorter, job, patternList)
             /*
             val count = sorter.size
             if (count != 0) {
