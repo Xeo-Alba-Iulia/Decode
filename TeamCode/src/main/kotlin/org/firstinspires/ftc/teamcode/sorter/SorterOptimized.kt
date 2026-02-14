@@ -48,7 +48,7 @@ class SorterOptimized(
                 .minByOrNull { distances[it][oldPosition] }
                 ?.let {
                     position = closestPosition[it][oldPosition]
-                    removeSlot(it)
+                    artefacts[it] = null
                     true
                 } ?: false
     }

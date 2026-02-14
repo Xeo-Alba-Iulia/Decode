@@ -19,6 +19,6 @@ class Transfer(@Named("transferServo") private val servo: CRServo) {
 
     companion object {
         @JvmField
-        var POWER = 0.6
+        var POWER = 1.0
     }
 }

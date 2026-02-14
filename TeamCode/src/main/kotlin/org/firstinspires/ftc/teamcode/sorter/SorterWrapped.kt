@@ -34,21 +34,9 @@ open class SorterWrapped(
 
     override val artefacts: Array<ArtefactType?> =
         if (isAuto)
-            arrayOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
+            arrayOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
         else
             arrayOfNulls(3)
-
-    protected fun setSlot(index: Int, type: ArtefactType) {
-        require(artefacts[index] == null)
-        artefacts[index] = type
-        size++
-    }
-
-    protected fun removeSlot(index: Int) {
-        require(artefacts[index] != null)
-        artefacts[index] = null
-        size--
-    }
 
     @Volatile
     private var currentIntakeSlot: Int = -1
@@ -62,7 +50,7 @@ open class SorterWrapped(
 
     override fun intake(type: ArtefactType) {
         if (currentIntakeSlot == -1) return
-        setSlot(currentIntakeSlot, type)
+        artefacts[currentIntakeSlot] = type
         currentIntakeSlot = -1
         if (!isFull) prepareIntake()
     }
@@ -88,15 +76,14 @@ open class SorterWrapped(
                     abs(oldPosition - position)
                 }?.let { (idx, position) ->
                     servo.position = position
-                removeSlot(idx)
+                artefacts[idx] = null
                     true
                 } ?: false
     }
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
-    override var size = if (isAuto) 3 else 0
-        protected set
+    override val size get() = artefacts.count { it != null }
 
     override fun toString() = "SorterWrapped(artefacts = ${artefacts.contentToString()}, position = $position)"
 }
