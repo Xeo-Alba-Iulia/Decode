@@ -22,9 +22,8 @@ import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootAuto
+import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import org.firstinspires.ftc.teamcode.sorter.SorterWrapped
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.time.Duration
@@ -61,8 +60,10 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
     val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
 
-    val cornerBallPreposition: Pose = mirrorAlliance(Pose(13.0, 18.0, 7 * PI / 6))
-    val cornerBallPose: Pose = mirrorAlliance(Pose(12.7, 9.2, 5 * PI / 6))
+    val rawCornerBallPreposition = Pose(13.0, 18.0, 7 * PI / 6)
+    val cornerBallPreposition: Pose = mirrorAlliance(rawCornerBallPreposition)
+    val rawCornerBallPose = Pose(12.3, 9.2, 5 * PI / 6)
+    val cornerBallPose: Pose = mirrorAlliance(rawCornerBallPose)
 
     lateinit var cornerPath: PathChain
 
@@ -76,7 +77,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     val lastBallPositionPath = pathChain {
         pathLinearHeading {
             +cornerBallPose
-            +cornerBallPose.withX(cornerBallPose.x + 7.0)
+            +cornerBallPose.withX(cornerBallPose.x + 5.0)
             callbacks {
                 temporalCallback(Duration.ZERO) { intake.isRunning = false }
             }
@@ -85,9 +86,9 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
 
     val lastBallCollectPath = pathChain {
         pathLinearHeading {
-            +cornerBallPose.withY(cornerBallPose.y + 7.0)
-            +Pose(cornerBallPose.x + 7.0, cornerBallPose.y + 7.0)
-            +cornerBallPose.withHeading(PI)
+            +cornerBallPose.withY(cornerBallPose.y + 5.0)
+            +mirrorAlliance(Pose(rawCornerBallPose.x + 7.0, rawCornerBallPose.y))
+            +mirrorAlliance(Pose(rawCornerBallPose.x, rawCornerBallPose.y, PI))
             callbacks {
                 temporalCallback(200.milliseconds) { intake.isRunning = true }
             }
@@ -115,7 +116,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         follower = opModeGraph.follower
         telemetry = opModeGraph.telemetry
         sorter = opModeGraph.sorter.also {
-            it.position = SorterWrapped.OFFSET
+            it.position = 0.5
         }
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter.also {
@@ -152,7 +153,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             pathLinearHeading(0.9) {
                 +scorePose
                 +cornerBallPreposition
-                callbacks { parametricCallback(0.6) { follower.setMaxPower(0.5) } }
+                callbacks { parametricCallback(0.6) { follower.setMaxPower(0.35) } }
             }
             path(
                 interpolator = HeadingInterpolator.piecewise(
@@ -177,7 +178,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         firstBalls = pathChain(follower) {
             pathLinearHeading(endTime = 0.8) {
                 +scorePose
-                +Pose(scorePose.x, firstBallPose.y)
+                +mirrorAlliance(Pose(rawScorePose.x, rawFirstBallPose.y))
                 +firstBallPositionPose
                 callbacks { parametricCallback(0.5) { follower.setMaxPower(0.5) } }
             }
@@ -205,7 +206,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             flow {
                 intake.artefactFlow
                     .take(3)
-                    .collect { sorter.intake(it); delay(150.milliseconds) }
+                    .collect { sorter.intake(it); delay(200.milliseconds) }
                 Log.d(TAG, "Got all 3 balls")
                 emit(Unit)
             },
@@ -234,7 +235,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
 
     override fun start() {
         patternJob.cancel()
-        sorter.isLifting = true
         super.start()
         val pattern = when (fiducialId) {
             21 -> listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
@@ -245,12 +245,8 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch {
             follower.followSuspend(scorePreload)
             shooterJob = shooter.shoot(::distanceFun)
-//            delay(500.milliseconds)
-            try {
-                withTimeout(5.seconds) { shootAuto(shooter.stateFlow, sorter, shooterJob, pattern) }
-            } catch (_: TimeoutCancellationException) {
-                Log.e(TAG, "Failed to shoot preload in time, moving on")
-            }
+            delay(500.milliseconds)
+            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
             followAndIntake(
                 firstBalls,
@@ -262,15 +258,11 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             shooter.alignToPose(follower.pose, goalPose, 0.0)
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            try {
-                withTimeout(5.seconds) { shootAuto(shooter.stateFlow, sorter, shooterJob, pattern) }
-            } catch (_: TimeoutCancellationException) {
-                Log.e(TAG, "Failed to shoot preload in time, moving on")
-            }
+            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             val intakeJob = launch {
                 intake.artefactFlow
                     .take(3)
-                    .collect { sorter.intake(it); delay(50L) }
+                    .collect { sorter.intake(it); delay(250L) }
             }
             follower.followSuspend(cornerPath)
             follower.followSuspend(lastBallPositionPath, maxPower = 0.5)
@@ -283,11 +275,14 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             shooter.alignToPose(follower.pose, goalPose, 0.0)
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            try {
-                withTimeout(5.seconds) { shootAuto(shooter.stateFlow, sorter, shooterJob, pattern) }
-            } catch (_: TimeoutCancellationException) {
-                Log.e(TAG, "Failed to shoot preload in time, moving on")
-            }
+            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            follower.followSuspend(pathChain {
+                pathConstantHeading(PI) {
+                    +scorePose
+                    // TODO: MIRROR
+                    +Pose(scorePose.x - 10.0, scorePose.y)
+                }
+            })
         }
     }
 
