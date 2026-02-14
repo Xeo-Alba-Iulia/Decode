@@ -71,7 +71,7 @@ suspend fun shootAll(
         }
         delay(400L)
         sorter.prepareIntake()
-        delay(100L)
+        delay(150L)
         sorter.isLifting = false
         shooterJob.cancel()
     }
