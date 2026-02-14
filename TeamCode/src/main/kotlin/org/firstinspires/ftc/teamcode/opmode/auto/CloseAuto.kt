@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
@@ -132,7 +133,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     override fun init() {
         follower = opModeGraph.follower.apply { setStartingPose(startPose) }
-        sorter = opModeGraph.sorter.apply { position = 0.5 }
+        sorter = opModeGraph.sorter.apply { position = 0.5; isLifting = false }
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter.apply { angleDegrees = if (isMirrored) 15.0 else -15.0 }
         limelight = opModeGraph.limelight
@@ -184,6 +185,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
                 }
             }
+            shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
             follower.setMaxPower(0.5)
             followAndIntake(collectBalls1)
@@ -191,11 +193,13 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 //            follower.followSuspend(freeGate, maxPower = .7)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls1)
+            shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
             followAndIntake(collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls2)
+            shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
             /*
             val count = sorter.size
