@@ -230,21 +230,27 @@ abstract class FullTeleOp : CoroutineOpMode() {
             gamepad2.leftBumperWasPressed() -> sorter.intake(ArtefactType.GREEN)
         }
 
+        if (!sorter.isEmpty)
         // Prepare shoot
-        when {
-            gamepad2.rightStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.PURPLE)
-            gamepad2.leftStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.GREEN)
-            gamepad2.backWasPressed() -> sorter.prepareShoot()
+            when {
+                gamepad2.rightStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.PURPLE)
+                gamepad2.leftStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.GREEN)
+                gamepad2.backWasPressed() -> sorter.prepareShoot()
+            }
+        else if (gamepad2.rightStickButtonWasPressed() ||
+            gamepad2.leftStickButtonWasPressed() ||
+            gamepad2.backWasPressed()
+        ) {
+            sorter.prepareIntake()
+            sorter.isLifting = false
         }
 
         // Prepare intake
         if (gamepad2.startWasPressed())
             sorter.prepareIntake()
 
-        when {
-            gamepad2.squareWasPressed() -> sorter.isLifting = true
-            gamepad2.squareWasReleased() -> sorter.isLifting = false
-        }
+        if (gamepad2.squareWasPressed())
+            sorter.isLifting = !sorter.isLifting
 
         // Adjust sorter position with triggers
         sorter.position += (gamepad2.right_trigger - gamepad2.left_trigger).toDouble() * SORTER_POSITION_MULTIPLIER
