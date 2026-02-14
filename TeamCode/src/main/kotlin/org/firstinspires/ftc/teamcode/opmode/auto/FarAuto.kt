@@ -22,7 +22,7 @@ import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootAll
+import org.firstinspires.ftc.teamcode.shooter.shootAuto
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped
 import kotlin.math.PI
@@ -245,8 +245,12 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch {
             follower.followSuspend(scorePreload)
             shooterJob = shooter.shoot(::distanceFun)
-            delay(500.milliseconds)
-            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+//            delay(500.milliseconds)
+            try {
+                withTimeout(5.seconds) { shootAuto(shooter.stateFlow, sorter, shooterJob, pattern) }
+            } catch (_: TimeoutCancellationException) {
+                Log.e(TAG, "Failed to shoot preload in time, moving on")
+            }
             intake.isRunning = true
             followAndIntake(
                 firstBalls,
@@ -258,11 +262,15 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             shooter.alignToPose(follower.pose, goalPose, 0.0)
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            try {
+                withTimeout(5.seconds) { shootAuto(shooter.stateFlow, sorter, shooterJob, pattern) }
+            } catch (_: TimeoutCancellationException) {
+                Log.e(TAG, "Failed to shoot preload in time, moving on")
+            }
             val intakeJob = launch {
                 intake.artefactFlow
                     .take(3)
-                    .collect { sorter.intake(it) }
+                    .collect { sorter.intake(it); delay(50L) }
             }
             follower.followSuspend(cornerPath)
             follower.followSuspend(lastBallPositionPath, maxPower = 0.5)
@@ -275,7 +283,11 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             shooter.alignToPose(follower.pose, goalPose, 0.0)
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            try {
+                withTimeout(5.seconds) { shootAuto(shooter.stateFlow, sorter, shooterJob, pattern) }
+            } catch (_: TimeoutCancellationException) {
+                Log.e(TAG, "Failed to shoot preload in time, moving on")
+            }
         }
     }
 

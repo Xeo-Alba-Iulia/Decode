@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.shootAll
+import org.firstinspires.ftc.teamcode.shooter.shootAuto
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -177,19 +177,19 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     emptyList()
                 }
             }
-            shootAll(shooter.stateFlow, sorter, job)
+            shootAuto(shooter.stateFlow, sorter, job)
             follower.setMaxPower(0.5)
             followAndIntake(collectBalls1)
             follower.setMaxPower(1.0)
             follower.followSuspend(freeGate, maxPower = .7)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls1)
-            shootAll(shooter.stateFlow, sorter, job, patternList)
+            shootAuto(shooter.stateFlow, sorter, job, patternList)
             followAndIntake(collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls2)
-            shootAll(shooter.stateFlow, sorter, job, patternList)
+            shootAuto(shooter.stateFlow, sorter, job, patternList)
             /*
             val count = sorter.size
             if (count != 0) {

@@ -76,3 +76,46 @@ suspend fun shootAll(
         shooterJob.cancel()
     }
 }
+
+suspend fun shootAuto(
+    shootFlow: Flow<Shooter.State>,
+    sorter: Sorter,
+    shooterJob: Job,
+    shootOrder: List<ArtefactType> = emptyList(),
+) {
+    fun <T : Any> Iterator<T>.nextOrNull(): T? = if (hasNext()) next() else null
+    fun Sorter.shootOrDefault(type: ArtefactType?) {
+        if (!prepareShoot(type) && type != null) {
+            RobotLog.ee("Shooter", "Failed to prepare artefact $type, shooting default")
+            prepareShoot()
+        }
+    }
+    if (shootCountMutex.isLocked) return
+    if (shootOrder.isNotEmpty() && shootOrder.size != sorter.size)
+        Log.e("Shooter", "shootAll called with order: $shootOrder but sorter size is ${sorter.size}")
+    Log.d("Shooter", "shootOrder: $shootOrder")
+    val orderIterator = shootOrder.iterator()
+    shootCountMutex.withLock {
+        val count = sorter.size
+        if (count == 0) return@withLock
+        val type = orderIterator.nextOrNull()
+        sorter.prepareShoot(type)
+        sorter.isLifting = true
+        delay(1000L)
+        shootFlow
+            .map { it.canShoot }
+            .distinctUntilChanged()
+            .filter { it }
+            .take(count)
+            .onStart { RobotLog.dd("Shooter", "Starting with $type") }
+            .collect {
+                val type = orderIterator.nextOrNull()
+                RobotLog.dd("Shooter", "Attempted next: $type")
+                sorter.shootOrDefault(type)
+                delay(1000L)
+            }
+        sorter.isLifting = false
+        shooterJob.cancel()
+        sorter.prepareIntake()
+    }
+}
