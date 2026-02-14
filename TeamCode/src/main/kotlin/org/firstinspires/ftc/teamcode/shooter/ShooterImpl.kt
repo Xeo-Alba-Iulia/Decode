@@ -35,27 +35,28 @@ class ShooterImpl(
         var coefficients = PIDCoefficients(0.001)
 
         @JvmField
-        var parameters = BasicFeedforwardParameters(kS = 0.15, kV = 0.00033)
+        var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
     }
 
     /*
        0.92: 1420 0.0
        1.40: 1500 0.053
-       1.81: 1620 0.25
-       2.25: 1850 0.38
+       1.67: 1800 0.41
+       1.97: 1750 0.35
+       2.3:  1750 0.31
        3.01: 2010 0.35
        3.42: 2040 0.332
      */
-    val distances = listOf(0.92, 1.4, 1.81, 2.25, 3.01, 3.42)
+    val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1420.0, 1500.0, 1620.0, 1800.0, 2010.0, 2040.0),
+        /* output = */ listOf(1420.0, 1500.0, 1760.0, 1750.0, 1750.0, 2010.0, 2040.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
         distances,
-        listOf(0.0, 0.053, 0.25, 0.38, 0.35, 0.332),
+        listOf(0.0, 0.053, 0.38, 0.35, 0.31, 0.35, 0.332),
         true
     ).createLUT()
 
