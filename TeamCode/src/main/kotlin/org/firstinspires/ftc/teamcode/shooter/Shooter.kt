@@ -69,9 +69,9 @@ suspend fun shootAll(
             RobotLog.dd("Shooter", "Shot $i balls")
             delay(400L)
         }
-        delay(400L)
+        delay(450L)
         sorter.prepareIntake()
-        delay(150L)
+        delay(100L)
         sorter.isLifting = false
         shooterJob.cancel()
     }
