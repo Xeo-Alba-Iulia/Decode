@@ -50,13 +50,13 @@ class ShooterImpl(
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1420.0, 1500.0, 1760.0, 1750.0, 1750.0, 2010.0, 2040.0),
+        /* output = */ listOf(1420.0, 1500.0, 1760.0, 1750.0, 1750.0, 1980.0, 2010.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
         distances,
-        listOf(0.0, 0.053, 0.38, 0.35, 0.31, 0.35, 0.332),
+        listOf(0.0, 0.053, 0.38, 0.35, 0.31, 0.355, 0.332),
         true
     ).createLUT()
 

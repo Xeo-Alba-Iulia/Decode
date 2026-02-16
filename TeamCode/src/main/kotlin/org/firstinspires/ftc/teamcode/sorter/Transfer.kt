@@ -17,6 +17,10 @@ class Transfer(@Named("transferServo") private val servo: CRServo) {
             servo.power = if (value) POWER else 0.0
         }
 
+    init {
+        servo.power = 0.0
+    }
+
     companion object {
         @JvmField
         var POWER = 1.0
