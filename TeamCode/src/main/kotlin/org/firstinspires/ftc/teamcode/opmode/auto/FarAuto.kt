@@ -9,6 +9,7 @@ import com.pedropathing.paths.HeadingInterpolator
 import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
+import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
@@ -53,12 +54,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     val startPose: Pose = mirrorAlliance(Pose(60.0, 7.0, PI / 2))
     val rawGoalPose = Pose(12.0, 144.0 - 12.0)
     val goalPose = mirrorAlliance(rawGoalPose)
-    val rawScorePose = Pose(
-        60.0, 20.0, atan2(
-            rawGoalPose.y - 20.0,
-            rawGoalPose.x - 60.0
-        )
-    )
+    val rawScorePose: Pose = Pose(60.0, 20.0).run { withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x)) }
     val scorePose: Pose = mirrorAlliance(rawScorePose)
     val rawFirstBallPose = Pose(10.0, 36.0, PI)
     val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
@@ -282,16 +278,17 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                 pathConstantHeading(PI) {
                     +scorePose
                     // TODO: MIRROR
-                    +Pose(scorePose.x - 10.0, scorePose.y)
+                    +mirrorAlliance(Pose(rawScorePose.x - 10.0, rawScorePose.y))
                 }
             })
         }
     }
 
     override fun loop() {
-//        telemetry.addData("Pose", follower.pose)
-//        if (BuildConfig.DEBUG)
-//            drawDebug(follower)
+        if (BuildConfig.DEBUG) {
+            telemetry.addData("Pose", follower.pose)
+            drawDebug(follower)
+        }
     }
 
     override fun stop() {
