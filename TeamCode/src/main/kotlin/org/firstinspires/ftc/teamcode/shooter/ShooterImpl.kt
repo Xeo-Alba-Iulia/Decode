@@ -10,12 +10,11 @@ import dev.nextftc.control.feedback.PIDCoefficients
 import dev.nextftc.control.feedforward.BasicFeedforwardParameters
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flowOn
 import org.firstinspires.ftc.teamcode.InterpLUT
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
@@ -66,8 +65,7 @@ class ShooterImpl(
             rotationServo.position = 0.5 - field / 160.0
         }
 
-    override var hood by hoodServo::position
-    override var velocityOffset = 0.0
+    private var hood by hoodServo::position
 
     private val controller = controlSystem {
         velPid(coefficients)
@@ -80,19 +78,43 @@ class ShooterImpl(
 
     private fun setPower(power: Double) = motors.forEach { it.power = power }
 
-    override fun shoot(currentDistance: () -> Double?): Job =
+    private fun update() {
+        val position = encoder.currentPosition.toDouble()
+        val velocity = encoder.velocity
+        val desiredVelocity = controller.goal.velocity
+        Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
+        setPower(controller.calculate(KineticState(position, velocity)))
+        stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
+    }
+
+    override fun shoot(distanceFlow: Flow<Double>): Job =
+        opModeScope.launch {
+            try {
+                val updateJob = launch {
+                    while (true) {
+                        update()
+                        delay(50L)
+                    }
+                }
+                distanceFlow.flowOn(Dispatchers.IO).collect { distance ->
+                    val desiredVelocity = velocityLUT[distance]
+                    hood = hoodLUT[distance]
+                    controller.goal = KineticState(velocity = desiredVelocity)
+                }
+                updateJob.cancel()
+            } finally {
+                setPower(0.0)
+                stateFlow.value = Shooter.State(0.0, false)
+            }
+        }
+
+    fun shoot(velocityFn: () -> Double, hoodFn: () -> Double): Job =
         opModeScope.launch {
             try {
                 while (true) {
-                    val curDist = currentDistance()
-                    val desiredVelocity = (curDist?.let { velocityLUT[it] } ?: 0.0) + velocityOffset
-                    curDist?.let { hood = hoodLUT[it] }
-                    controller.goal = KineticState(velocity = desiredVelocity)
-                    val position = encoder.currentPosition.toDouble()
-                    val velocity = encoder.velocity
-                    Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
-                    setPower(controller.calculate(KineticState(position, velocity)))
-                    stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
+                    controller.goal = KineticState(velocity = velocityFn())
+                    hood = hoodLUT[hoodFn()]
+                    update()
                     delay(50L)
                 }
             } finally {

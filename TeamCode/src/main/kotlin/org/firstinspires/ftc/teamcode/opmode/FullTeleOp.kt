@@ -210,13 +210,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
             currentShooterJob?.cancel()
         }
 
-//        if (gamepad2.y) shooter.velocityOffset += VELOCITY_ADJUSTMENT_STEP
-//        if (gamepad2.x) shooter.velocityOffset -= VELOCITY_ADJUSTMENT_STEP
-
-        // Adjust hood position
-        if (gamepad2.dpad_up) shooter.hood += HOOD_ADJUSTMENT_STEP
-        if (gamepad2.dpad_down) shooter.hood -= HOOD_ADJUSTMENT_STEP
-
         // Adjust shooter angle
         when {
             gamepad2.dpad_right -> shooter.angleDegrees += ANGLE_ADJUSTMENT_STEP

@@ -8,7 +8,6 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import org.firstinspires.ftc.teamcode.sorter.Transfer
 
 @TeleOp(group = "Systems")
 class ShooterOpMode : CoroutineOpMode() {
@@ -17,29 +16,27 @@ class ShooterOpMode : CoroutineOpMode() {
     lateinit var shooter: ShooterImpl
     lateinit var intake: Intake
     lateinit var sorter: Sorter
-    lateinit var transfer: Transfer
     var limelight: Limelight3A? = null
     var shooterJob: Job? = null
+    var velocity = 2200.0
+    var hood = 0.5
 
     override fun init() {
         intake = opModeGraph.intake
         sorter = opModeGraph.sorter.apply { prepareIntake() }
         shooter = opModeGraph.shooter
         telemetry = opModeGraph.telemetry
-        transfer = opModeGraph.transfer
-        shooter.hood = 0.5
         telemetry = opModeGraph.telemetry
         limelight = opModeGraph.limelight.apply { pipelineSwitch(1) }
     }
 
     override fun start() {
         limelight?.start()
-        shooter.velocityOffset = 2200.0
     }
 
     override fun loop() {
         if (gamepad1.aWasPressed() && shooterJob == null) {
-            shooterJob = shooter.shoot()
+            shooterJob = shooter.shoot(::velocity, ::hood)
         }
         if (gamepad1.bWasPressed()) {
             shooterJob?.cancel()
@@ -47,9 +44,9 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         val diff = gamepad1.right_trigger - gamepad1.left_trigger
         if (diff != 0f)
-            shooter.velocityOffset += diff
+            velocity += diff
         if (gamepad1.left_stick_y != 0f)
-            shooter.hood += gamepad1.left_stick_y * (-0.001)
+            hood += gamepad1.left_stick_y * (-0.001)
         when {
             gamepad1.dpad_right -> shooter.angleDegrees -= 1.0
             gamepad1.dpad_left -> shooter.angleDegrees += 1.0
@@ -62,8 +59,8 @@ class ShooterOpMode : CoroutineOpMode() {
         }
 
         when {
-            gamepad1.squareWasPressed() -> transfer.isRunning = true
-            gamepad1.squareWasReleased() -> transfer.isRunning = false
+            gamepad1.squareWasPressed() -> sorter.isLifting = true
+            gamepad1.squareWasReleased() -> sorter.isLifting = false
         }
         if (gamepad1.rightBumperWasPressed())
             intake.isRunning = !intake.isRunning
@@ -83,8 +80,8 @@ class ShooterOpMode : CoroutineOpMode() {
             }
         }
 
-        telemetry.addData("Hood", shooter.hood)
-        telemetry.addData("Speed", shooter.velocityOffset)
+        telemetry.addData("Hood", hood)
+        telemetry.addData("Target Speed", velocity)
         telemetry.addData("Actual speed", shooter.stateFlow.value.velocity)
     }
 
