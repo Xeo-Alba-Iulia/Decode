@@ -204,10 +204,36 @@
 <p>Scoring from variable distances (0.97–3.0 m) requires the shooter to adjust both flywheel velocity (1 540–2 170 RPM) and hood angle (0–0.33 servo position) continuously. We calibrated 10 field positions empirically and use monotone cubic spline interpolation to map any distance to smooth setpoints—avoiding the abrupt jumps that linear interpolation would cause. A combined PID + feedforward controller tracks those setpoints: the feedforward term (<code>kS·sign(v) + kV·v</code>) predicts the required motor power so the flywheel converges in roughly 200 ms instead of the 800 ms PID alone needed, while the PID term handles residual error from battery changes and mechanical wear. Limelight auto-alignment calculates the angle from robot pose to goal pose and sets the turret automatically, so the driver presses one button and the system handles the rest.</p>
 
 <h2>6. Reactive Sensor Processing</h2>
-<p>Rather than polling every loop cycle, our intake’s REV ColorRangeSensor v3 emits readings into a Kotlin Flow that debounces for 30 ms, classifies artifacts by RGB ratio thresholds (green/red &gt; 1.5 → GREEN, red/green &gt; 1.5 → PURPLE), filters with <code>distinctUntilChanged</code>, and publishes the result as a <code>StateFlow</code>. Multiple consumers—sorter, auto-cutoff logic, telemetry—observe the same stream without duplicating work. This pipeline reduced sensor-related CPU usage by roughly 35% and eliminated the coordination bugs we had when multiple subsystems polled the same sensor independently.</p>
+<p>Rather than polling every loop cycle, our intake’s REV ColorRangeSensor v3 emits readings into a Kotlin Flow that
+    debounces for 30 ms, classifies artifacts by RGB ratio thresholds (green/red &gt; 1.5 → GREEN, red/green &gt; 1.5 →
+    PURPLE), and publishes the result as a <code>StateFlow</code>. Multiple consumers—sorter, auto-cutoff logic,
+    telemetry—observe the same stream without duplicating work.
+    <!-- TODO: Find a way to explain this or eliminate it from portfolio -->This pipeline reduced sensor-related CPU
+    usage by roughly 35% and eliminated the coordination bugs we had when multiple subsystems polled the same sensor
+    independently.</p>
 
 <h2>7. Design Process &amp; Iterations</h2>
-<p>Hardware and software evolved together across three major cycles. The shooter started as a single motor running at maximum power; it physically could not reach far distances, so the mechanism was redesigned twice—improving geometry, compression, and eventually moving to a dual-motor configuration—before advanced control made sense. Only after the third hardware revision did PID + feedforward and interpolation LUTs deliver their full benefit. Localization followed a similar arc: IMU-only tracking drifted too much for repeatable autonomous, so we adopted PedroPathing with a GoBilda Pinpoint odometry computer for sub-inch accuracy. The sorter progressed through three implementation files (<code>SorterImpl</code> → <code>SorterOptimized</code> → <code>SorterWrapped</code>), each adding more automation—from fully manual slot changes to intelligent artifact routing with 90 ms cycle times. The color sensor was relocated from the intake ramp to directly above the sorter intake slot, improving detection reliability at the exact transfer point.</p>
+<p>Hardware and software evolved together across three major cycles. The shooter started as a single motor running at
+    maximum power; it physically could not reach far distances, so the mechanism was redesigned twice—improving
+    geometry, compression, and eventually moving to a dual-motor configuration—before advanced control made sense. Only
+    after the third hardware revision did PID + feedforward and interpolation LUTs deliver their full benefit.
+    Localization followed a similar arc: IMU-only tracking drifted too much for repeatable autonomous, so we adopted
+    PedroPathing with a GoBilda Pinpoint odometry computer for sub-inch accuracy. The sorter progressed through three
+    implementation files (<code>SorterImpl</code> → <code>SorterWrapped</code> → <code>SorterOptimized</code>), each
+    adding more automation.
+    It started as a simple class that moved the sorter to 3 predefined positions.
+    After that, it used smart wrap-around to find occupied slots past a full rotation,
+    eventually optimizing the implementation
+    of the class to select a position in 5 ms from the 15ms <code>SorterWrapped</code> used to take.
+    <br>
+    For testing purposes, we kept old versions in the codebase, and <code>SorterOptimized</code> is designed to behave
+    in the same
+    was as <code>SorterWrapped</code>, just faster. As such we developed preprogrammed and random unit tests that verify
+    the
+    behavior of both implementations are identical.
+</p>
+<p>The color sensor was relocated from the intake ramp to directly above the sorter intake slot, improving detection
+    reliability at the exact transfer point.</p>
 <p>Planned next steps: dynamic path re-planning when vision detects positioning conflicts, segment-level timeout diagnostics for autonomous debugging, and predictive aiming compensation for shots taken while the robot is still moving.</p>
 <p>The recurring lesson across all iterations: consistency outweighs peak performance. A robot that reliably scores 7 artifacts is more valuable than one that occasionally hits 9 but fails unpredictably. And every concurrent operation needs explicit timeouts and cancellation—leaving any coroutine unchecked is a match-ending risk.</p>
 
