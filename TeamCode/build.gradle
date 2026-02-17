@@ -39,9 +39,11 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
-            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
+            freeCompilerArgs.add("-Wextra")
+            freeCompilerArgs.add("-Xannotation-default-target=param-field")
             freeCompilerArgs.add("-Xreturn-value-checker=full")
             freeCompilerArgs.add("-Xexplicit-backing-fields")
+            freeCompilerArgs.add("-Xcontext-sensitive-resolution")
         }
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17
