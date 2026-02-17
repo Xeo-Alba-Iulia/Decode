@@ -37,13 +37,12 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(PathLinearExperimental::class)
 abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
-    lateinit var follower: Follower
-    lateinit var intake: Intake
-    lateinit var sorter: Sorter
-    lateinit var shooter: Shooter
-    lateinit var limelight: Limelight3A
-    lateinit var patternJob: Job
-    lateinit var shooterJob: Job
+    private lateinit var follower: Follower
+    private lateinit var intake: Intake
+    private lateinit var sorter: Sorter
+    private lateinit var shooter: Shooter
+    private lateinit var limelight: Limelight3A
+    private lateinit var patternJob: Job
 
     private val isMirrored = alliance == Alliance.RED
 
@@ -51,30 +50,30 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     private fun mirrorAlliance(p: Pose): Pose = if (isMirrored) p.mirror() else p
 
     // raw poses (defined for the blue alliance), then mirrored when needed
-    val startPose: Pose = mirrorAlliance(Pose(60.0, 7.0, PI / 2))
-    val rawGoalPose = Pose(12.0, 144.0 - 12.0)
-    val goalPose = mirrorAlliance(rawGoalPose)
-    val rawScorePose: Pose = Pose(60.0, 20.0).run { withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x)) }
-    val scorePose: Pose = mirrorAlliance(rawScorePose)
-    val rawFirstBallPose = Pose(10.0, 36.0, PI)
-    val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
-    val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
+    private val startPose: Pose = mirrorAlliance(Pose(60.0, 7.0, PI / 2))
+    private val rawGoalPose = Pose(12.0, 144.0 - 12.0)
+    private val goalPose = mirrorAlliance(rawGoalPose)
+    private val rawScorePose: Pose = Pose(60.0, 20.0).run { withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x)) }
+    private val scorePose: Pose = mirrorAlliance(rawScorePose)
+    private val rawFirstBallPose = Pose(10.0, 36.0, PI)
+    private val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
+    private val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
 
-    val rawCornerBallPreposition = Pose(13.0, 18.0, 7 * PI / 6)
-    val cornerBallPreposition: Pose = mirrorAlliance(rawCornerBallPreposition)
-    val rawCornerBallPose = Pose(12.3, 9.4, 5 * PI / 6)
-    val cornerBallPose: Pose = mirrorAlliance(rawCornerBallPose)
+    private val rawCornerBallPreposition = Pose(13.0, 18.0, 7 * PI / 6)
+    private val cornerBallPreposition: Pose = mirrorAlliance(rawCornerBallPreposition)
+    private val rawCornerBallPose = Pose(12.3, 9.4, 5 * PI / 6)
+    private val cornerBallPose: Pose = mirrorAlliance(rawCornerBallPose)
 
-    lateinit var cornerPath: PathChain
+    private lateinit var cornerPath: PathChain
 
-    val scoreFromCornerPath = pathChain {
+    private val scoreFromCornerPath = pathChain {
         pathLinearHeading {
             +cornerBallPose
             +scorePose
         }
     }
 
-    val lastBallPositionPath = pathChain {
+    private val lastBallPositionPath = pathChain {
         pathLinearHeading {
             +cornerBallPose
             +cornerBallPose.withX(cornerBallPose.x + 5.0)
@@ -84,7 +83,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         }
     }
 
-    val lastBallCollectPath = pathChain {
+    private val lastBallCollectPath = pathChain {
         pathLinearHeading {
             +cornerBallPose.withY(cornerBallPose.y + 5.0)
             +mirrorAlliance(Pose(rawCornerBallPose.x + 5.0, rawCornerBallPose.y + 7.0))
@@ -97,15 +96,15 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     }
 
     @Volatile
-    var fiducialId = 21
-    val scorePreload = pathChain {
+    private var fiducialId = 21
+    private val scorePreload = pathChain {
         pathLinearHeading {
             +startPose
             +scorePose
         }
     }
-    lateinit var firstBalls: PathChain
-    val scoreFirstBalls = pathChain(null) {
+    private lateinit var firstBalls: PathChain
+    private val scoreFirstBalls = pathChain(null) {
         pathLinearHeading(endTime = 0.8) {
             +firstBallPose
             +scorePose
@@ -194,18 +193,19 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         Thread.sleep(100L)
     }
 
-    private fun distanceFun() = 3.5
+    @Suppress("NOTHING_TO_INLINE")
+    private inline fun distanceFun() = 3.5
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun followAndIntake(
+    private suspend inline fun followAndIntake(
         pathChain: PathChain,
         timeout: Duration = 5.seconds
     ) = followAndIntake(timeout) { follower.followSuspend(pathChain) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun followAndIntake(
+    private suspend inline fun followAndIntake(
         timeout: Duration = 5.seconds,
-        followFunction: suspend () -> Unit
+        crossinline followFunction: suspend () -> Unit
     ): Unit = coroutineScope {
         intake.isRunning = true
         val intakeJob = launch {
@@ -241,7 +241,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         opModeScope.launch {
             follower.followSuspend(scorePreload)
-            shooterJob = shooter.shoot(::distanceFun)
+            var shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
@@ -277,7 +277,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(pathChain {
                 pathConstantHeading(PI) {
                     +scorePose
-                    // TODO: MIRROR
                     +mirrorAlliance(Pose(rawScorePose.x - 10.0, rawScorePose.y))
                 }
             })

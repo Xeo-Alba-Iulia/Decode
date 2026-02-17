@@ -42,15 +42,15 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun followAndIntake(
+    private suspend inline fun followAndIntake(
         pathChain: PathChain,
         timeout: Duration = 5.seconds
     ) = followAndIntake(timeout) { follower.followSuspend(pathChain) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun followAndIntake(
+    private suspend inline fun followAndIntake(
         timeout: Duration = 5.seconds,
-        followFunction: suspend () -> Unit
+        crossinline followFunction: suspend () -> Unit
     ): Unit = coroutineScope {
         intake.isRunning = true
         val intakeJob = launch {
@@ -78,9 +78,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val startPose = mirrorAlliance(rawStartPose)
     private val rawGoalPose = Pose(13.0, 141.5 - 13.0)
     private val goalPose = mirrorAlliance(rawGoalPose)
-    private val rawScorePose: Pose = Pose(54.0, 86.0).run {
-        withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x))
-    }
+    private val rawScorePose = Pose(54.0, 86.0).run { withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x)) }
     private val scorePose = mirrorAlliance(rawScorePose)
     private val rawFirstBallsCollectPose = Pose(18.0, 84.0, PI)
     private val firstBallsCollectPose = mirrorAlliance(rawFirstBallsCollectPose)
@@ -201,25 +199,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
-            /*
-            val count = sorter.size
-            if (count != 0) {
-                sorter.prepareShoot()
-                sorter.isLifting = true
-                delay(600L)
-//                shootFlow.map { it.canShoot }.filter { it }.first()
-                for (i in 1..<count) {
-                    sorter.prepareShoot()
-                    RobotLog.dd("Shooter", "Shot $i balls")
-                    delay(600L)
-                }
-                delay(600L)
-                sorter.prepareIntake()
-                delay(250L)
-                sorter.isLifting = false
-                job.cancel()
-            }
-             */
             follower.followSuspend(leavePath)
         }
     }
