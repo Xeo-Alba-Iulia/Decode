@@ -15,15 +15,13 @@ import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.selects.onTimeout
-import kotlinx.coroutines.selects.select
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
+import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
@@ -108,6 +106,13 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         pathLinearHeading(endTime = 0.8) {
             +firstBallPose
             +scorePose
+        }
+    }
+
+    private val leavePathChain = pathChain {
+        pathConstantHeading(PI) {
+            +scorePose
+            +mirrorAlliance(Pose(rawScorePose.x - 10.0, rawScorePose.y))
         }
     }
 
@@ -196,40 +201,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     @Suppress("NOTHING_TO_INLINE")
     private inline fun distanceFun() = 3.5
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend inline fun followAndIntake(
-        pathChain: PathChain,
-        timeout: Duration = 5.seconds
-    ) = followAndIntake(timeout) { follower.followSuspend(pathChain) }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend inline fun followAndIntake(
-        timeout: Duration = 5.seconds,
-        crossinline followFunction: suspend () -> Unit
-    ): Unit = coroutineScope {
-        intake.isRunning = true
-        val intakeJob = launch {
-            intake.artefactFlow.take(3 - sorter.size).collect {
-                sorter.intake(it)
-                RobotLog.dd(TAG, "Intaked $it")
-                delay(300L)
-            }
-        }
-        val followerJob = launch { followFunction() }
-        select {
-            intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
-            followerJob.onJoin { Log.e(TAG, "Only picked up ${sorter.size} artefacts") }
-            onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
-        }
-        followerJob.cancel()
-        opModeScope.launch {
-            delay(1.seconds)
-            intakeJob.cancel()
-            intake.isServoRunning = true
-        }
-    }
-
-
     override fun start() {
         patternJob.cancel()
         super.start()
@@ -246,7 +217,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
             follower.setMaxPower(0.4)
-            followAndIntake(firstBalls, timeout = 8.seconds)
+            follower.followAndIntake(intake, sorter, firstBalls)
             follower.setMaxPower(1.0)
             follower.followSuspend(scoreFirstBalls)
             delay(200.milliseconds)
@@ -258,11 +229,15 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
-            followAndIntake(timeout = 10.seconds) {
-                follower.followSuspend(cornerPath)
-                follower.followSuspend(lastBallPositionPath, maxPower = 0.4)
-                follower.followSuspend(lastBallCollectPath, maxPower = 0.4)
-            }
+            follower.setMaxPower(0.5)
+            follower.followAndIntake(
+                intake,
+                sorter,
+                cornerPath,
+                lastBallPositionPath,
+                lastBallCollectPath,
+                timeout = 10.seconds
+            )
             follower.setMaxPower(1.0)
             follower.followSuspend(scoreFromCornerPath)
             intake.isOuttake = true
@@ -274,12 +249,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             delay(500.milliseconds)
             intake.isServoRunning = true
             shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
-            follower.followSuspend(pathChain {
-                pathConstantHeading(PI) {
-                    +scorePose
-                    +mirrorAlliance(Pose(rawScorePose.x - 10.0, rawScorePose.y))
-                }
-            })
+            follower.followSuspend(leavePathChain)
         }
     }
 

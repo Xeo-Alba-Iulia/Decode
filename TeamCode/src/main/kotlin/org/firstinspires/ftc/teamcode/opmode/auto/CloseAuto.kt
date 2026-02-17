@@ -7,11 +7,7 @@ import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.hardware.limelightvision.Limelight3A
-import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.selects.onTimeout
-import kotlinx.coroutines.selects.select
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
@@ -19,6 +15,7 @@ import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
+import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
@@ -26,7 +23,6 @@ import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.atan2
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -40,39 +36,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend inline fun followAndIntake(
-        pathChain: PathChain,
-        timeout: Duration = 5.seconds
-    ) = followAndIntake(timeout) { follower.followSuspend(pathChain) }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend inline fun followAndIntake(
-        timeout: Duration = 5.seconds,
-        crossinline followFunction: suspend () -> Unit
-    ): Unit = coroutineScope {
-        intake.isRunning = true
-        val intakeJob = launch {
-            intake.artefactFlow.take(3 - sorter.size).collect {
-                sorter.intake(it)
-                RobotLog.dd(TAG, "Intaked $it, sorter now has ${sorter.size} artefacts")
-                delay(130L)
-            }
-        }
-        val followerJob = launch { followFunction() }
-        select {
-            intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
-            followerJob.onJoin { Log.e(TAG, "Only picked up ${sorter.size} artefacts") }
-            onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
-        }
-        followerJob.cancel()
-        opModeScope.launch {
-            delay(500.milliseconds)
-            intakeJob.cancel()
-            intake.isServoRunning = true
-        }
-    }
 
     private val rawStartPose = Pose(32.0, 135.0)
     private val startPose = mirrorAlliance(rawStartPose)
@@ -186,14 +149,14 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
             follower.setMaxPower(0.5)
-            followAndIntake(collectBalls1)
+            follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
 //            follower.followSuspend(freeGate, maxPower = .7)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
-            followAndIntake(collectBalls2)
+            follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls2)
