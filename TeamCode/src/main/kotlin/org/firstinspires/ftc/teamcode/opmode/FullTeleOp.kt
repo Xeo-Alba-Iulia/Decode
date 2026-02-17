@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
-import org.firstinspires.ftc.teamcode.elevator.Elevator
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
@@ -54,7 +53,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var sorter: Sorter
     lateinit var follower: Follower
     lateinit var limelight: Limelight3A
-    lateinit var elevator: Elevator
 
     // Drive state
     private var isRobotCentric = false
@@ -93,7 +91,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
-        elevator = opModeGraph.elevator
         observers += sorter
         limelight.pipelineSwitch(limelightPipeline)
     }
@@ -164,8 +161,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         if (gamepad1.squareWasPressed()) {
+            // Elevator removed from graph; button reserved for future use.
             if (!heightIterator.hasNext()) heightIterator = HEIGHT_LIST.iterator()
-            elevator.lift(heightIterator.next())
+            // intentionally no-op
         }
 
         handleShooter()
