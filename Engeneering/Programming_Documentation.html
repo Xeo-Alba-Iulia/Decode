@@ -762,7 +762,7 @@ while (opModeIsActive()) {
 
 <div class="highlight-box">
     <h4>Reactive Data Pipeline</h4>
-    <p>Sensors → Flows → Processing → StateFlow → UI/OpMode</p>
+    <p>Sensors → Flows → Processing → StateFlow</p>
     <ul>
         <li>Backpressure handling prevents overwhelming slow consumers</li>
         <li>Debouncing and filtering at subsystem level</li>
@@ -774,7 +774,10 @@ while (opModeIsActive()) {
     <h4>Concurrent Execution</h4>
     <ul>
         <li>Drive, intake, shooter, elevator all operate on independent coroutines</li>
-        <li>No blocking operations in main loop (60+ FPS maintained)</li>
+        <li>
+            No blocking operations in main loop, allows for reactive controls while CPU intensive operations
+            run in the background.
+        </li>
         <li>Graceful degradation if one subsystem fails (SupervisorJob)</li>
     </ul>
 </div>
@@ -796,7 +799,8 @@ PedroPathingDSL/        # Our custom DSL module
 ├── src/main/kotlin/    # DSL implementation
 └── build.gradle.kts    # Independent build</pre>
 
-<p><strong>Language Distribution:</strong> 48 <code>.kt</code> files, 1 <code>.java</code> file (InterpLUT for performance)</p>
+<p><strong>Language Distribution:</strong> 48 <code>.kt</code> files, 1 <code>.java</code> file (InterpLUT from
+    SolversLib)</p>
 
 <div class="page-break"></div>
 
@@ -900,8 +904,8 @@ PedroPathingDSL/        # Our custom DSL module
 
 <div class="highlight-box">
     <h4>Why Feedforward?</h4>
-    <p><strong>PID alone:</strong> Reacts to error after it occurs (~800ms settling)<br>
-    <strong>Feedforward:</strong> Anticipates required power based on target velocity (~200ms settling)</p>
+    <p><strong>PID alone:</strong> Reacts to error after it occurs (~1s settling)<br>
+        <strong>Feedforward:</strong> Anticipates required power based on target velocity (~400ms settling)</p>
     <p>Control equation: <code>power = kS × sign(velocity) + kV × velocity + PID(error)</code></p>
 </div>
 
@@ -975,7 +979,7 @@ PedroPathingDSL/        # Our custom DSL module
     </tr>
 </table>
 
-<h3>6.2 Intake Color Sensor Processing Pipeline</h3>
+<h3 id="first-intake">6.2 Intake Color Sensor Processing Pipeline</h3>
 
 <p><strong>Hardware:</strong> REV ColorRangeSensor v3<br>
 <strong>Goal:</strong> Detect artifact color (GREEN vs PURPLE) and distance</p>
@@ -1010,8 +1014,8 @@ PedroPathingDSL/        # Our custom DSL module
          │
          ▼
 ┌─────────────────┐
-│   Debounce      │  30ms window filters noise
-│   (30ms)        │
+│   Debounce      │  50ms window filters noise
+│   (50ms)        │
 └────────┬────────┘
          │
          ▼
@@ -1226,7 +1230,7 @@ readyToShootFlow.collect { ready ->
         <p>Hardware and software evolved together. The shooter was <strong>physically redesigned 3 times</strong> to increase power. We learned that software control becomes most valuable once the hardware can support sophisticated behaviors.</p>
     </div>
 </div>
-
+    <!-- TODO: Ti-am zis ce sa fac. -->
 <div class="timeline-item">
     <h4>Decision 4: Dependency Injection with Metro</h4>
     <p><strong>TODO:</strong> This section needs input from the team member who implemented Metro DI.</p>
@@ -1245,6 +1249,7 @@ readyToShootFlow.collect { ready ->
 </div>
 
 <h3>7.3 Sorter Automation Evolution</h3>
+<!-- TODO: Aici a gresit putin Claude. SorterWrapped si SorterOptimized fac același lucru, dar prima era cam neoptimizata si din loguri am văzut ca lua mult timp sa selecteze o poziție in teleop-->
 
 <p><strong>Context:</strong> Like the shooter, the sorter evolved through progressive automation as we developed more sophisticated control strategies.</p>
 
@@ -1358,6 +1363,8 @@ class FarAutoRed : FarAuto(Alliance.RED)</pre>
 </table>
 
 <h3>8.2 Intake System</h3>
+<!-- TODO: Duplication of 6.2 -->
+<a href="#first-intake">Duplicate</a>
 <span class="badge badge-required">STANDARD REQUIREMENT</span>
 
 <p><strong>Hardware:</strong> Motor-driven roller with REV ColorRangeSensor v3</p>
@@ -1603,6 +1610,12 @@ intakeJob.cancel()</pre>
         <td>PedroPathing FTC</td>
         <td>2.0.6</td>
     </tr>
+    <!-- TODO: Emphasize ca PedroPathingDSL e o librarie externa pe care planuim sa dam publish si este deja structurata astfel -->
+    <tr>
+        <td>PedroPathingDSL</td>
+        <td>Custom Kotlin Wrapper</td>
+        <td>0.3.2</td>
+    </tr>
     <tr>
         <td>Control Library</td>
         <td>NextFTC Control</td>
@@ -1625,6 +1638,7 @@ intakeJob.cancel()</pre>
     </tr>
 </table>
 
+<!-- TODO: Nu am timp sa mai caut dar si asta e duplicata pe undeva, am schimbat deja, ar trebui sa fie al doilea fragment din diferente -->
 <p><strong>Language Distribution:</strong> 48 Kotlin files (<code>.kt</code>), 1 Java file (<code>.java</code> - InterpLUT for performance-critical interpolation)</p>
 
 <h3>10.4 Testing Methodology</h3>
