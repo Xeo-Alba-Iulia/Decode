@@ -16,7 +16,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.teamcode.Alliance
-import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
@@ -27,6 +26,7 @@ import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.time.Duration
@@ -204,12 +204,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     override fun start() {
         patternJob.cancel()
         super.start()
-        val pattern = when (fiducialId) {
-            21 -> listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
-            22 -> listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
-            23 -> listOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
-            else -> error("Invalid fiducialId: $fiducialId")
-        }
+        val pattern = fiducialId.toArtefactList()
         opModeScope.launch {
             follower.followSuspend(scorePreload)
             var shooterJob = shooter.shoot(::distanceFun)

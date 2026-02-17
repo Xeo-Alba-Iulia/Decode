@@ -13,9 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.contracts.ExperimentalContracts
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 private val followingMutex = Mutex()
@@ -41,7 +39,16 @@ suspend fun Follower.followSuspend(
     }
 }
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalContracts::class)
+/**
+ * Follow the given path while intaking, and stop when either the path is finished or the timeout is reached.
+ *
+ * This is the most general version of followAndIntake, which takes a suspend function as a parameter
+ * to allow for maximum flexibility in how the path is followed.
+ *
+ * The other versions of followAndIntake are just convenience wrappers around this
+ * one that call it with different parameters.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 suspend inline fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
@@ -69,11 +76,14 @@ suspend inline fun Follower.followAndIntake(
         }
         followerJob.cancel()
         if (pathFinished)
-            delay(500.milliseconds)
+            delay(500L)
         intakeJob.cancel()
         intake.isServoRunning = true
     }
 
+/**
+ * Follow the given path while intaking, and stop when either the path is finished or the timeout is reached.
+ */
 suspend inline fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
@@ -81,9 +91,31 @@ suspend inline fun Follower.followAndIntake(
     timeout: Duration = 5.seconds,
 ) = followAndIntake(intake, sorter, timeout) { followSuspend(path) }
 
+/**
+ * Deprecated version of followAndIntake that doesn't take a path.
+ *
+ * This is used to cause a compile error if someone tries to call followAndIntake without a path,
+ * since that would be a bug.
+ *
+ * @throws UnsupportedOperationException
+ */
+@Suppress("UNUSED_PARAMETER", "UnusedReceiverParameter")
+@Deprecated("No path provided", level = DeprecationLevel.ERROR)
+fun Follower.followAndIntake(
+    intake: Intake,
+    sorter: Sorter,
+    timeout: Duration = 5.seconds
+): Unit = throw UnsupportedOperationException("No path provided to follow")
+
+/**
+ * Follow the given paths while intaking, and stop when either the paths are finished or the timeout is reached.
+ *
+ * This is a vararg version of followAndIntake that allows you to provide multiple paths to follow in sequence.
+ * To set max powers individually, they must be set in the paths callbacks themselves.
+ */
 suspend inline fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
     vararg paths: PathChain,
     timeout: Duration = 5.seconds,
-) = followAndIntake(intake, sorter, timeout) { require(paths.isNotEmpty()); paths.forEach { followSuspend(it) } }
+) = followAndIntake(intake, sorter, timeout) { assert(paths.isNotEmpty()); paths.forEach { followSuspend(it) } }

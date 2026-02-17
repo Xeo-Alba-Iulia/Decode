@@ -9,7 +9,6 @@ import com.pedropathing.paths.pathChain
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
 import org.firstinspires.ftc.teamcode.Alliance
-import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
@@ -21,6 +20,7 @@ import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.time.Duration.Companion.milliseconds
@@ -137,15 +137,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 Log.d(TAG, "Detected $result")
                 result
             }
-            val patternList = when (pattern) {
-                21 -> listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
-                22 -> listOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
-                23 -> listOf(ArtefactType.PURPLE, ArtefactType.PURPLE, ArtefactType.GREEN)
-                else -> {
-                    Log.e(TAG, "Failed to detect pattern, defaulting to first pattern")
-                    listOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
-                }
-            }
+            val patternList = pattern?.toArtefactList() ?: emptyList()
             shooter.alignToPose(follower.pose, goalPose)
             shootAll(shooter.stateFlow, sorter, job, patternList)
             follower.setMaxPower(0.5)
