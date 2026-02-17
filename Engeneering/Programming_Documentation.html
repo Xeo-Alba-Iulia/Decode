@@ -414,24 +414,36 @@
 <div class="comparison-cols">
     <div class="comparison-col">
         <h5>Standard PedroPathing API</h5>
-        <pre>Path path = new Path(new BezierLine(
-    new Point(startPose),
-    new Point(targetPose)
-));
-path.setLinearHeadingInterpolation(
-    startHeading, endHeading);
-path.setPathEndTimeoutConstraint(500);
-follower.followPath(path);</pre>
+        <pre>PathChain pathChain =
+    follower.pathBuilder()
+    .addBezierLine(startPose, targetPose)
+    .setLinearInterp(startHeading,endHeading)
+    .setPathEndTimeoutConstraint(500)
+    .addTemporalCallback(200) {
+        intake.isRunning = true
+    }
+    .addParametricCallback(0.5) {
+        shooter.setVelocity(2000)
+    }
+    .build();
+</pre>
     </div>
     <div class="comparison-col">
         <h5>Our DSL Wrapper</h5>
-        <pre>pathChain {
+        <pre>pathChain(constraints.copy(timeout = 500)) {
+    /* Automatically adds linear
+       heading interpolation
+       between start and target poses
+    */
     pathLinearHeading {
         +startPose
         +targetPose
         callbacks {
-            temporalCallback(200.ms) { 
-                intake.isRunning = true 
+            temporalCallback(200.ms) {
+                intake.isRunning = true
+            }
+            parametricCallback(0.5) {
+                shooter.setVelocity(2000)
             }
         }
     }
