@@ -7,11 +7,11 @@ import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
-import org.firstinspires.ftc.teamcode.sorter.Transfer
+import org.firstinspires.ftc.teamcode.sorter.Sorter
 
 @ContributesTo(OpModeScope::class)
 interface SorterProviders {
-    val transfer: Transfer
+    val sorter: Sorter
 
     companion object {
         @Provides
