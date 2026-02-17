@@ -24,7 +24,7 @@ class ShooterOpMode : CoroutineOpMode() {
     override fun init() {
         intake = opModeGraph.intake
         sorter = opModeGraph.sorter.apply { prepareIntake() }
-        shooter = opModeGraph.shooter
+        shooter = opModeGraph.shooter as ShooterImpl
         telemetry = opModeGraph.telemetry
         telemetry = opModeGraph.telemetry
         limelight = opModeGraph.limelight.apply { pipelineSwitch(1) }

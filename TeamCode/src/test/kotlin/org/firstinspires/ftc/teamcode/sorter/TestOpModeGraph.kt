@@ -5,13 +5,12 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.CoroutineProviders
-import org.firstinspires.ftc.teamcode.metro.ElevatorProviders
 import org.firstinspires.ftc.teamcode.metro.IntakeProviders
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @DependencyGraph(
     OpModeScope::class,
-    excludes = [CoroutineProviders::class, ElevatorProviders::class, IntakeProviders::class]
+    excludes = [CoroutineProviders::class, IntakeProviders::class]
 )
 interface TestOpModeGraph {
     val sorterOptimized: SorterOptimized

@@ -70,11 +70,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
     // Speed control
     companion object {
         @JvmField
-        var HOOD_ADJUSTMENT_STEP = 0.01
-        @JvmField
         var ANGLE_ADJUSTMENT_STEP = -0.5
         @JvmField
-        var SORTER_POSITION_MULTIPLIER = -0.005
+        var SORTER_POSITION_MULTIPLIER = -0.02
         @JvmField
         var TURET_OFFSET_ADJUSTMENT_STEP = 1
 
@@ -85,7 +83,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
     }
 
     override fun init() {
-//        telemetry = opModeGraph.telemetry
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter
         sorter = opModeGraph.sorter
@@ -132,7 +129,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         gamepad1.rumble(500)
                         gamepad2.rumble(500)
                     }
-
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
                 lastIsFull = isFull

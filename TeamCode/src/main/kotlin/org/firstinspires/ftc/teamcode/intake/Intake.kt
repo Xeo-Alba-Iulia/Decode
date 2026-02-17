@@ -61,7 +61,7 @@ class Intake(
             _isServoRunning = value
             _isRunning = false
             _isOuttake = false
-            motor.power = if (value) SERVO_POWER else 0.0
+            motor.power = if (value) SLOW_POWER else 0.0
         }
 
     init {
@@ -109,7 +109,7 @@ class Intake(
         @JvmField
         var INTAKE_POWER = 0.7
         @JvmField
-        var SERVO_POWER = 0.4
+        var SLOW_POWER = 0.2
         @JvmField
         var ALPHA_THRESHOLD = 350.0
         @JvmField

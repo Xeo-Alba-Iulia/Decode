@@ -24,6 +24,7 @@ interface Shooter {
     data class State(val velocity: Double, val canShoot: Boolean)
 }
 
+//TODO: Fix not going fully to -80
 fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
     val angle = atan2(
         targetPose.y - currentPose.y,
@@ -67,11 +68,10 @@ suspend fun shootAll(
         for (i in 1..<count) {
             sorter.shootOrDefault(orderIterator.nextOrNull())
             RobotLog.dd("Shooter", "Shot $i balls")
-            delay(400L)
+            delay(250L)
         }
-        delay(450L)
+        delay(250L)
         sorter.prepareIntake()
-        delay(100L)
         sorter.isLifting = false
         shooterJob.cancel()
     }

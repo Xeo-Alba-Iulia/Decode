@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.metro
 
-import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
@@ -19,7 +18,7 @@ interface SorterProviders {
         fun provideServo(map: HardwareMap): Servo = map.servo["sorter"]
 
         @Provides
-        @Named("transferServo")
-        fun provideTransferServo(map: HardwareMap): DcMotor = map.dcMotor["transfer"]
+        @Named("transfer")
+        fun provideTransferMotor(map: HardwareMap): DcMotor = map.dcMotor["transfer"]
     }
 }

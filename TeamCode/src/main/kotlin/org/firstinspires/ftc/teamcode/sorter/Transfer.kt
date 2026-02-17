@@ -10,19 +10,19 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 @Config
 @Inject
 @SingleIn(OpModeScope::class)
-class Transfer(@Named("transferServo") private val servo: DcMotor) {
+class Transfer(@Named("transfer") private val motor: DcMotor) {
     var isRunning = false
         set(value) {
             field = value
-            servo.power = if (value) POWER else 0.0
+            motor.power = if (value) POWER else 0.0
         }
 
     init {
-        servo.power = 0.0
+        motor.power = 0.0
     }
 
     companion object {
         @JvmField
-        var POWER = 1.0
+        var POWER = 0.7
     }
 }
