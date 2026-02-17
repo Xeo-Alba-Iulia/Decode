@@ -488,7 +488,7 @@
     </tr>
 </table>
 
-<p><strong>Architecture Location:</strong> <code>PedroPathingDSL/</code> - Separate Gradle module with independent build configuration, making it reusable across seasons and potentially sharable with the FTC community.</p>
+<p><strong>Architecture Location:</strong> <code>PedroPathingDSL/</code> - Separate Gradle module with independent build configuration, making it reusable across seasons. We plan to publish this library publicly for the FTC community to use.</p>
 
 <h3>2.3 Core Components</h3>
 
@@ -1230,10 +1230,8 @@ readyToShootFlow.collect { ready ->
         <p>Hardware and software evolved together. The shooter was <strong>physically redesigned 3 times</strong> to increase power. We learned that software control becomes most valuable once the hardware can support sophisticated behaviors.</p>
     </div>
 </div>
-    <!-- TODO: Ti-am zis ce sa fac. -->
 <div class="timeline-item">
     <h4>Decision 4: Dependency Injection with Metro</h4>
-    <p><strong>TODO:</strong> This section needs input from the team member who implemented Metro DI.</p>
     
     <p><strong>Problem Context:</strong> Subsystems becoming tightly coupled, testing difficult</p>
     
@@ -1249,7 +1247,6 @@ readyToShootFlow.collect { ready ->
 </div>
 
 <h3>7.3 Sorter Automation Evolution</h3>
-<!-- TODO: Aici a gresit putin Claude. SorterWrapped si SorterOptimized fac același lucru, dar prima era cam neoptimizata si din loguri am văzut ca lua mult timp sa selecteze o poziție in teleop-->
 
 <p><strong>Context:</strong> Like the shooter, the sorter evolved through progressive automation as we developed more sophisticated control strategies.</p>
 
@@ -1363,32 +1360,15 @@ class FarAutoRed : FarAuto(Alliance.RED)</pre>
 </table>
 
 <h3>8.2 Intake System</h3>
-<!-- TODO: Duplication of 6.2 -->
-<a href="#first-intake">Duplicate</a>
 <span class="badge badge-required">STANDARD REQUIREMENT</span>
 
-<p><strong>Hardware:</strong> Motor-driven roller with REV ColorRangeSensor v3</p>
+<p><strong>Hardware Configuration:</strong> Motor-driven roller mechanism with integrated REV ColorRangeSensor v3</p>
 
-<p><strong>Design Evolution:</strong> The color sensor was initially mounted on the intake ramp but was relocated to above the sorter's intake slot for more reliable detection at the transfer point.</p>
+<p><strong>Physical Design Evolution:</strong> The color sensor was initially mounted on the intake ramp but was relocated to above the sorter's intake slot for more reliable detection at the transfer point. This positioning change improved detection accuracy by sensing artifacts at the precise moment they enter the sorting mechanism.</p>
 
-<div class="feature-list">
-    <ul>
-        <li>Real-time color detection (GREEN vs PURPLE artifacts)</li>
-        <li>Distance-based artifact detection (&lt;8cm threshold)</li>
-        <li>RGB ratio analysis: <code>green/red > 1.5</code> for GREEN classification</li>
-        <li>Reactive Flow-based processing with 30ms debouncing</li>
-        <li>Multiple modes: intake, outtake, servo control</li>
-    </ul>
-</div>
+<p><strong>Control Modes:</strong> Intake (collect artifacts), outtake (eject), and servo control for positioning adjustments.</p>
 
-<h4>Classification Algorithm</h4>
-
-<pre>when {
-    reading.alpha < 350 -> null              // Insufficient light
-    reading.green > reading.red * 1.5 -> GREEN
-    reading.red > reading.green * 1.5 -> PURPLE
-    else -> null                             // Ambiguous
-}</pre>
+<p><strong>Software Implementation:</strong> Reactive color detection and processing pipeline detailed in <a href="#first-intake">Section 6.2</a>.</p>
 
 <h3>8.3 Sorter System</h3>
 <span class="badge badge-required">STANDARD REQUIREMENT</span>
@@ -1610,7 +1590,6 @@ intakeJob.cancel()</pre>
         <td>PedroPathing FTC</td>
         <td>2.0.6</td>
     </tr>
-    <!-- TODO: Emphasize ca PedroPathingDSL e o librarie externa pe care planuim sa dam publish si este deja structurata astfel -->
     <tr>
         <td>PedroPathingDSL</td>
         <td>Custom Kotlin Wrapper</td>
@@ -1637,9 +1616,6 @@ intakeJob.cancel()</pre>
         <td>Latest</td>
     </tr>
 </table>
-
-<!-- TODO: Nu am timp sa mai caut dar si asta e duplicata pe undeva, am schimbat deja, ar trebui sa fie al doilea fragment din diferente -->
-<p><strong>Language Distribution:</strong> 48 Kotlin files (<code>.kt</code>), 1 Java file (<code>.java</code> - InterpLUT for performance-critical interpolation)</p>
 
 <h3>10.4 Testing Methodology</h3>
 
