@@ -1,17 +1,16 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import com.qualcomm.robotcore.hardware.Servo
-import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
-import dev.zacsweers.metro.binding
+import dev.zacsweers.metro.SingleIn
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import java.util.*
 import kotlin.math.abs
 
 @Inject
-@ContributesBinding(OpModeScope::class, binding<Sorter>(), [SorterImpl::class, SorterWrapped::class])
+@SingleIn(OpModeScope::class)
 class SorterOptimized(
     @Named("sorterServo") servo: Servo,
     transfer: Transfer,
@@ -40,7 +39,6 @@ class SorterOptimized(
     }
 
     override fun prepareShoot(type: ArtefactType?): Boolean {
-        if (isEmpty) return false
         val oldPosition = (position * 1000.0).toInt()
         return artefacts
                 .indices

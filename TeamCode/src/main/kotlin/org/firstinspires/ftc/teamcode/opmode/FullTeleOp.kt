@@ -14,11 +14,11 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootAll
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -156,12 +156,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
 
-        if (gamepad1.squareWasPressed()) {
-            // Elevator removed from graph; button reserved for future use.
-            if (!heightIterator.hasNext()) heightIterator = HEIGHT_LIST.iterator()
-            // intentionally no-op
-        }
-
         handleShooter()
 
         if (gamepad2.dpad_right) {
@@ -186,19 +180,23 @@ abstract class FullTeleOp : CoroutineOpMode() {
         val autoShoot = gamepad2.triangleWasPressed()
 
         // Start/stop shooting sequence
-        if ((gamepad2.aWasPressed() || autoShoot) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = shooter.shoot { goalPose.distanceFrom(follower.pose) / 39.37 }
+        if ((gamepad2.aWasPressed()) && currentShooterJob?.isCancelled != false) {
+            currentShooterJob = (shooter as ShooterImpl).shoot(velocityFn = { 2000.0 }, hoodFn = { 0.4 })
+            sorter.position = 0.0
         }
 
-        if (autoShoot)
+        if (autoShoot) {
+            if (sorter.position != 0.0)
+                RobotLog.ww(TAG, "Auto shoot triggered while in position: ${sorter.position}")
+            sorter.position = 1.0
+            sorter.isLifting = true
             opModeScope.launch {
-                try {
-                    shootAll(shooter.stateFlow, sorter, currentShooterJob!!)
-                } catch (e: Exception) {
-                    if (e is CancellationException) return@launch
-                    RobotLog.dd("FullTeleOp", e, "Shooter problem")
-                }
+                delay(1.25.seconds)
+                sorter.isLifting = false
+                sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
+                sorter.prepareIntake()
             }
+        }
 
         if (gamepad2.bWasPressed()) {
             currentShooterJob?.cancel()

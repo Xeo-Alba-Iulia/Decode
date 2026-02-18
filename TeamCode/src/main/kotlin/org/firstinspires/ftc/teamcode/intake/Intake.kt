@@ -109,7 +109,7 @@ class Intake(
         @JvmField
         var INTAKE_POWER = 0.7
         @JvmField
-        var SLOW_POWER = 0.2
+        var SLOW_POWER = 0.3
         @JvmField
         var ALPHA_THRESHOLD = 350.0
         @JvmField

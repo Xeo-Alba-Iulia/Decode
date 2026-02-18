@@ -23,6 +23,6 @@ class Transfer(@Named("transfer") private val motor: DcMotor) {
 
     companion object {
         @JvmField
-        var POWER = 0.7
+        var POWER = 1.0
     }
 }

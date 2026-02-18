@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
+import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.binding
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
@@ -12,8 +13,8 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
 
 @Config
-//@SingleIn(OpModeScope::class)
-@ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
+@SingleIn(OpModeScope::class)
+@ContributesBinding(OpModeScope::class, binding<Sorter>())
 open class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
@@ -38,8 +39,18 @@ open class SorterWrapped(
         else
             arrayOfNulls(3)
 
-    @Volatile
-    private var currentIntakeSlot: Int = -1
+    val positionsList = List(3) {
+        buildList {
+            var position = OFFSET - HALF_ROTATION + it * HALF_ROTATION * 2 / 3
+            while (position < 1.0) {
+                if (position >= 0.0)
+                    add(it to position)
+                position += 2 * HALF_ROTATION
+            }
+        }
+    }
+
+    private var currentIntakeSlot = -1
 
     override fun prepareIntake() {
         if (isFull) return
@@ -60,25 +71,17 @@ open class SorterWrapped(
     */
     override fun prepareShoot(type: ArtefactType?): Boolean {
         val oldPosition = servo.position
-        return artefacts.asSequence().withIndex()
-                .filter { (_, storedType) -> type?.equals(storedType) ?: (storedType != null) }
-                .map(IndexedValue<*>::index)
-                .flatMap {
-                    buildList {
-                        var position = OFFSET - HALF_ROTATION + it * HALF_ROTATION * 2 / 3
-                        while (position < 1.0) {
-                            if (position >= 0.0)
-                                add(it to position)
-                            position += 2 * HALF_ROTATION
-                        }
-                    }
-                }.minByOrNull { (_, position) ->
-                    abs(oldPosition - position)
-                }?.let { (idx, position) ->
-                    servo.position = position
-                artefacts[idx] = null
-                    true
-                } ?: false
+        val validIndices =
+            artefacts
+                .indices
+                .filter { type?.equals(artefacts[it]) ?: (artefacts[it] != null) }
+        val correctedList = validIndices.flatMap { positionsList[it] }
+        val closest = correctedList.minByOrNull { (_, pos) -> abs(pos - oldPosition) }
+        return closest?.let { (idx, position) ->
+            servo.position = position
+            artefacts[idx] = null
+            true
+        } ?: false
     }
 
     override suspend fun onStart(opMode: OpMode) = prepareIntake()
