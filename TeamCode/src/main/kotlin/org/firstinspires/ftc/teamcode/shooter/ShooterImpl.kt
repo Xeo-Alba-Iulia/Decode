@@ -113,7 +113,7 @@ class ShooterImpl(
             try {
                 while (true) {
                     controller.goal = KineticState(velocity = velocityFn())
-                    hood = hoodLUT[hoodFn()]
+                    hood = hoodFn()
                     update()
                     delay(50L)
                 }
