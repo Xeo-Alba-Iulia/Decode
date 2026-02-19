@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.flowOn
 import org.firstinspires.ftc.teamcode.InterpLUT
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Config
 @ContributesBinding(OpModeScope::class)
@@ -78,27 +80,63 @@ class ShooterImpl(
 
     private fun setPower(power: Double) = motors.forEach { it.power = power }
 
-    private fun update() {
+    /**
+     * Finds the launch angle for a given distance and velocity using Newton's method.
+     *
+     * @param distance The horizontal distance to the target in meters.
+     * @param velocity The launch velocity in meters per second.
+     * @param guess An initial guess for the launch angle in degrees.
+     *
+     * @return The launch angle in degrees that will hit the target at the given distance and velocity.
+     */
+    private tailrec fun findLaunchAngle(
+        distance: Double,
+        velocity: Double,
+        guess: Double = Math.toRadians(40.0),
+        repetitions: Int = 3
+    ): Double {
+        val g = 9.81
+        val height = 110.0 - 30.0
+        if (repetitions <= 0) return guess
+        val time = distance / (velocity * cos(guess))
+        val f = velocity * sin(guess) * time - 0.5 * g * time * time - height
+        val df = velocity * sin(guess) - g * time
+        return findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
+    }
+
+    private var oldVelocity = 0.0
+    private var oldDistance = 0.0
+
+    private fun update(distance: Double) {
         val position = encoder.currentPosition.toDouble()
         val velocity = encoder.velocity
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
         stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
+        if (abs(distance - oldDistance) > 0.1 || abs(velocity - oldVelocity) > 50.0) {
+            hood = (Math.toDegrees(findLaunchAngle(distance, (desiredVelocity - 100.0) / 28.0)) - 33.0) /
+                    (47.0 - 33.0)
+            oldDistance = distance
+            oldVelocity = velocity
+        }
     }
 
     override fun shoot(distanceFlow: Flow<Double>): Job =
         opModeScope.launch {
             try {
+                var dist = 0.0
                 val updateJob = launch {
                     while (true) {
-                        update()
+                        update(dist)
                         delay(50L)
                     }
                 }
                 distanceFlow.flowOn(Dispatchers.IO).collect { distance ->
+                    dist = distance
                     val desiredVelocity = velocityLUT[distance]
-                    hood = hoodLUT[distance]
+//                    hood = (Math.toDegrees(findLaunchAngle(distance, (desiredVelocity - 100.0) / 28.0)) - 33.0) /
+//                            (47.0 - 33.0)
                     controller.goal = KineticState(velocity = desiredVelocity)
                 }
                 updateJob.cancel()
@@ -114,7 +152,7 @@ class ShooterImpl(
                 while (true) {
                     controller.goal = KineticState(velocity = velocityFn())
                     hood = hoodFn()
-                    update()
+                    update(0.0)
                     delay(50L)
                 }
             } finally {
