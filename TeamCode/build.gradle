@@ -39,7 +39,6 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
-            freeCompilerArgs.add("-Wextra")
             freeCompilerArgs.add("-Xannotation-default-target=param-property")
             freeCompilerArgs.add("-Xreturn-value-checker=full")
             freeCompilerArgs.add("-Xexplicit-backing-fields")
