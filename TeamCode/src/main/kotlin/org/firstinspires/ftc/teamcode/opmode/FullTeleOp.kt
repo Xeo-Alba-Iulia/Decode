@@ -14,9 +14,9 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -66,6 +66,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val limelightPipeline: Int
 
     var heightIterator: Iterator<Double> = HEIGHT_LIST.iterator()
+
+    val distanceFlow = MutableStateFlow(0.0)
 
     // Speed control
     companion object {
@@ -150,6 +152,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         )
         follower.update()
         drawDebug(follower)
+        distanceFlow.value = goalPose.distanceFrom(follower.pose)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
@@ -181,7 +184,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed()) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = (shooter as ShooterImpl).shoot(velocityFn = { 2000.0 }, hoodFn = { 0.4 })
+            currentShooterJob = shooter.shoot(
+                distanceFlow.map { it / 39.37 }.distinctUntilChanged { vel1, vel2 -> abs(vel1 - vel2) < 0.1 }
+            )
             sorter.position = 0.0
         }
 
