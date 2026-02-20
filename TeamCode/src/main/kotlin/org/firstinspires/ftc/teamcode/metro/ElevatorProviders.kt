@@ -12,7 +12,7 @@ interface ElevatorProviders {
 
     @Provides
     fun provideServos(map: HardwareMap): List<Servo> = listOf(
-        map.servo["lift left"],
-        map.servo["lift right"].apply { direction = Servo.Direction.REVERSE },
+        map.servo["lift left"].apply { direction = Servo.Direction.REVERSE },
+        map.servo["lift right"],
     )
 }
