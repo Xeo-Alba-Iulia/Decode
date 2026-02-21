@@ -48,7 +48,7 @@ class ShooterImpl(
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1420.0, 1500.0, 1760.0, 1800.0, 1860.0, 2020.0, 2150.0),
+        /* output = */ listOf(1600.0, 1650.0, 1700.0, 1760.0, 1870.0, 2140.0, 2260.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -84,9 +84,9 @@ class ShooterImpl(
         distance: Double,
         velocity: Double,
         guess: Double = Math.toRadians(67.5),
-        repetitions: Int = 2
+        repetitions: Int = 4
     ): Double {
-        val g = 8.9
+        val g = 9.1
         val height = 0.68
         if (velocity == 0.0 || distance == 0.0)
             return Math.toRadians(60.0)
@@ -110,7 +110,7 @@ class ShooterImpl(
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
         stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
-        val result = Math.toDegrees(findLaunchAngle(distance, ((velocity) / 28) * .08)).coerceIn(28.0..45.0)
+        val result = Math.toDegrees(findLaunchAngle(distance, ((velocity) / 28) * .083)).coerceIn(45.0..62.0)
         hood = (90 - result - 28) / (45 - 30)
     }
 
