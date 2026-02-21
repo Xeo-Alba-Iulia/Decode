@@ -83,23 +83,23 @@ class ShooterImpl(
     private tailrec fun findLaunchAngle(
         distance: Double,
         velocity: Double,
-        guess: Double = Math.toRadians(40.0),
-        repetitions: Int = 5
+        guess: Double = Math.toRadians(67.5),
+        repetitions: Int = 2
     ): Double {
-        val g = 9.81
-        val height = (115.0 - 30.0) / 100.0
-        if (repetitions <= 0)
-            if (guess.isNaN()) {
-                Log.e("ShooterImpl", "Guess was Nan")
-                return Math.toRadians(40.0)
-            } else {
-                Log.v("ShooterImpl", "Found angle was ${Math.toDegrees(guess)}")
-                return guess
-            }
+        val g = 8.9
+        val height = 0.68
+        if (velocity == 0.0 || distance == 0.0)
+            return Math.toRadians(60.0)
+        if (repetitions <= 0) {
+            Log.v("Angle", "Found: $guess, distance = $distance, velocity = $velocity")
+            return guess
+        }
+        val d = distance
+        val v = velocity
         val sin = sin(guess)
         val cos = cos(guess)
-        val f = distance * sin / cos - (distance * distance * g) / (2 * velocity * velocity * cos * cos) - height
-        val df = distance / (cos * cos) - (distance * distance * g * sin) / (velocity * velocity * cos * cos * cos)
+        val f = d * sin / cos - (d * d * g) / (2 * v * v * cos * cos) - height
+        val df = d / (cos * cos) - (d * d * g * sin) / (v * v * cos * cos * cos)
         return findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
     }
 
@@ -110,7 +110,8 @@ class ShooterImpl(
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
         stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
-        hood = (Math.toDegrees(findLaunchAngle(distance, velocity / 28.0)) - 29.0) / 9.5
+        val result = Math.toDegrees(findLaunchAngle(distance, ((velocity) / 28) * .08)).coerceIn(28.0..45.0)
+        hood = (90 - result - 28) / (45 - 30)
     }
 
     override fun shoot(distanceFlow: Flow<Double>): Job =

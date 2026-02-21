@@ -180,12 +180,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
     }
 
     private fun handleShooter() {
-        val autoShoot = gamepad2.triangleWasPressed()
+        val autoShoot = gamepad2.triangleWasPressed() || gamepad1.rightTriggerWasPressed()
 
         // Start/stop shooting sequence
-        if ((gamepad2.aWasPressed()) && currentShooterJob?.isCancelled != false) {
+        if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
             currentShooterJob = shooter.shoot(
-                distanceFlow.map { it / 39.37 }.distinctUntilChanged { vel1, vel2 -> abs(vel1 - vel2) < 0.1 }
+                distanceFlow.map { it / 40 }.distinctUntilChanged { vel1, vel2 -> abs(vel1 - vel2) < 0.1 }
             )
             sorter.position = 0.0
         }
@@ -200,6 +200,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 sorter.isLifting = false
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
                 sorter.prepareIntake()
+                currentShooterJob?.cancel()
             }
         }
 
