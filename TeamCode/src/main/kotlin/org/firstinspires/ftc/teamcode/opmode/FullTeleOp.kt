@@ -128,6 +128,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         intake.isServoRunning = true
                         gamepad1.rumble(500)
                         gamepad2.rumble(500)
+                        sorter.position = 0.0
+                        sorter.prepareShoot()
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -150,7 +152,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         )
         follower.update()
         drawDebug(follower)
-        distanceFlow.value = goalPose.distanceFrom(follower.pose)
+        distanceFlow.value = goalPose.distanceFrom(follower.pose) / 39.37
+        telemetry.addData("Distance",distanceFlow.value)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
@@ -182,9 +185,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = shooter.shoot(distanceFlow.map { it / 39.37 })
-            sorter.position = 0.0
-            sorter.prepareShoot()
+            currentShooterJob = shooter.shoot(distanceFlow)
         }
 
         if (autoShoot) {
@@ -195,14 +196,14 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 delay(600L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
                 sorter.isLifting = false
-                currentShooterJob?.cancel()
+                //currentShooterJob?.cancel()
                 sorter.prepareIntake()
                 delay(400L)
                 (sorter as? SorterImpl)?.run { size = 0 }
             }
         }
 
-        if (gamepad2.bWasPressed()) {
+        if (gamepad2.bWasPressed()||gamepad1.leftBumperWasPressed()) {
             currentShooterJob?.cancel()
         }
 
