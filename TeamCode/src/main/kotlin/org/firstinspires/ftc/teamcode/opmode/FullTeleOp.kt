@@ -7,7 +7,6 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
-import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
@@ -16,9 +15,8 @@ import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.math.abs
+import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -184,23 +182,23 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = shooter.shoot(
-                distanceFlow.map { it / 40 }.distinctUntilChanged { vel1, vel2 -> abs(vel1 - vel2) < 0.1 }
-            )
+            currentShooterJob = shooter.shoot(distanceFlow.map { it / 39.37 })
             sorter.position = 0.0
+            sorter.prepareShoot()
         }
 
         if (autoShoot) {
-            if (sorter.position != 0.0)
-                RobotLog.ww(TAG, "Auto shoot triggered while in position: ${sorter.position}")
-            sorter.position = 1.0
             sorter.isLifting = true
             opModeScope.launch {
-                delay(1.25.seconds)
-                sorter.isLifting = false
+                delay(100L)
+                sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
+                delay(600L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
-                sorter.prepareIntake()
+                sorter.isLifting = false
                 currentShooterJob?.cancel()
+                sorter.prepareIntake()
+                delay(400L)
+                (sorter as? SorterImpl)?.run { size = 0 }
             }
         }
 
