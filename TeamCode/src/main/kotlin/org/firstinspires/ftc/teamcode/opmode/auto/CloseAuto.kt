@@ -47,7 +47,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val firstBallsCollectPose = mirrorAlliance(rawFirstBallsCollectPose)
     private val rawSecondBallsCollectPose = Pose(11.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
-    private val rawFreeGoalPose = Pose(16.0, 73.0, PI / 2)
+    private val rawFreeGoalPose = Pose(16.0, 75.0, PI / 2)
     private val freeGoalPose = mirrorAlliance(rawFreeGoalPose)
 
     private val scorePreload = pathChain {
@@ -114,28 +114,38 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
         val distance = goalPose.distanceFrom(scorePose) / 39.37
+        val followerDispatcher = Dispatchers.Default.limitedParallelism(1)
         intake.isServoRunning = true
-        opModeScope.launch {
-            var job: Job
-            val pattern = coroutineScope {
-                val patternId = async {
-                    var id = 0
-                    while (id == 0) {
-                        limelight?.latestResult?.fiducialResults?.singleOrNull()?.let { id = it.fiducialId }
-                        delay(50.milliseconds)
+        opModeScope.launch(followerDispatcher) {
+            while (true) {
+                drawDebug(follower)
+                yield()
+            }
+        }
+        opModeScope.launch(followerDispatcher) {
+            var job = shooter.shoot { distance }
+            val pattern: Int?
+            withContext(Dispatchers.Default) {
+                pattern = coroutineScope {
+                    val patternId = async {
+                        var id = 0
+                        while (id == 0) {
+                            delay(50.milliseconds)
+                            limelight?.latestResult?.fiducialResults?.singleOrNull()?.let { id = it.fiducialId }
+                        }
+                        id
                     }
-                    Log.d(TAG, "Detected pattern ID: $id")
-                    id
+                    withContext(followerDispatcher) { follower.followSuspend(scorePreload) }
+                    launch { delay(500.milliseconds) }
+                    val result = withTimeoutOrNull(1.seconds) { patternId.await() }
+                    patternId.cancel()
+                    shooter.angleDegrees = 0.0
+                    Log.d(TAG, "Detected $result")
+                    result
                 }
-                follower.followSuspend(scorePreload)
-                job = shooter.shoot { distance }
-                launch { delay(500.milliseconds) }
-                val result = withTimeoutOrNull(1.seconds) { patternId.await() }
-                shooter.angleDegrees = 0.0
-                Log.d(TAG, "Detected $result")
-                result
             }
             val patternList = pattern?.toArtefactList() ?: emptyList()
             shooter.alignToPose(follower.pose, goalPose)
@@ -156,10 +166,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followSuspend(leavePath)
         }
-    }
-
-    override fun loop() {
-        drawDebug(follower)
     }
 
     override fun stop() {

@@ -52,7 +52,6 @@ suspend fun shootPattern(
         }
         return result
     }
-
     val count = sorter.size
     if (count == 0) return
     Log.d("Shooter", "shootOrder: $shootOrder")
@@ -61,9 +60,9 @@ suspend fun shootPattern(
     val orderIterator = shootOrder.iterator()
     repeat(count) {
         assert(sorter.shootOrDefault(orderIterator.nextOrNull()))
-        delay(300.milliseconds)
+        delay(450.milliseconds)
         sorter.isLifting = true
-        delay(50.milliseconds)
+        delay(100.milliseconds)
         sorter.isLifting = false
     }
     sorter.prepareIntake()
