@@ -15,7 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 
 @JvmField
 var followerConstants: FollowerConstants = FollowerConstants()
-    .mass(11.0)
+    .mass(12.3)
     .forwardZeroPowerAcceleration(-41.02643032142339)
     .lateralZeroPowerAcceleration(-73.149645)
     .translationalPIDFCoefficients(PIDFCoefficients(0.2, 0.0, 0.012, 0.01))

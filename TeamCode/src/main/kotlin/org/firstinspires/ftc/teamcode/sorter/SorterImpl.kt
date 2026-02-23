@@ -18,7 +18,8 @@ import org.firstinspires.ftc.teamcode.sorter.SorterWrapped.Companion.OFFSET
 @ContributesBinding(OpModeScope::class, binding<Sorter>())
 class SorterImpl(
     @Named("sorterServo") private val servo: Servo,
-    private val transfer: Transfer
+    private val transfer: Transfer,
+    isAuto: Boolean
 ) : Sorter, OpModeObserver {
 
     companion object {
@@ -35,11 +36,15 @@ class SorterImpl(
 
     override var position by servo::position
 
-    override val artefacts = arrayOfNulls<ArtefactType>(3) // TODO: Auto start config
+    override val artefacts: Array<ArtefactType?> =
+        if (isAuto)
+            arrayOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
+        else
+            arrayOfNulls(3)
 
     private var currentIntakeSlot: Int = -1
 
-    override var size = 0
+    override var size = if (isAuto) 3 else 0
 
     fun intakePosition(index: Int) {
         servo.position = INTAKE_POSITIONS[index]

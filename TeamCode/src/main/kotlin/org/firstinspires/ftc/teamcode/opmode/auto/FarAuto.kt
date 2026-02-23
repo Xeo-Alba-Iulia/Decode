@@ -24,7 +24,7 @@ import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootAll
+import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
@@ -209,7 +209,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(scorePreload)
             var shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            shootPattern(shooter.stateFlow, sorter, shooterJob, pattern)
             intake.isRunning = true
             follower.setMaxPower(0.4)
             follower.followAndIntake(intake, sorter, firstBalls)
@@ -223,7 +223,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isServoRunning = true
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            shootPattern(shooter.stateFlow, sorter, shooterJob, pattern)
             follower.setMaxPower(0.5)
             follower.followAndIntake(
                 intake,
@@ -243,7 +243,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isOuttake = true
             delay(500.milliseconds)
             intake.isServoRunning = true
-            shootAll(shooter.stateFlow, sorter, shooterJob, pattern)
+            shootPattern(shooter.stateFlow, sorter, shooterJob, pattern)
             follower.followSuspend(leavePathChain)
         }
     }

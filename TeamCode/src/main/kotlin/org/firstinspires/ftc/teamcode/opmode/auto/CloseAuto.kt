@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootAll
+import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
@@ -73,7 +73,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
     private val scoreBalls1 = pathChain {
         pathLinearHeading {
-            +firstBallsCollectPose
+            +freeGoalPose
             +scorePose
         }
     }
@@ -139,21 +139,21 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
             val patternList = pattern?.toArtefactList() ?: emptyList()
             shooter.alignToPose(follower.pose, goalPose)
-            shootAll(shooter.stateFlow, sorter, job, patternList)
+            shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.setMaxPower(0.5)
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
-//            follower.followSuspend(freeGate, maxPower = .7)
+            follower.followSuspend(freeGate, maxPower = .7)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)
-            shootAll(shooter.stateFlow, sorter, job, patternList)
+            shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
-            shootAll(shooter.stateFlow, sorter, job, patternList)
+            shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followSuspend(leavePath)
         }
     }
