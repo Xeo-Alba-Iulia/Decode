@@ -55,12 +55,13 @@ suspend fun shootPattern(
     val count = sorter.size
     if (count == 0) return
     Log.d("Shooter", "shootOrder: $shootOrder")
+    Log.d("Shooter", "count: $count")
     if (shootOrder.size != sorter.size)
         Log.e("Shooter", "Sorter size is ${sorter.size}, but expected ${shootOrder.size}")
     val orderIterator = shootOrder.iterator()
     repeat(count) {
         assert(sorter.shootOrDefault(orderIterator.nextOrNull()))
-        delay(450.milliseconds)
+        delay(300.milliseconds)
         sorter.isLifting = true
         delay(100.milliseconds)
         sorter.isLifting = false
