@@ -45,16 +45,16 @@ class ShooterImpl(
        3.01: 2010 0.35
        3.42: 2040 0.332
      */
-    val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3,2.7, 3.01, 3.42)
+    val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1600.0, 1650.0, 1700.0, 1710.0, 1800.0,1950.0, 2100.0, 2260.0),
+        /* output = */ listOf(1600.0, 1650.0, 1700.0, 1710.0, 1800.0, 2080.0, 2200.0),
         /* safeMode = */ true
     ).createLUT()
 
     override var angleDegrees = 0.0
         set(value) {
-            field = value.coerceIn(-80.0..80.0)
+            field = value.coerceIn(-80.0, 80.0)
             rotationServo.position = 0.5 - field / 160.0
         }
 

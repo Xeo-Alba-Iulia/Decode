@@ -130,6 +130,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         gamepad2.rumble(500)
                         sorter.position = 0.0
                         sorter.prepareShoot()
+                        currentShooterJob = shooter.shoot(distanceFlow)
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -196,7 +197,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 delay(600L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
                 sorter.isLifting = false
-                //currentShooterJob?.cancel()
+                currentShooterJob?.cancel()
                 sorter.prepareIntake()
                 delay(400L)
                 (sorter as? SorterImpl)?.run { size = 0 }
