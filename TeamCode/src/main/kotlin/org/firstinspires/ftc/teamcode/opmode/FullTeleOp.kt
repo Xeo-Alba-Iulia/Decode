@@ -7,18 +7,16 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
-import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 /**Control Scheme:
  * GAMEPAD 1 (Driver):
@@ -66,6 +64,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val limelightPipeline: Int
 
     var heightIterator: Iterator<Double> = HEIGHT_LIST.iterator()
+
+    val distanceFlow = MutableStateFlow(0.0)
 
     // Speed control
     companion object {
@@ -128,6 +128,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         intake.isServoRunning = true
                         gamepad1.rumble(500)
                         gamepad2.rumble(500)
+                        sorter.position = 0.0
+                        sorter.prepareShoot()
+                        currentShooterJob = shooter.shoot(distanceFlow)
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -150,6 +153,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         )
         follower.update()
         drawDebug(follower)
+        distanceFlow.value = goalPose.distanceFrom(follower.pose) / 39.37
+        telemetry.addData("Distance", distanceFlow.value)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
@@ -177,28 +182,29 @@ abstract class FullTeleOp : CoroutineOpMode() {
     }
 
     private fun handleShooter() {
-        val autoShoot = gamepad2.triangleWasPressed()
+        val autoShoot = gamepad2.triangleWasPressed() || gamepad1.rightTriggerWasPressed()
 
         // Start/stop shooting sequence
-        if ((gamepad2.aWasPressed()) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = (shooter as ShooterImpl).shoot(velocityFn = { 2000.0 }, hoodFn = { 0.4 })
-            sorter.position = 0.0
+        if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
+            currentShooterJob = shooter.shoot(distanceFlow)
         }
 
         if (autoShoot) {
-            if (sorter.position != 0.0)
-                RobotLog.ww(TAG, "Auto shoot triggered while in position: ${sorter.position}")
-            sorter.position = 1.0
             sorter.isLifting = true
             opModeScope.launch {
-                delay(1.25.seconds)
-                sorter.isLifting = false
+                delay(100L)
+                sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
+                delay(600L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
+                sorter.isLifting = false
+                currentShooterJob?.cancel()
                 sorter.prepareIntake()
+                delay(400L)
+                (sorter as? SorterImpl)?.run { size = 0 }
             }
         }
 
-        if (gamepad2.bWasPressed()) {
+        if (gamepad2.bWasPressed() || gamepad1.leftBumperWasPressed()) {
             currentShooterJob?.cancel()
         }
 

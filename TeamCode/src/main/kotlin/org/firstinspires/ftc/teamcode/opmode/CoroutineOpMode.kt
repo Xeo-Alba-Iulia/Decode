@@ -24,6 +24,8 @@ abstract class CoroutineOpMode(
         }
     }
 
+    override fun loop() {}
+
     override fun stop() {
         for (observer in observers.asReversed()) {
             opModeScope.launch {

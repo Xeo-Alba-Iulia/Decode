@@ -8,30 +8,25 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-private val followingMutex = Mutex()
-
-suspend fun Follower.followSuspend(pathChain: PathChain, holdEnd: Boolean = constants.automaticHoldEnd) =
-    followingMutex.withLock {
-        followPath(pathChain, holdEnd)
-        while (isBusy) {
-            update()
-            yield()
-        }
+suspend fun Follower.followSuspend(pathChain: PathChain, holdEnd: Boolean = constants.automaticHoldEnd) {
+    followPath(pathChain, holdEnd)
+    while (isBusy) {
+        update()
+        yield()
     }
+}
 
 suspend fun Follower.followSuspend(
     pathChain: PathChain,
     maxPower: Double,
     holdEnd: Boolean = constants.automaticHoldEnd
-) = followingMutex.withLock {
+) {
     followPath(pathChain, maxPower, holdEnd)
     while (isBusy) {
         update()
@@ -75,8 +70,15 @@ suspend inline fun Follower.followAndIntake(
             onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
         }
         followerJob.cancel()
-        if (pathFinished)
-            delay(500L)
+        if (pathFinished) {
+            @Suppress("CoroutineContextWithJob")
+            launch(SupervisorJob() + Dispatchers.IO) {
+                delay(1.seconds)
+                intakeJob.cancel()
+                intake.isServoRunning = true
+            }
+            return@coroutineScope
+        }
         intakeJob.cancel()
         intake.isServoRunning = true
     }

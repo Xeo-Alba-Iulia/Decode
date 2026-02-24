@@ -3,39 +3,48 @@ package org.firstinspires.ftc.teamcode.sorter
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
-import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.binding
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import org.firstinspires.ftc.teamcode.sorter.SorterWrapped.Companion.HALF_ROTATION
+import org.firstinspires.ftc.teamcode.sorter.SorterWrapped.Companion.OFFSET
 
 @Config
 @SingleIn(OpModeScope::class)
-@Inject
+@ContributesBinding(OpModeScope::class, binding<Sorter>())
 class SorterImpl(
     @Named("sorterServo") private val servo: Servo,
-    private val transfer: Transfer
+    private val transfer: Transfer,
+    isAuto: Boolean
 ) : Sorter, OpModeObserver {
 
     companion object {
         @JvmField
-        var INTAKE_POSITIONS = doubleArrayOf(0.05, 0.412, 0.81)
+        var INTAKE_POSITIONS =
+            (0..2).map { OFFSET + it * HALF_ROTATION * 2 / 3 }.toDoubleArray()
 
         @JvmField
-        var SHOOTER_POSITIONS = doubleArrayOf(0.593, 0.991, 0.231)
+        var SHOOTER_POSITIONS =
+            (0..2).map { OFFSET + HALF_ROTATION + HALF_ROTATION * 2 / 3 * it }.toDoubleArray()
     }
 
     override var isLifting by transfer::isRunning
 
     override var position by servo::position
 
-    override val artefacts = arrayOfNulls<ArtefactType>(3)
+    override val artefacts: Array<ArtefactType?> =
+        if (isAuto)
+            arrayOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
+        else
+            arrayOfNulls(3)
 
     private var currentIntakeSlot: Int = -1
 
-    override var size = 0
-        private set
+    override var size = if (isAuto) 3 else 0
 
     fun intakePosition(index: Int) {
         servo.position = INTAKE_POSITIONS[index]
@@ -46,22 +55,21 @@ class SorterImpl(
     }
 
     override fun prepareIntake() {
-        require(!isFull) { "Sorter is full" }
+        if (isFull) return
         currentIntakeSlot = artefacts.indexOfFirst { it == null }.also { intakePosition(it) }
     }
 
     override fun intake(type: ArtefactType) {
-        require(currentIntakeSlot != -1) { "Sorter not prepared for intake" }
+        if (currentIntakeSlot == -1) return
         artefacts[currentIntakeSlot] = type
         size++
         if (!isFull) prepareIntake() else currentIntakeSlot = -1
     }
 
     override fun prepareShoot(type: ArtefactType?): Boolean {
-        require(!isEmpty) { "Sorter is empty" }
+        if (isEmpty) return false
         currentIntakeSlot = -1
-
-        return artefacts.indexOfLast { storedType ->
+        return artefacts.indexOfFirst { storedType ->
             if (type == null) storedType != null else type == storedType
         }.takeIf { it != -1 }?.let {
             shooterPosition(it)
