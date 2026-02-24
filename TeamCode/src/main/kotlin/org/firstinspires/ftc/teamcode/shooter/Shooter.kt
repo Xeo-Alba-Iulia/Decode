@@ -61,7 +61,7 @@ suspend fun shootPattern(
     val orderIterator = shootOrder.iterator()
     repeat(count) {
         assert(sorter.shootOrDefault(orderIterator.nextOrNull()))
-        delay(300.milliseconds)
+        delay(250.milliseconds)
         sorter.isLifting = true
         delay(100.milliseconds)
         sorter.isLifting = false

@@ -71,7 +71,7 @@ suspend inline fun Follower.followAndIntake(
         }
         followerJob.cancel()
         if (pathFinished)
-            delay(500L)
+            delay(300L)
         intakeJob.cancel()
         intake.isServoRunning = true
     }

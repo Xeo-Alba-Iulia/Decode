@@ -164,7 +164,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                         id
                     }
                     withContext(followerDispatcher) { follower.followSuspend(scorePreload) }
-                    launch { delay(500.milliseconds) }
+                    launch { delay(0.milliseconds) }
                     val result = withTimeoutOrNull(0.seconds) { patternId.await() }
                     patternId.cancel()
                     shooter.angleDegrees = 0.0
@@ -175,7 +175,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             val patternList = pattern?.toArtefactList() ?: emptyList()
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
-            delay(500L)
+            delay(300L)
             intake.isServoRunning = true
             shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.setMaxPower(1.0)
@@ -186,7 +186,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
-            delay(500L)
+            delay(300L)
             intake.isServoRunning = true
             shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followAndIntake(intake, sorter, collectBalls2)
@@ -195,28 +195,24 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
-            delay(500L)
+            delay(300L)
             intake.isServoRunning = true
             shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followAndIntake(intake, sorter) {
                     follower.followSuspend(freeGateAndCollect)
-                    delay(4000L)
-                    follower.followSuspend(freeGateAndCollect2)
-                    delay(700L)
+                    delay(2.seconds)
             }
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
-            delay(500L)
+            delay(300L)
             intake.isServoRunning = true
            shootPattern(shooter.stateFlow, sorter, job, patternList    )
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
-                delay(4000L)
-                follower.followSuspend(freeGateAndCollect2)
-                delay(700L)
+                delay(2.seconds)
             }
             follower.setMaxPower(1.0)
             job = shooter.shoot { distance }

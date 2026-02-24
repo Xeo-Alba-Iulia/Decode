@@ -10,8 +10,8 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 @Config
 @Inject
 @SingleIn(OpModeScope::class)
-class Transfer(@Named("transfer") private val motor: DcMotor) {
-    var isRunning = false
+open class Transfer(@Named("transfer") private val motor: DcMotor) {
+    open var isRunning = false
         set(value) {
             field = value
             motor.power = if (value) POWER else 0.0
