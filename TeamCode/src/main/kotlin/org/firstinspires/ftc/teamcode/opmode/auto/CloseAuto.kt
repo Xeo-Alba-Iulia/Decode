@@ -3,12 +3,12 @@ package org.firstinspires.ftc.teamcode.opmode.auto
 import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
+import com.pedropathing.paths.HeadingInterpolator
 import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
-import kotlinx.coroutines.android.awaitFrame
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
@@ -46,12 +46,12 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val scorePose = mirrorAlliance(rawScorePose)
     private val rawFirstBallsCollectPose = Pose(18.0, 84.0, PI)
     private val firstBallsCollectPose = mirrorAlliance(rawFirstBallsCollectPose)
-    private val rawSecondBallsCollectPose = Pose(10.0, 60.0, PI)
+    private val rawSecondBallsCollectPose = Pose(9.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
     private val rawFreeGoalPose = Pose(16.0, 75.0, PI / 2)
     private val freeGoalPose = mirrorAlliance(rawFreeGoalPose)
 
-    private val rawCollectAndFreeGoalPose = Pose(15.0,62.5,(5 * PI) / 6)
+    private val rawCollectAndFreeGoalPose = Pose(15.0, 62.5, (5 * PI) / 6)
 
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
@@ -103,9 +103,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
     private lateinit var collectBalls2: PathChain
     private val scoreBalls2 = pathChain {
-        pathLinearHeading(endTime = 0.8) {
+        path(interpolator = HeadingInterpolator.tangent.reverse()) {
             +secondBallsCollectPose
-            +mirrorAlliance(Pose(rawScorePose.x, rawSecondBallsCollectPose.y))
+//            +mirrorAlliance(Pose(rawScorePose.x, rawSecondBallsCollectPose.y))
             +scorePose
         }
     }
@@ -118,7 +118,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     override fun init() {
         follower = opModeGraph.follower.apply { setStartingPose(startPose) }
-        sorter = opModeGraph.sorter.apply { position = 0.5; isLifting = false }
+        sorter = opModeGraph.sorter.apply { position = 0.5 }
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter.apply { angleDegrees = if (isMirrored) 15.0 else -15.0 }
         limelight = opModeGraph.limelight
