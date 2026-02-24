@@ -25,14 +25,13 @@ interface Shooter {
     data class State(val velocity: Double, val canShoot: Boolean)
 }
 
-//TODO: Fix not going fully to -80
 fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
     val angle = atan2(
         targetPose.y - currentPose.y,
         targetPose.x - currentPose.x
     )
     val normalizedAngle = MathFunctions.normalizeAngle(currentPose.heading).let {
-        if (it > PI * 3 / 2) it - 2 * PI else it
+        if (it > PI * (3.0 / 2.0)) it - 2 * PI else it
     }
     angleDegrees = Math.toDegrees(angle - normalizedAngle) + offset
 }

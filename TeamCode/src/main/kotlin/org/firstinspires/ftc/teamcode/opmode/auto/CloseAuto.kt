@@ -9,6 +9,7 @@ import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.flowOf
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
@@ -150,7 +151,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         opModeScope.launch(followerDispatcher) {
-            var job = shooter.shoot { distance }
+            var job = shooter.shoot(flowOf(distance))
             val pattern: Int?
             withContext(Dispatchers.Default) {
                 pattern = coroutineScope {
@@ -182,7 +183,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
             follower.followSuspend(freeGate, maxPower = 1.0)
-            job = shooter.shoot { distance }
+            job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
@@ -191,7 +192,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
-            job = shooter.shoot { distance }
+            job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
@@ -199,11 +200,11 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isServoRunning = true
             shootPattern(shooter.stateFlow, sorter, job, patternList)
             follower.followAndIntake(intake, sorter) {
-                    follower.followSuspend(freeGateAndCollect)
-                    delay(2.seconds)
+                follower.followSuspend(freeGateAndCollect)
+                delay(2.seconds)
             }
             follower.setMaxPower(1.0)
-            job = shooter.shoot { distance }
+            job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
             intake.isOuttake = true
@@ -215,7 +216,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 delay(2.seconds)
             }
             follower.setMaxPower(1.0)
-            job = shooter.shoot { distance }
+            job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
             shootPattern(shooter.stateFlow, sorter, job, patternList)
