@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.intake
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotorEx
+import com.qualcomm.robotcore.hardware.DistanceSensor
 import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
@@ -13,12 +14,14 @@ import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.teamcode.ArtefactType
+import kotlin.math.min
 
 @Config
 @Inject
 class Intake(
     @Named("intake") private val motor: DcMotorEx,
     private val sensor: ColorRangeSensor,
+    private val sensor2: DistanceSensor,
     opModeScope: CoroutineScope,
 ) {
     data class State(
@@ -75,8 +78,10 @@ class Intake(
         flow {
             with(sensor) {
                 while (true) {
-                    if (isRunning || isDebug)
-                        emit(State(alpha(), red(), green(), blue(), getDistance(DistanceUnit.CM)))
+                    if (isRunning || isDebug) {
+                        val dist = min(getDistance(DistanceUnit.CM), sensor2.getDistance(DistanceUnit.CM))
+                        emit(State(alpha(), red(), green(), blue(), dist))
+                    }
                     delay(10L)
                 }
             }
