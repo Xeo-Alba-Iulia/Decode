@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.intake
 
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
-import com.qualcomm.robotcore.hardware.DcMotor
+import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
@@ -10,13 +10,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.teamcode.ArtefactType
 
 @Config
 @Inject
 class Intake(
-    @Named("intake") private val motor: DcMotor,
+    @Named("intake") private val motor: DcMotorEx,
     private val sensor: ColorRangeSensor,
     opModeScope: CoroutineScope,
 ) {
@@ -63,6 +64,8 @@ class Intake(
             _isOuttake = false
             motor.power = if (value) SLOW_POWER else 0.0
         }
+
+    val current get() = motor.getCurrent(CurrentUnit.AMPS)
 
     init {
         sensor.gain = GAIN

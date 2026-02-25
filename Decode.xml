@@ -11,7 +11,8 @@
             <Servo name="lift right" port="3" />
             <Servo name="lift left" port="4" />
             <Servo name="hood" port="5" />
-            <LynxColorSensor name="sorter sensor" bus="0" port="0" />
+            <LynxColorSensor name="sensor" bus="0" port="0" />
+            <LynxColorSensor name="sensor2" bus="1" port="0" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
             <goBILDA5202SeriesMotor name="intake" port="0" />
