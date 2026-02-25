@@ -107,7 +107,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         intake.artefactFlow
             .onEach { Log.d("Intake", "Detected artefact: $it") }
             .onEach { sorter.intake(it) }
-            .onEach { delay(150.milliseconds) }
+            .onEach { delay(250.milliseconds) }
             .launchIn(opModeScope + Dispatchers.IO)
 
         intake.stateFlow

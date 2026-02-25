@@ -8,8 +8,6 @@
             <goBILDA5202SeriesMotor name="shooter1" port="3" />
             <Servo name="rotation" port="1" />
             <Servo name="sorter" port="2" />
-            <Servo name="lift right" port="3" />
-            <Servo name="lift left" port="4" />
             <Servo name="hood" port="5" />
             <LynxColorSensor name="sensor" bus="0" port="0" />
             <LynxColorSensor name="sensor2" bus="1" port="0" />
@@ -23,6 +21,5 @@
             <goBILDAPinpoint name="pinpoint" bus="1" port="0" />
         </LynxModule>
     </LynxUsbDevice>
-    <EthernetDevice name="Limelight" name="Limelight" ipAddress="172.29.0.1" port="-1"
-        serialNumber="EthernetOverUsb:eth0:172.29.0.23" />
+    <EthernetDevice name="Limelight" ipAddress="172.29.0.1" port="-1" serialNumber="EthernetOverUsb:eth0:172.29.0.23" />
 </Robot>
