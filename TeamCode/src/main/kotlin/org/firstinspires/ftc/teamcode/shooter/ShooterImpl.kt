@@ -34,6 +34,8 @@ class ShooterImpl(
 
         @JvmField
         var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
+
+        private const val QUEUE_SIZE = 8
     }
 
     /*
@@ -48,12 +50,12 @@ class ShooterImpl(
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1520.0, 1650.0, 1750.0, 1820.0, 2100.0, 2100.0, 2200.0).map { it + 100 },
+        /* output = */ listOf(1580.0, 1680.0, 1780.0, 1880.0, 2050.0, 2100.0, 2200.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
-        listOf(22.5, 24.0, 27.0, 29.0, 31.0, 34.0, 36.5, 39.0, 41.1, 43.0, 45.0).map { it + 5.0 },
+        listOf(22.5, 24.0, 27.0, 29.0, 31.0, 34.0, 36.5, 39.0, 41.1, 43.0, 45.0).map { it + 6.0 },
         (0..10).map { it / 10.0 },
         true
     ).createLUT()
@@ -92,10 +94,8 @@ class ShooterImpl(
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double {
-        val g = 9.2
+        val g = 9.1
         val height = 0.7
-        if (velocity == 0.0 || distance == 0.0)
-            return Math.toRadians(60.0)
         if (repetitions <= 0) {
             Log.v("Angle", "Found: ${Math.toDegrees(guess)}, distance = $distance, velocity = $velocity")
             return guess
@@ -109,6 +109,9 @@ class ShooterImpl(
         return findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
     }
 
+    private val speedQueue = ArrayDeque(List(QUEUE_SIZE) { 0.0 })
+    private var speedSum = 0.0
+
     private fun update(distance: Double) {
         val position = encoder.currentPosition.toDouble()
         val velocity = encoder.velocity
@@ -116,9 +119,12 @@ class ShooterImpl(
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
         stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
-        if (distance == 0.0)
+        speedSum -= speedQueue.removeFirst()
+        speedSum += velocity
+        speedQueue.addLast(velocity)
+        if (distance == 0.0 || velocity == 0.0)
             return
-        val result = Math.toDegrees(findLaunchAngle(distance, ((velocity) / 28) * .075))
+        val result = Math.toDegrees(findLaunchAngle(distance, ((speedSum / QUEUE_SIZE) / 28) * .082))
         hood = hoodLUT[result]
     }
 
@@ -133,7 +139,7 @@ class ShooterImpl(
                 withContext(Dispatchers.Default) {
                     while (true) {
                         update(dist)
-                        delay(100L)
+                        delay(50L)
                     }
                 }
             } finally {

@@ -63,11 +63,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val startPose: Pose
     abstract val limelightPipeline: Int
 
-    var heightIterator: Iterator<Double> = HEIGHT_LIST.iterator()
-
     val distanceFlow = MutableStateFlow(0.0)
 
-    // Speed control
     companion object {
         @JvmField
         var ANGLE_ADJUSTMENT_STEP = -0.5
@@ -104,9 +101,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .onEach { gamepad2.rumble(100) }
             .launchIn(opModeScope + Dispatchers.IO)
 
-        intake.artefactFlow
-            .onEach { Log.d("Intake", "Detected artefact: $it") }
-            .onEach { sorter.intake(it) }
+        intake.distanceFlow
+            .filter { it }
+            .onEach { Log.d("Intake", "Detected artefact") }
+            .onEach { sorter.intake(PURPLE) }
             .onEach { delay(250.milliseconds) }
             .launchIn(opModeScope + Dispatchers.IO)
 
@@ -130,7 +128,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         gamepad2.rumble(500)
                         sorter.position = 0.0
                         sorter.prepareShoot()
-                        currentShooterJob = shooter.shoot(distanceFlow)
+                        if (currentShooterJob?.isCancelled != false)
+                            currentShooterJob = shooter.shoot(distanceFlow)
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -193,8 +192,10 @@ abstract class FullTeleOp : CoroutineOpMode() {
             sorter.isLifting = true
             opModeScope.launch {
                 delay(100L)
+                sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
+                delay(200L)
                 sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
-                delay(600L)
+                delay(300L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
                 sorter.isLifting = false
                 currentShooterJob?.cancel()
