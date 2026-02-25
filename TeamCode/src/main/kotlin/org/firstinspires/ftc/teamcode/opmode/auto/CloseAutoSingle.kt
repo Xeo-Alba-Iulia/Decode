@@ -84,6 +84,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
     private lateinit var collectBalls2: PathChain
     private lateinit var scoreBalls2: PathChain
     private lateinit var collectBalls3: PathChain
+    private lateinit var scoreBalls3: PathChain
 
     private val leavePath = pathChain {
         pathConstantHeading(scorePose.heading) {
@@ -129,6 +130,13 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
         scoreBalls2 = pathChain(follower) {
             path(interpolator = HeadingInterpolator.tangent.reverse()) {
                 +secondBallsCollectPose
+                +scorePose
+                callbacks { parametricCallback(0.75) { launchJob.start() } }
+            }
+        }
+        scoreBalls3 = pathChain(follower) {
+            path(interpolator = HeadingInterpolator.tangent.reverse()) {
+                +thirdBallsCollectPose
                 +scorePose
                 callbacks { parametricCallback(0.75) { launchJob.start() } }
             }
@@ -200,7 +208,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
             shooter.angleDegrees = -77.0 * if (isMirrored) -1 else 1
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
-            follower.followSuspend(scoreBalls2)
+            follower.followSuspend(scoreBalls3)
             launchJob.join()
             follower.followSuspend(leavePath)
         }
