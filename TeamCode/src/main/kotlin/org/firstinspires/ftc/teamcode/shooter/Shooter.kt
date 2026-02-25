@@ -37,7 +37,6 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.
 }
 
 suspend fun shootPattern(
-    shootFlow: Flow<Shooter.State>,
     sorter: Sorter,
     shooterJob: Job,
     shootOrder: List<ArtefactType>,

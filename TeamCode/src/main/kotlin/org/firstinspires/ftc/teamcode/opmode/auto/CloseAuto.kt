@@ -185,7 +185,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isOuttake = true
             delay(300L)
             intake.isServoRunning = true
-            shootPattern(shooter.stateFlow, sorter, job, patternList)
+            shootPattern(sorter, job, patternList)
             follower.setMaxPower(1.0)
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
@@ -196,13 +196,13 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isOuttake = true
             delay(300L)
             intake.isServoRunning = true
-            shootPattern(shooter.stateFlow, sorter, job, patternList)
+            shootPattern(sorter, job, patternList)
             follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance))
             shooter.angleDegrees = -77.0 * if (isMirrored) -1 else 1
             launchJob =
-                launch(start = CoroutineStart.LAZY) { shootPattern(shooter.stateFlow, sorter, job, emptyList()) }
+                launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
             follower.followSuspend(scoreBalls2)
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
@@ -212,7 +212,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance))
             launchJob =
-                launch(start = CoroutineStart.LAZY) { shootPattern(shooter.stateFlow, sorter, job, emptyList()) }
+                launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
             follower.followSuspend(scoreBalls2)
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
@@ -223,7 +223,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls2)
             shooter.alignToPose(follower.pose, goalPose)
-            shootPattern(shooter.stateFlow, sorter, job, patternList)
+            shootPattern(sorter, job, patternList)
             follower.followSuspend(leavePath)
         }
     }

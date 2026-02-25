@@ -209,7 +209,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followSuspend(scorePreload)
             var shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            shootPattern(shooter.stateFlow, sorter, shooterJob, pattern)
+            shootPattern(sorter, shooterJob, pattern)
             intake.isRunning = true
             follower.setMaxPower(0.4)
             follower.followAndIntake(intake, sorter, firstBalls)
@@ -223,7 +223,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isServoRunning = true
             shooterJob = shooter.shoot(::distanceFun)
             delay(500.milliseconds)
-            shootPattern(shooter.stateFlow, sorter, shooterJob, pattern)
+            shootPattern(sorter, shooterJob, pattern)
             follower.setMaxPower(0.5)
             follower.followAndIntake(
                 intake,
@@ -243,7 +243,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isOuttake = true
             delay(500.milliseconds)
             intake.isServoRunning = true
-            shootPattern(shooter.stateFlow, sorter, shooterJob, pattern)
+            shootPattern(sorter, shooterJob, pattern)
             follower.followSuspend(leavePathChain)
         }
     }
