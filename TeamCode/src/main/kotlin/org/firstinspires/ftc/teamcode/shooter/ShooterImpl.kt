@@ -48,8 +48,14 @@ class ShooterImpl(
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1600.0, 1650.0, 1700.0, 1710.0, 1800.0, 2080.0, 2200.0),
+        /* output = */ listOf(1520.0, 1650.0, 1750.0, 1820.0, 2100.0, 2100.0, 2200.0).map { it + 100 },
         /* safeMode = */ true
+    ).createLUT()
+
+    val hoodLUT: InterpLUT = InterpLUT(
+        listOf(22.5, 24.0, 27.0, 29.0, 31.0, 34.0, 36.5, 39.0, 41.1, 43.0, 45.0).map { it + 5.0 },
+        (0..10).map { it / 10.0 },
+        true
     ).createLUT()
 
     override var angleDegrees = 0.0
@@ -58,7 +64,7 @@ class ShooterImpl(
             rotationServo.position = 0.5 - field / 160.0
         }
 
-    private var hood by hoodServo::position
+    var hood by hoodServo::position
 
     private val controller = controlSystem {
         velPid(coefficients)
@@ -83,15 +89,15 @@ class ShooterImpl(
     private tailrec fun findLaunchAngle(
         distance: Double,
         velocity: Double,
-        guess: Double = Math.toRadians(67.5),
+        guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double {
-        val g = 9.3
-        val height = 0.72
+        val g = 9.2
+        val height = 0.7
         if (velocity == 0.0 || distance == 0.0)
             return Math.toRadians(60.0)
         if (repetitions <= 0) {
-            Log.v("Angle", "Found: $guess, distance = $distance, velocity = $velocity")
+            Log.v("Angle", "Found: ${Math.toDegrees(guess)}, distance = $distance, velocity = $velocity")
             return guess
         }
         val d = distance
@@ -110,13 +116,10 @@ class ShooterImpl(
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
         stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
-        val result = Math.toDegrees(findLaunchAngle(distance, ((velocity) / 28) * .083)).let {
-            if (it in 45.0..62.0)
-                it
-            else
-                58.0
-        }
-        hood = (90 - result - 28) / (45 - 30)
+        if (distance == 0.0)
+            return
+        val result = Math.toDegrees(findLaunchAngle(distance, ((velocity) / 28) * .075))
+        hood = hoodLUT[result]
     }
 
     override fun shoot(distanceFlow: Flow<Double>): Job =

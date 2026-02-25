@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import kotlinx.coroutines.Job
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.constrainedDouble
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -18,8 +19,8 @@ class ShooterOpMode : CoroutineOpMode() {
     lateinit var sorter: Sorter
     var limelight: Limelight3A? = null
     var shooterJob: Job? = null
-    var velocity = 2200.0
-    var hood = 0.5
+    var velocity by constrainedDouble(1000.0..3000.0, 1500.0)
+    var hood by constrainedDouble(0.0..1.0, 0.5)
 
     override fun init() {
         intake = opModeGraph.intake
