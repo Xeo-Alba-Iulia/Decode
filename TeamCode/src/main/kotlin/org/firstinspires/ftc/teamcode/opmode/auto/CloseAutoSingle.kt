@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
+import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.HeadingInterpolator
@@ -12,21 +13,23 @@ import kotlinx.coroutines.flow.flowOf
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
+import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
-import org.firstinspires.ftc.teamcode.pedropathing.pathConstraints
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(PathLinearExperimental::class)
-abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
+open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
     private lateinit var follower: Follower
     private lateinit var sorter: Sorter
     private lateinit var intake: Intake
@@ -46,16 +49,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val firstBallsCollectPose = mirrorAlliance(rawFirstBallsCollectPose)
     private val rawSecondBallsCollectPose = Pose(9.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
+    private val rawThirdBallsCollectPose = Pose(9.0, 36.0, PI)
+    private val thirdBallsCollectPose = mirrorAlliance(rawThirdBallsCollectPose)
     private val rawFreeGoalPose = Pose(16.0, 76.0, PI / 2)
     private val freeGoalPose = mirrorAlliance(rawFreeGoalPose)
-
-    private val rawCollectAndFreeGoalPose = Pose(15.0, 62.5, (5 * PI) / 6)
-
-    private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
-
-    private val rawCollectAndFreeGoalPose2 = Pose(9.0, 51.0, Math.toRadians(100.0))
-
-    private val collectAndFreeGoalPose2 = mirrorAlliance(rawCollectAndFreeGoalPose2)
 
     private val scorePreload = pathChain {
         pathLinearHeading(endTime = .8) {
@@ -78,24 +75,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             +freeGoalPose
         }
     }
-    private val freeGateAndCollect = pathChain {
-        pathLinearHeading(pathConstraints = pathConstraints.copy().apply {
-            brakingStart = 0.8
-            brakingStrength = 0.55
-        }) {
-            +scorePose
-            +mirrorAlliance(Pose(scorePose.x, collectAndFreeGoalPose.y - 4))
-            +collectAndFreeGoalPose
-        }
-    }
-    private val freeGateAndCollect2 = pathChain {
-        pathLinearHeading {
-            +scorePose
-            +mirrorAlliance(Pose(scorePose.x, collectAndFreeGoalPose2.y))
-            +collectAndFreeGoalPose2
-        }
-    }
-
     private val scoreBalls1 = pathChain {
         pathLinearHeading {
             +freeGoalPose
@@ -104,6 +83,8 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
     private lateinit var collectBalls2: PathChain
     private lateinit var scoreBalls2: PathChain
+    private lateinit var collectBalls3: PathChain
+
     private val leavePath = pathChain {
         pathConstantHeading(scorePose.heading) {
             +scorePose
@@ -133,6 +114,18 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
             }
         }
+        collectBalls3 = pathChain(follower) {
+            pathLinearHeading(endTime = 0.8) {
+                +scorePose
+                +mirrorAlliance(Pose(rawScorePose.x, rawThirdBallsCollectPose.y))
+                +mirrorAlliance(Pose(rawScorePose.x - 4.0, rawThirdBallsCollectPose.y))
+                +thirdBallsCollectPose
+                callbacks {
+                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(1.0) }
+                }
+            }
+        }
+
         scoreBalls2 = pathChain(follower) {
             path(interpolator = HeadingInterpolator.tangent.reverse()) {
                 +secondBallsCollectPose
@@ -155,18 +148,44 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         opModeScope.launch(followerDispatcher) {
             var job = shooter.shoot(flowOf(distance))
-            val patternList = withContext(Dispatchers.IO) { getPatternList(limelight) }
-            follower.followSuspend(scorePreload)
+            val pattern: Int?
+            withContext(Dispatchers.Default) {
+                pattern = coroutineScope {
+                    val patternId = async {
+                        var id = 0
+                        while (id == 0) {
+                            delay(50.milliseconds)
+                            limelight?.latestResult?.fiducialResults?.singleOrNull()
+                                ?.let { id = it.fiducialId }
+                        }
+                        id
+                    }
+                    withContext(followerDispatcher) { follower.followSuspend(scorePreload) }
+                    launch { delay(0.milliseconds) }
+                    val result = withTimeoutOrNull(0.seconds) { patternId.await() }
+                    patternId.cancel()
+                    shooter.angleDegrees = 0.0
+                    Log.d(TAG, "Detected $result")
+                    result
+                }
+            }
+            val patternList = pattern?.toArtefactList() ?: emptyList()
             shooter.alignToPose(follower.pose, goalPose)
-            outtakeBall(intake)
-            shootPattern(sorter, job, patternList.await())
+            intake.isOuttake = true
+            delay(300L)
+            intake.isServoRunning = true
+            shootPattern(sorter, job, patternList)
+            follower.setMaxPower(1.0)
             follower.followAndIntake(intake, sorter, collectBalls1)
-            follower.followSuspend(freeGate)
+            follower.setMaxPower(1.0)
+            follower.followSuspend(freeGate, maxPower = 1.0)
             job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)
-            outtakeBall(intake)
-            shootPattern(sorter, job, patternList.await())
+            intake.isOuttake = true
+            delay(300L)
+            intake.isServoRunning = true
+            shootPattern(sorter, job, patternList)
             follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance))
@@ -175,25 +194,14 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
             follower.followSuspend(scoreBalls2)
             launchJob.join()
-            follower.followAndIntake(intake, sorter) {
-                follower.followSuspend(freeGateAndCollect)
-                delay(2.seconds)
-            }
+            follower.followAndIntake(intake, sorter, collectBalls3)
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance))
+            shooter.angleDegrees = -77.0 * if (isMirrored) -1 else 1
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
             follower.followSuspend(scoreBalls2)
             launchJob.join()
-            follower.followAndIntake(intake, sorter) {
-                follower.followSuspend(freeGateAndCollect)
-                delay(2.seconds)
-            }
-            follower.setMaxPower(1.0)
-            job = shooter.shoot(flowOf(distance))
-            follower.followSuspend(scoreBalls2)
-            shooter.alignToPose(follower.pose, goalPose)
-            shootPattern(sorter, job, patternList.await())
             follower.followSuspend(leavePath)
         }
     }
