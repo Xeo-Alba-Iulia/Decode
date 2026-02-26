@@ -3,8 +3,8 @@ package org.firstinspires.ftc.teamcode.intake
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotorEx
-import com.qualcomm.robotcore.hardware.DistanceSensor
 import com.qualcomm.robotcore.util.RobotLog
+import dev.nextftc.control.filters.LowPassFilter
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
@@ -14,14 +14,12 @@ import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.teamcode.ArtefactType
-import kotlin.math.min
 
 @Config
 @Inject
 class Intake(
     @Named("intake") private val motor: DcMotorEx,
-    private val sensor: ColorRangeSensor,
-    private val sensor2: DistanceSensor,
+    private val sensorList: List<ColorRangeSensor>,
     opModeScope: CoroutineScope,
 ) {
     data class State(
@@ -71,16 +69,28 @@ class Intake(
     val current get() = motor.getCurrent(CurrentUnit.AMPS)
 
     init {
-        sensor.gain = GAIN
+        sensorList.forEach { it.gain = GAIN }
     }
+
+    private val alphaFilter = LowPassFilter(ALPHA)
+    private val redFilter = LowPassFilter(ALPHA)
+    private val greenFilter = LowPassFilter(ALPHA)
+    private val blueFilter = LowPassFilter(ALPHA)
 
     val stateFlow =
         flow {
-            with(sensor) {
+            with(sensorList) {
                 while (true) {
                     if (isRunning || isDebug) {
-                        val dist = min(getDistance(DistanceUnit.CM), sensor2.getDistance(DistanceUnit.CM))
-                        emit(State(alpha(), red(), green(), blue(), dist))
+                        emit(
+                            State(
+                                alphaFilter.filter(maxOf(ColorRangeSensor::alpha).toDouble()).toInt(),
+                                redFilter.filter(maxOf(ColorRangeSensor::red).toDouble()).toInt(),
+                                greenFilter.filter(maxOf(ColorRangeSensor::green).toDouble()).toInt(),
+                                blueFilter.filter(maxOf(ColorRangeSensor::blue).toDouble()).toInt(),
+                                minOf { it.getDistance(DistanceUnit.CM) }
+                            )
+                        )
                     }
                     delay(10L)
                 }
@@ -120,6 +130,8 @@ class Intake(
         var SLOW_POWER = 0.3
         @JvmField
         var ALPHA_THRESHOLD = 350.0
+        @JvmField
+        var ALPHA = 0.7
         @JvmField
         var GAIN = 2f
     }

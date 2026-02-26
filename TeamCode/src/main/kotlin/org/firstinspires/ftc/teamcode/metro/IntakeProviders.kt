@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.metro
 
-import com.qualcomm.robotcore.hardware.*
+import com.qualcomm.robotcore.hardware.CRServo
+import com.qualcomm.robotcore.hardware.ColorRangeSensor
+import com.qualcomm.robotcore.hardware.DcMotorEx
+import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
@@ -19,8 +22,6 @@ interface IntakeProviders {
     fun provideIntakeServo(map: HardwareMap): CRServo = map.getCast("intake servo")
 
     @Provides
-    fun provideColorSensor(map: HardwareMap): ColorRangeSensor = map.getCast("sensor")
-
-    @Provides
-    fun provideDistanceSensor(map: HardwareMap): DistanceSensor = map.getCast("sensor2")
+    fun provideColorSensors(map: HardwareMap): List<ColorRangeSensor> =
+        listOf(map.getCast("sensor"), map.getCast("sensor2"))
 }
