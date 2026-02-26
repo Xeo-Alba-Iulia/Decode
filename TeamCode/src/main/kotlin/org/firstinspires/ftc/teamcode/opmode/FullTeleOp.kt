@@ -73,9 +73,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
         @JvmField
         var TURET_OFFSET_ADJUSTMENT_STEP = 1
 
-        @JvmField
-        var HEIGHT_LIST = mutableListOf(1200.0, 800.0, 0.0)
-
         const val TAG = "TeleOp"
     }
 
@@ -98,7 +95,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .map { (_, canShoot) -> canShoot }
             .distinctUntilChanged()
             .filter { it }
-            .onEach { gamepad2.rumble(100) }
+            .onEach { gamepad1.rumble(100); gamepad2.rumble(100) }
             .launchIn(opModeScope + Dispatchers.IO)
 
         intake.distanceFlow
@@ -115,7 +112,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope + Dispatchers.IO)
 
-        opModeScope.launch {
+        opModeScope.launch(Dispatchers.IO) {
             var lastIsFull = false
             var lastIsEmpty = true
             while (true) {
@@ -191,11 +188,11 @@ abstract class FullTeleOp : CoroutineOpMode() {
         if (autoShoot) {
             sorter.isLifting = true
             opModeScope.launch {
-                delay(100L)
-                sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
                 delay(200L)
-                sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
+                sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
                 delay(300L)
+                sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
+                delay(400L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
                 sorter.isLifting = false
                 currentShooterJob?.cancel()
