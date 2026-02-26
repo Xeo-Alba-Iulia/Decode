@@ -135,7 +135,16 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         scoreBalls3 = pathChain(follower) {
-            path(interpolator = HeadingInterpolator.tangent.reverse()) {
+            path(
+                interpolator = HeadingInterpolator.piecewise(
+                    HeadingInterpolator.PiecewiseNode(0.0, 0.75, HeadingInterpolator.tangent.reverse()),
+                    HeadingInterpolator.PiecewiseNode(
+                        0.7,
+                        1.0,
+                        HeadingInterpolator.constant(if (isMirrored) 0.0 else PI)
+                    )
+                )
+            ) {
                 +thirdBallsCollectPose
                 +scorePose
                 callbacks { parametricCallback(0.75) { launchJob.start() } }
@@ -205,7 +214,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
             follower.followAndIntake(intake, sorter, collectBalls3)
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance))
-            shooter.angleDegrees = -77.0 * if (isMirrored) -1 else 1
+            shooter.alignToPose(scorePose.withHeading(if (isMirrored) 0.0 else PI), goalPose)
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
             follower.followSuspend(scoreBalls3)
