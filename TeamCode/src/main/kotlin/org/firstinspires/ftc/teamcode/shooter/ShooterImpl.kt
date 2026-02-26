@@ -102,7 +102,7 @@ class ShooterImpl(
         val cos = cos(guess)
         val f = d * sin / cos - (d * d * g) / (2 * v * v * cos * cos) - height
         if (repetitions == 0) {
-            val guess = if (f >= -0.1) guess else null
+            val guess = guess.takeIf { f >= -0.1 }
             if (BuildConfig.DEBUG) {
                 val guessDeg = guess?.let { Math.toDegrees(it) }
                 Log.v("Angle", "Found: $guessDeg, distance = $distance, velocity = $velocity, f = $f")
