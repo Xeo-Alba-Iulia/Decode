@@ -191,9 +191,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
         if (autoShoot) {
             sorter.isLifting = true
             opModeScope.launch {
-                delay(100L)
+                delay(150L)
                 sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
-                delay(200L)
+                delay(300L)
                 sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
                 delay(300L)
                 sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }

@@ -15,7 +15,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.InterpLUT
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
-import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -31,12 +30,12 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        var coefficients = PIDCoefficients(0.001)
+        var coefficients = PIDCoefficients(0.0015)
 
         @JvmField
         var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
 
-        private const val QUEUE_SIZE = 8
+        private const val QUEUE_SIZE = 1
     }
 
     /*
@@ -51,12 +50,12 @@ class ShooterImpl(
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1580.0, 1680.0, 1780.0, 1880.0, 2050.0, 2100.0, 2200.0),
+        /* output = */ listOf(1580.0, 1680.0, 1780.0, 1850.0, 1960.0, 2160.0, 2340.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
-        listOf(22.5, 24.0, 27.0, 29.0, 31.0, 34.0, 36.5, 39.0, 41.1, 43.0, 45.0).map { it + 6.0 },
+        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.9, 37.2, 39.5, 41.4, 43.2, 45.0),
         (0..10).map { it / 10.0 },
         true
     ).createLUT()
@@ -94,13 +93,9 @@ class ShooterImpl(
         velocity: Double,
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
-    ): Double {
-        val g = 9.1
-        val height = 0.7
-        if (repetitions <= 0) {
-            Log.v("Angle", "Found: ${Math.toDegrees(guess)}, distance = $distance, velocity = $velocity")
-            return guess
-        }
+    ): Double? {
+        val g = 9
+        val height = 0.65
         val d = distance
         val v = velocity
         val sin = sin(guess)
@@ -119,7 +114,7 @@ class ShooterImpl(
     }
 
     private val speedQueue = ArrayDeque(List(QUEUE_SIZE) { 0.0 })
-    private var speedSum = 0.0
+    private var speedSum = speedQueue.sum()
 
     private fun update(distance: Double) {
         val position = encoder.currentPosition.toDouble()
@@ -127,14 +122,15 @@ class ShooterImpl(
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        stateFlow.value = Shooter.State(velocity, abs(velocity - desiredVelocity) <= 80.0)
-        speedSum -= speedQueue.removeFirst()
-        speedSum += velocity
+        speedSum += velocity - speedQueue.removeFirst()
         speedQueue.addLast(velocity)
         if (distance == 0.0 || velocity == 0.0)
             return
-        val result = Math.toDegrees(findLaunchAngle(distance, ((speedSum / QUEUE_SIZE) / 28) * .082))
-        hood = hoodLUT[result]
+        stateFlow.value =
+            Shooter.State(velocity, findLaunchAngle(distance, ((speedSum / QUEUE_SIZE) / 28) * .085)?.let { result ->
+                hood = hoodLUT[Math.toDegrees(result)]
+                true
+            } ?: false)
     }
 
     override fun shoot(distanceFlow: Flow<Double>): Job =
