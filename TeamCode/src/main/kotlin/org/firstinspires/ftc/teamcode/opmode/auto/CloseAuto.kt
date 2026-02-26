@@ -71,16 +71,16 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val collectBalls1 = pathChain {
         pathLinearHeading(endTime = 0.45) {
             +scorePose
-            +mirrorAlliance(Pose(rawScorePose.x, rawFirstBallsCollectPose.y))
             +firstBallsCollectPose
         }
     }
     private val freeGate = pathChain {
-        pathLinearHeading(endTime = 0.8) {
-            +firstBallsCollectPose
-            +mirrorAlliance(Pose(rawFirstBallsCollectPose.x+11, rawFreeGoalPose.y+9))
-            +freeGoalPose
+        pathConstantHeading(scorePose.heading) {
+            +scorePose
+            +mirrorAlliance(Pose(rawFirstBallsCollectPose.x + 10.0, rawFirstBallsCollectPose.y, PI))
         }
+        pathToPose(mirrorAlliance(Pose(rawFirstBallsCollectPose.x + 10.0, rawFreeGatePose.y, PI)))
+        pathToPose(freeGatePose)
     }
     private val freeGateAndCollect = pathChain {
         pathLinearHeading(pathConstraints = pathConstraints.copy().apply {
@@ -102,7 +102,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     private val scoreBalls1 = pathChain {
         pathLinearHeading {
-            +freeGoalPose
+            +freeGatePose
             +scorePose
         }
     }
@@ -158,9 +158,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         opModeScope.launch(followerDispatcher) {
-            var job = shooter.shoot(flowOf(distance-0.3))
+            val patternList = async(Dispatchers.IO) { getPatternList(limelight) }
+            var job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scorePreload)
-            val patternList = withContext(Dispatchers.IO) { getPatternList(limelight) }
             shooter.alignToPose(follower.pose, goalPose)
             outtakeBall(intake)
             shootPattern(sorter, job, patternList.await())
@@ -168,7 +168,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
             follower.followSuspend(freeGate)
-            job = shooter.shoot(flowOf(distance-0.3))
+            job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)
             outtakeBall(intake)

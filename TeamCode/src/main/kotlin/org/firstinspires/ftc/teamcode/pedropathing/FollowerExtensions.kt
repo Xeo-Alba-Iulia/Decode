@@ -70,15 +70,8 @@ suspend inline fun Follower.followAndIntake(
             onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
         }
         followerJob.cancel()
-        if (pathFinished) {
-            @Suppress("CoroutineContextWithJob")
-            launch(SupervisorJob() + Dispatchers.IO) {
-                delay(1.seconds)
-                intakeJob.cancel()
-                intake.isServoRunning = true
-            }
-            return@coroutineScope
-        }
+        if (pathFinished)
+            delay(1.seconds)
         intakeJob.cancel()
         intake.isServoRunning = true
     }

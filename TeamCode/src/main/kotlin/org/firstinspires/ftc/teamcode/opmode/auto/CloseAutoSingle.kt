@@ -51,7 +51,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
     private val rawThirdBallsCollectPose = Pose(9.0, 36.0, PI)
     private val thirdBallsCollectPose = mirrorAlliance(rawThirdBallsCollectPose)
-    private val rawFreeGoalPose = Pose(16.0, 76.0, PI / 2)
+    private val rawFreeGoalPose = Pose(16.0, 76.0, PI)
     private val freeGoalPose = mirrorAlliance(rawFreeGoalPose)
 
     private val scorePreload = pathChain {
