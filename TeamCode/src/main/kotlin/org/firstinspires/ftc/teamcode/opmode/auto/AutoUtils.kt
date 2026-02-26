@@ -8,7 +8,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-suspend inline fun getPatternList(limelight: Limelight3A?, timeout: Duration = 5.seconds) = coroutineScope {
+suspend inline fun getPatternList(limelight: Limelight3A?, timeout: Duration = 0.0.milliseconds) = coroutineScope {
     if (limelight?.isConnected != true) return@coroutineScope CompletableDeferred(value = emptyList())
     async {
         withTimeoutOrNull(timeout) {
