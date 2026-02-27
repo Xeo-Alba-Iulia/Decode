@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.time.Duration.Companion.milliseconds
@@ -67,4 +68,27 @@ suspend fun shootPattern(
     }
     sorter.prepareIntake()
     shooterJob.cancel()
+}
+
+suspend fun fastShoot(sorter: Sorter, shooterJob: Job) {
+    sorter.isLifting = true
+    delay(150L)
+    sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
+    delay(350L)
+    sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
+    delay(300L)
+    sorter.isLifting = false
+    shooterJob.cancel()
+    delay(400L)
+    sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
+    (sorter as? SorterImpl)?.run { size = 0 }
+    sorter.prepareIntake()
+}
+
+fun Sorter.prepareFastShoot() {
+    val size = size
+    if (size != 3)
+        Log.e("Auto", "Prepare fast shoot with size: $size")
+    position = 0.0
+    prepareShoot()
 }

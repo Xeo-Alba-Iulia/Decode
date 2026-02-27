@@ -14,8 +14,8 @@ import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
+import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.time.Duration.Companion.milliseconds
 
 /**Control Scheme:
@@ -193,20 +193,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         if (autoShoot) {
-            sorter.isLifting = true
-            opModeScope.launch {
-                delay(150L)
-                sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
-                delay(300L)
-                sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
-                delay(300L)
-                sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
-                sorter.isLifting = false
-                currentShooterJob?.cancel()
-                sorter.prepareIntake()
-                delay(400L)
-                (sorter as? SorterImpl)?.run { size = 0 }
-            }
+            opModeScope.launch { fastShoot(sorter, currentShooterJob!!) }
         }
 
         if (gamepad2.bWasPressed() || gamepad1.leftBumperWasPressed()) {

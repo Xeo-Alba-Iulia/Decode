@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
-import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -61,7 +60,7 @@ suspend inline fun Follower.followAndIntake(
                 .filter { it }
                 .take(3 - sorter.size)
                 .collect {
-                    sorter.intake(ArtefactType.PURPLE)
+                    sorter.intake(PURPLE)
                     RobotLog.dd(TAG, "Intake $it, sorter now has ${sorter.size} artefacts")
                     delay(200L)
                 }

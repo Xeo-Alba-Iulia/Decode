@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
+import com.pedropathing.paths.CallbackBuilder
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
@@ -20,8 +21,7 @@ suspend inline fun getPatternList(limelight: Limelight3A?, timeout: Duration = 5
         0
     }?.toArtefactList() ?: emptyList()
 
-suspend inline fun outtakeBall(intake: Intake) {
-    intake.isOuttake = true
-    delay(300.milliseconds)
-    intake.isOuttake = false
+fun CallbackBuilder.outtakeBall(intake: Intake, startDelay: Duration = 200.milliseconds) {
+    temporalCallback(startDelay) { intake.isOuttake = true }
+    temporalCallback(startDelay + 300.milliseconds) { intake.isServoRunning = true }
 }
