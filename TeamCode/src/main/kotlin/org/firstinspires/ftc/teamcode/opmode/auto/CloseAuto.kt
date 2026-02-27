@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
+import org.firstinspires.ftc.teamcode.pedropathing.followAndIntakeWhileScoring
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.pedropathing.pathConstraints
 import org.firstinspires.ftc.teamcode.shooter.Shooter
@@ -50,7 +51,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawFreeGoalPose = Pose(10.0, 76.0, PI / 2)
     private val freeGoalPose = mirrorAlliance(rawFreeGoalPose)
 
-    private val rawCollectAndFreeGoalPose = Pose(18.0, 62.5, (5 * PI) / 6)
+    private val rawCollectAndFreeGoalPose = Pose(16.6, 62.5, Math.toRadians(150.0))
 
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
@@ -58,7 +59,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     private val collectAndFreeGoalPose2 = mirrorAlliance(rawCollectAndFreeGoalPose2)
 
-    private val rawFreeGatePose = Pose(17.0, 82.0, Math.toRadians(180.0))
+    private val rawFreeGatePose = Pose(19.0, 81.0, Math.toRadians(180.0))
 
     private val freeGatePose = mirrorAlliance(rawFreeGatePose)
 
@@ -134,7 +135,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +mirrorAlliance(Pose(rawScorePose.x - 4.0, rawSecondBallsCollectPose.y))
                 +secondBallsCollectPose
                 callbacks {
-                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(1.0) }
+                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(0.7) }
                 }
             }
         }
@@ -160,7 +161,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         opModeScope.launch(followerDispatcher) {
             val patternList = async(Dispatchers.IO) { getPatternList(limelight) }
-            var job = shooter.shoot(flowOf(distance))
+            var job = shooter.shoot(flowOf(distance-0.3))
             follower.followSuspend(scorePreload)
             shooter.alignToPose(follower.pose, goalPose)
             outtakeBall(intake)
@@ -178,7 +179,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance-0.3))
-            shooter.angleDegrees = -77.0 * if (isMirrored) -1 else 1
+            shooter.angleDegrees = -75.0 * if (isMirrored) -1 else 1
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
             follower.followSuspend(scoreBalls2)
@@ -188,24 +189,28 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
-                delay(0.6.seconds)
+                delay(1.seconds)
             }
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance-0.3))
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
-            follower.followSuspend(scoreBalls2)
+            follower.followAndIntakeWhileScoring(intake,sorter){
+                follower.followSuspend(scoreBalls2)
+            }
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
-                delay(0.6.seconds)
+                delay(1.seconds)
             }
             follower.setMaxPower(1.0)
             job = shooter.shoot(flowOf(distance-0.3))
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
-            follower.followSuspend(scoreBalls2)
-            delay(100L)
+            follower.followAndIntakeWhileScoring(intake,sorter){
+                follower.followSuspend(scoreBalls2)
+            }
+            delay(1000L)
             follower.followSuspend(leavePath)
         }
     }

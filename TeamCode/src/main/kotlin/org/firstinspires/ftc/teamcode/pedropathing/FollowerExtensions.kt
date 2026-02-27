@@ -75,6 +75,35 @@ suspend inline fun Follower.followAndIntake(
         intakeJob.cancel()
         intake.isServoRunning = true
     }
+suspend inline fun Follower.followAndIntakeWhileScoring(
+    intake: Intake,
+    sorter: Sorter,
+    timeout: Duration = 5.seconds,
+    crossinline followFunction: suspend Follower.() -> Unit,
+): Unit =
+    coroutineScope {
+        intake.isRunning = true
+        val intakeJob = launch {
+            intake.artefactFlow.take(3 - sorter.size).collect {
+                sorter.intake(it)
+                RobotLog.dd(TAG, "Intake $it, sorter now has ${sorter.size} artefacts")
+                delay(200L)
+            }
+        }
+        val followerJob = launch { followFunction() }
+        var pathFinished = false
+        select {
+            intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
+            followerJob.onJoin {
+                Log.e(TAG, "Path finished, only picked up ${sorter.size} artefacts")
+                pathFinished = true
+            }
+            onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
+        }
+        followerJob.cancel()
+        intakeJob.cancel()
+        intake.isServoRunning = true
+    }
 
 /**
  * Follow the given path while intaking, and stop when either the path is finished or the timeout is reached.
