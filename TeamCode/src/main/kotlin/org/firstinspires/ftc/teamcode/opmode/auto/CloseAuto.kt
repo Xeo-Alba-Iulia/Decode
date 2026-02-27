@@ -15,7 +15,6 @@ import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
-import org.firstinspires.ftc.teamcode.pedropathing.followAndIntakeWhileScoring
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.pedropathing.pathConstraints
 import org.firstinspires.ftc.teamcode.shooter.Shooter
@@ -161,12 +160,12 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         opModeScope.launch(followerDispatcher) {
             val patternList = async(Dispatchers.IO) { getPatternList(limelight) }
-            var job = shooter.shoot(flowOf(distance-0.3))
+            var job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scorePreload)
             shooter.alignToPose(follower.pose, goalPose)
             outtakeBall(intake)
-            shootPattern(sorter, job, patternList.await())
-            follower.setMaxPower(1.0)
+            shootPattern(sorter, job, emptyList())
+            follower.setMaxPower(0.8)
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
             follower.followSuspend(freeGate)
@@ -178,7 +177,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.setMaxPower(1.0)
             follower.followAndIntake(intake, sorter, collectBalls2)
             follower.setMaxPower(1.0)
-            job = shooter.shoot(flowOf(distance-0.3))
+            job = shooter.shoot(flowOf(distance))
             shooter.angleDegrees = -75.0 * if (isMirrored) -1 else 1
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
@@ -189,27 +188,23 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
-                delay(1.seconds)
+                delay(5.seconds)
             }
             follower.setMaxPower(1.0)
-            job = shooter.shoot(flowOf(distance-0.3))
+            job = shooter.shoot(flowOf(distance))
             launchJob =
                 launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
-            follower.followAndIntakeWhileScoring(intake,sorter){
-                follower.followSuspend(scoreBalls2)
-            }
+            follower.followAndIntake(intake, sorter, scoreBalls2)
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
-                delay(1.seconds)
+                delay(3.seconds)
             }
             follower.setMaxPower(1.0)
-            job = shooter.shoot(flowOf(distance-0.3))
+            job = shooter.shoot(flowOf(distance))
             launchJob =
-                launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, emptyList()) }
-            follower.followAndIntakeWhileScoring(intake,sorter){
-                follower.followSuspend(scoreBalls2)
-            }
+                launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, patternList.await()) }
+            follower.followAndIntake(intake, sorter, scoreBalls2)
             delay(1000L)
             follower.followSuspend(leavePath)
         }

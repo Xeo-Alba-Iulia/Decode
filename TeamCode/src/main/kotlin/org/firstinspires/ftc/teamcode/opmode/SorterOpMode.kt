@@ -30,12 +30,11 @@ open class SorterOpMode : CoroutineOpMode() {
             }.launchIn(opModeScope)
 
         intake.stateFlow
-            .onEach { (alpha, red, green, blue, dist) ->
-                dashTelemetry.addData("Alpha", alpha)
-                dashTelemetry.addData("Red", red)
-                dashTelemetry.addData("Green", green)
-                dashTelemetry.addData("Blue", blue)
-                dashTelemetry.addData("Distance", dist)
+            .onEach { (hue, saturation, value, dist) ->
+                dashTelemetry.addData("hue", hue)
+                dashTelemetry.addData("saturation", saturation)
+                dashTelemetry.addData("value", value)
+                dashTelemetry.addData("dist", dist)
                 dashTelemetry.update()
             }.launchIn(opModeScope)
     }

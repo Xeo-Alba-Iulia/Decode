@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.intake
 
+import android.graphics.Color
+import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotorEx
-import com.qualcomm.robotcore.util.RobotLog
-import dev.nextftc.control.filters.LowPassFilter
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
@@ -23,14 +23,13 @@ class Intake(
     opModeScope: CoroutineScope,
 ) {
     data class State(
-        val alpha: Int,
-        val red: Int,
-        val green: Int,
-        val blue: Int,
+        val hue: Float,
+        val saturation: Float,
+        val value: Float,
         val distanceCm: Double,
     ) {
         companion object {
-            val ZERO = State(0, 0, 0, 0, 17.0)
+            val ZERO = State(0f, 0f, 0f, 25.0)
         }
     }
 
@@ -72,27 +71,27 @@ class Intake(
         sensorList.forEach { it.gain = GAIN }
     }
 
-    private val alphaFilter = LowPassFilter(ALPHA)
-    private val redFilter = LowPassFilter(ALPHA)
-    private val greenFilter = LowPassFilter(ALPHA)
-    private val blueFilter = LowPassFilter(ALPHA)
-
     val stateFlow =
         flow {
+            val hsvArr = FloatArray(3)
             with(sensorList) {
                 while (true) {
                     if (isRunning || isDebug) {
+                        val red = sensorList.maxOf { it.red() }
+                        val green = sensorList.maxOf { it.green() }
+                        val blue = sensorList.maxOf { it.blue() }
+                        Color.RGBToHSV(red, green, blue, hsvArr)
+                        val (hue, saturation, value) = hsvArr
                         emit(
                             State(
-                                alphaFilter.filter(maxOf(ColorRangeSensor::alpha).toDouble()).toInt(),
-                                redFilter.filter(maxOf(ColorRangeSensor::red).toDouble()).toInt(),
-                                greenFilter.filter(maxOf(ColorRangeSensor::green).toDouble()).toInt(),
-                                blueFilter.filter(maxOf(ColorRangeSensor::blue).toDouble()).toInt(),
-                                minOf { it.getDistance(DistanceUnit.CM) }
+                                hue,
+                                saturation,
+                                value,
+                                minOf { it.getDistance(DistanceUnit.CM) }.takeUnless { it.isNaN() } ?: 25.0
                             )
                         )
                     }
-                    delay(10L)
+                    delay(50L)
                 }
             }
         }.stateIn(opModeScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 100L), State.ZERO)
@@ -106,19 +105,18 @@ class Intake(
     @OptIn(FlowPreview::class)
     val artefactFlow
         get() =
-            stateFlow
-                .map { (alpha, red, green, blue, dist) ->
-                    when {
-                        dist > MAX_DISTANCE -> null
-                        alpha > ALPHA_THRESHOLD && green > blue && blue > red -> ArtefactType.GREEN
-                        alpha > ALPHA_THRESHOLD && blue > red && red > green -> ArtefactType.PURPLE
-                        else -> {
-                            RobotLog.dd("Intake", "Unknown artefact color: A=$alpha R=$red, G=$green, B=$blue")
-                            null
-                        }
+            stateFlow.map { (hue, sat, value, dist) ->
+                when {
+                    dist >= MAX_DISTANCE || value > 2 -> null
+                    hue > 200 && sat <= 0.5 -> ArtefactType.PURPLE
+                    hue < 200 && sat >= 0.55 -> ArtefactType.GREEN
+                    else -> {
+                        Log.e("Intake", "Wrong read: hue: $hue, sat: $sat, value: $value")
+                        null
                     }
-                }.distinctUntilChanged()
-                .debounce(30L)
+                }
+            }.distinctUntilChanged()
+                .debounce(120L)
                 .filterNotNull()
 
     companion object {
@@ -133,6 +131,6 @@ class Intake(
         @JvmField
         var ALPHA = 0.7
         @JvmField
-        var GAIN = 2f
+        var GAIN = 1f
     }
 }

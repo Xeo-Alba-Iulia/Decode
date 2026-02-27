@@ -24,12 +24,8 @@ open class IntakeOpMode : CoroutineOpMode() {
             }.launchIn(opModeScope)
 
         intake.stateFlow
-            .onEach { (alpha, red, green, blue, dist) ->
-                dashTelemetry.addData("Alpha", alpha)
-                dashTelemetry.addData("Red", red)
-                dashTelemetry.addData("Green", green)
-                dashTelemetry.addData("Blue", blue)
-                dashTelemetry.addData("Distance", dist)
+            .onEach {
+                dashTelemetry.addLine(it.toString())
                 dashTelemetry.update()
             }.launchIn(opModeScope)
     }

@@ -5,9 +5,11 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.paths.PathChain
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
+import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.auto.FarAuto.Companion.TAG
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -53,11 +55,16 @@ suspend inline fun Follower.followAndIntake(
     coroutineScope {
         intake.isRunning = true
         val intakeJob = launch {
-            intake.artefactFlow.take(3 - sorter.size).collect {
-                sorter.intake(it)
-                RobotLog.dd(TAG, "Intake $it, sorter now has ${sorter.size} artefacts")
-                delay(200L)
-            }
+            delay(500L)
+            Log.d("FollowAndIntake", "Intake started, size is: ${sorter.size}")
+            intake.distanceFlow
+                .filter { it }
+                .take(3 - sorter.size)
+                .collect {
+                    sorter.intake(ArtefactType.PURPLE)
+                    RobotLog.dd(TAG, "Intake $it, sorter now has ${sorter.size} artefacts")
+                    delay(200L)
+                }
         }
         val followerJob = launch { followFunction() }
         var pathFinished = false
@@ -72,35 +79,6 @@ suspend inline fun Follower.followAndIntake(
         followerJob.cancel()
         if (pathFinished)
             delay(0.55.seconds)
-        intakeJob.cancel()
-        intake.isServoRunning = true
-    }
-suspend inline fun Follower.followAndIntakeWhileScoring(
-    intake: Intake,
-    sorter: Sorter,
-    timeout: Duration = 5.seconds,
-    crossinline followFunction: suspend Follower.() -> Unit,
-): Unit =
-    coroutineScope {
-        intake.isRunning = true
-        val intakeJob = launch {
-            intake.artefactFlow.take(3 - sorter.size).collect {
-                sorter.intake(it)
-                RobotLog.dd(TAG, "Intake $it, sorter now has ${sorter.size} artefacts")
-                delay(200L)
-            }
-        }
-        val followerJob = launch { followFunction() }
-        var pathFinished = false
-        select {
-            intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
-            followerJob.onJoin {
-                Log.e(TAG, "Path finished, only picked up ${sorter.size} artefacts")
-                pathFinished = true
-            }
-            onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
-        }
-        followerJob.cancel()
         intakeJob.cancel()
         intake.isServoRunning = true
     }
