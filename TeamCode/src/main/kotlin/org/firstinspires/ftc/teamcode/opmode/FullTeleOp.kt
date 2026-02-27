@@ -101,6 +101,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .onEach { gamepad2.rumble(100) }
             .launchIn(opModeScope + Dispatchers.IO)
 
+//        intake.artefactFlow
+//            .onEach { Log.d("Intake", "Detected artefact $it") }
+//            .onEach { sorter.intake(it) }
+//            .onEach { delay(250.milliseconds) }
+//            .launchIn(opModeScope + Dispatchers.IO)
+
         intake.distanceFlow
             .filter { it }
             .onEach { Log.d("Intake", "Detected artefact") }
@@ -128,8 +134,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         gamepad2.rumble(500)
                         sorter.position = 0.0
                         sorter.prepareShoot()
-                        if (currentShooterJob?.isCancelled != false)
-                            currentShooterJob = shooter.shoot(distanceFlow)
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }

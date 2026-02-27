@@ -34,8 +34,6 @@ class ShooterImpl(
 
         @JvmField
         var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
-
-        private const val QUEUE_SIZE = 1
     }
 
     /*
@@ -55,7 +53,7 @@ class ShooterImpl(
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
-        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.9, 37.2, 39.5, 41.4, 43.2, 45.0),
+        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.9, 37.2, 39.5, 41.4, 43.8, 46.2),
         (0..10).map { it / 10.0 },
         true
     ).createLUT()
@@ -113,21 +111,16 @@ class ShooterImpl(
         return findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
     }
 
-    private val speedQueue = ArrayDeque(List(QUEUE_SIZE) { 0.0 })
-    private var speedSum = speedQueue.sum()
-
     private fun update(distance: Double) {
         val position = encoder.currentPosition.toDouble()
         val velocity = encoder.velocity
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        speedSum += velocity - speedQueue.removeFirst()
-        speedQueue.addLast(velocity)
         if (distance == 0.0 || velocity == 0.0)
             return
         stateFlow.value =
-            Shooter.State(velocity, findLaunchAngle(distance, ((speedSum / QUEUE_SIZE) / 28) * .085)?.let { result ->
+            Shooter.State(velocity, findLaunchAngle(distance, ((velocity) / 28) * .086)?.let { result ->
                 hood = hoodLUT[Math.toDegrees(result)]
                 true
             } ?: false)
