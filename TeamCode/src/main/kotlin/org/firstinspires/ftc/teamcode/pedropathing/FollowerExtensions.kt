@@ -66,18 +66,14 @@ suspend inline fun Follower.followAndIntake(
                 }
         }
         val followerJob = launch { followFunction() }
-        var pathFinished = false
         select {
             intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
             followerJob.onJoin {
                 Log.e(TAG, "Path finished, only picked up ${sorter.size} artefacts")
-                pathFinished = true
             }
             onTimeout(timeout) { Log.e(TAG, "Path didn't finish, picked up ${sorter.size} artefacts") }
         }
         followerJob.cancel()
-        if (pathFinished)
-            delay(0.55.seconds)
         intakeJob.cancel()
         intake.isServoRunning = true
     }

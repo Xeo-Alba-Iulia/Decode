@@ -51,7 +51,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
     private val rawThirdBallsCollectPose = Pose(9.0, 36.0, PI)
     private val thirdBallsCollectPose = mirrorAlliance(rawThirdBallsCollectPose)
-    private val rawFreeGoalPose = Pose(16.0, 76.0, PI)
+    private val rawFreeGoalPose = Pose(15.1, 74.5, PI / 2)
     private val freeGoalPose = mirrorAlliance(rawFreeGoalPose)
 
     private val scorePreload = pathChain {
@@ -111,7 +111,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                 +mirrorAlliance(Pose(rawScorePose.x - 4.0, rawSecondBallsCollectPose.y))
                 +secondBallsCollectPose
                 callbacks {
-                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(1.0) }
+                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(0.8) }
                 }
             }
         }
@@ -122,7 +122,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                 +mirrorAlliance(Pose(rawScorePose.x - 4.0, rawThirdBallsCollectPose.y))
                 +thirdBallsCollectPose
                 callbacks {
-                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(1.0) }
+                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(0.8) }
                 }
             }
         }
@@ -195,7 +195,7 @@ open class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
             follower.setMaxPower(1.0)
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.setMaxPower(1.0)
-            follower.followSuspend(freeGate, maxPower = 1.0)
+            follower.followSuspend(freeGate, maxPower = 0.8)
             job = shooter.shoot(flowOf(distance))
             follower.followSuspend(scoreBalls1)
             shooter.alignToPose(follower.pose, goalPose)

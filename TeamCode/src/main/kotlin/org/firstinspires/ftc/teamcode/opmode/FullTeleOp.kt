@@ -134,6 +134,11 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         gamepad2.rumble(500)
                         sorter.position = 0.0
                         sorter.prepareShoot()
+                        opModeScope.launch {
+                            intake.isOuttake = true
+                            delay(500.milliseconds)
+                            intake.isServoRunning = true
+                        }
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }

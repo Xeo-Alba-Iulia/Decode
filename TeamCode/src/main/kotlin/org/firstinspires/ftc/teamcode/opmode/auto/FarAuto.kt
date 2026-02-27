@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
-import android.util.Log
 import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
@@ -13,6 +12,7 @@ import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.teamcode.Alliance
@@ -22,14 +22,11 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
-import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootPattern
+import org.firstinspires.ftc.teamcode.shooter.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.math.atan2
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -76,7 +73,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             +cornerBallPose
             +cornerBallPose.withX(cornerBallPose.x + 5.0)
             callbacks {
-                temporalCallback(Duration.ZERO) { intake.isRunning = false }
+                addCallback { intake.isRunning = false }
             }
         }
     }
@@ -102,7 +99,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         }
     }
     private lateinit var firstBalls: PathChain
-    private val scoreFirstBalls = pathChain(null) {
+    private val scoreFirstBalls = pathChain {
         pathLinearHeading(endTime = 0.8) {
             +firstBallPose
             +scorePose
@@ -119,13 +116,9 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     override fun init() {
         follower = opModeGraph.follower
         telemetry = opModeGraph.telemetry
-        sorter = opModeGraph.sorter.also {
-            it.position = 0.5
-        }
+        sorter = opModeGraph.sorter.apply { prepareFastShoot() }
         intake = opModeGraph.intake
-        shooter = opModeGraph.shooter.also {
-            it.angleDegrees = 0.0
-        }
+        shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
         limelight = opModeGraph.limelight
         observers += sorter
         follower.setStartingPose(startPose)
@@ -140,11 +133,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                 delay(100L)
             }
         }
-        drawDebug(follower)
-        intake.artefactFlow
-            .onEach { Log.d("Intake", "Detected artefact: $it") }
-            .onEach { sorter.intake(it) }
-            .launchIn(opModeScope + Dispatchers.IO)
 
         intake.stateFlow
             .onEach {
@@ -157,7 +145,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             pathLinearHeading(0.9) {
                 +scorePose
                 +cornerBallPreposition
-                callbacks { parametricCallback(0.6) { follower.setMaxPower(0.35) } }
+                callbacks { parametricCallback(0.6) { follower.setMaxPower(0.6) } }
             }
             path(
                 interpolator = HeadingInterpolator.piecewise(
@@ -176,7 +164,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             ) {
                 +cornerBallPreposition
                 +cornerBallPose
-                callbacks { addCallback { follower.setMaxPower(0.4) } }
+                callbacks { addCallback { follower.setMaxPower(0.7) } }
             }
         }
         firstBalls = pathChain(follower) {
@@ -198,33 +186,33 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         Thread.sleep(100L)
     }
 
-    @Suppress("NOTHING_TO_INLINE")
-    private inline fun distanceFun() = 3.5
-
     override fun start() {
         patternJob.cancel()
         super.start()
         val pattern = fiducialId.toArtefactList()
-        opModeScope.launch {
+        val followerDispatcher = Dispatchers.Default.limitedParallelism(1)
+        val distanceFlow = flowOf(goalPose.distanceFrom(scorePose) / 39.37)
+        if (BuildConfig.DEBUG)
+            opModeScope.launch(followerDispatcher) {
+                telemetry.addData("Pose", follower.pose)
+                drawDebug(follower)
+            }
+        opModeScope.launch(followerDispatcher) {
+            var shooterJob = shooter.shoot(distanceFlow)
             follower.followSuspend(scorePreload)
-            var shooterJob = shooter.shoot(::distanceFun)
-            delay(500.milliseconds)
-            shootPattern(sorter, shooterJob, pattern)
+            delay(2.seconds)
+            fastShoot(sorter, shooterJob)
             intake.isRunning = true
-            follower.setMaxPower(0.4)
+            follower.setMaxPower(0.7)
             follower.followAndIntake(intake, sorter, firstBalls)
             follower.setMaxPower(1.0)
+            shooterJob = shooter.shoot(distanceFlow)
+            sorter.prepareFastShoot()
             follower.followSuspend(scoreFirstBalls)
             delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose)
-            delay(500.milliseconds)
-            intake.isOuttake = true
-            delay(500.milliseconds)
-            intake.isServoRunning = true
-            shooterJob = shooter.shoot(::distanceFun)
-            delay(500.milliseconds)
-            shootPattern(sorter, shooterJob, pattern)
-            follower.setMaxPower(0.5)
+            fastShoot(sorter, shooterJob)
+            follower.setMaxPower(0.7)
             follower.followAndIntake(
                 intake,
                 sorter,
@@ -234,24 +222,12 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                 timeout = 10.seconds
             )
             follower.setMaxPower(1.0)
+            shooterJob = shooter.shoot(distanceFlow)
             follower.followSuspend(scoreFromCornerPath)
-            intake.isOuttake = true
-            delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose, 0.0)
-            shooterJob = shooter.shoot(::distanceFun)
-            delay(500.milliseconds)
-            intake.isOuttake = true
-            delay(500.milliseconds)
-            intake.isServoRunning = true
             shootPattern(sorter, shooterJob, pattern)
+            shooterJob.cancel()
             follower.followSuspend(leavePathChain)
-        }
-    }
-
-    override fun loop() {
-        if (BuildConfig.DEBUG) {
-            telemetry.addData("Pose", follower.pose)
-            drawDebug(follower)
         }
     }
 
