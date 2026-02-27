@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
+import android.util.Log
 import com.pedropathing.paths.CallbackBuilder
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.delay
@@ -21,7 +22,13 @@ suspend inline fun getPatternList(limelight: Limelight3A?, timeout: Duration = 5
         0
     }?.toArtefactList() ?: emptyList()
 
-fun CallbackBuilder.outtakeBall(intake: Intake, startDelay: Duration = 200.milliseconds) {
-    temporalCallback(startDelay) { intake.isOuttake = true }
-    temporalCallback(startDelay + 300.milliseconds) { intake.isServoRunning = true }
+fun CallbackBuilder.outtakeBall(intake: Intake, startDelay: Duration = 1.25.seconds) {
+    temporalCallback(startDelay) {
+        intake.isOuttake = true
+        Log.d("Auto", "Started Outtake Ball")
+    }
+    temporalCallback(startDelay + 1.seconds) {
+        intake.isServoRunning = true
+        Log.d("Auto", "Started Servo Running")
+    }
 }

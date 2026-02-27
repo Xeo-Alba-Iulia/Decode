@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
+import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.HeadingInterpolator
@@ -77,10 +78,20 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         pathToPose(freeGatePose)
     }
     private val freeGateAndCollect = pathChain {
-        pathLinearHeading(pathConstraints = pathConstraints.copy().apply {
-            brakingStart = 0.5
-            brakingStrength = 1.0
-        }) {
+        path(
+            pathConstraints = pathConstraints.copy().apply {
+                brakingStart = 0.5
+                brakingStrength = 1.0
+            },
+            interpolator = HeadingInterpolator.piecewise(
+                HeadingInterpolator.PiecewiseNode(0.0, 0.8, HeadingInterpolator.tangent),
+                HeadingInterpolator.PiecewiseNode(
+                    0.8,
+                    1.0,
+                    HeadingInterpolator.constant(collectAndFreeGoalPose.heading)
+                )
+            )
+        ) {
             +scorePose
             +mirrorAlliance(Pose(scorePose.x, collectAndFreeGoalPose.y - 4))
             +collectAndFreeGoalPose
@@ -95,6 +106,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
     private lateinit var collectBalls2: PathChain
     private lateinit var scoreBalls2: PathChain
+    private lateinit var scoreBallsGate: PathChain
     private val leavePath = pathChain {
         pathConstantHeading(scorePose.heading) {
             +scorePose
@@ -126,6 +138,30 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         scoreBalls2 = pathChain(follower) {
+            path(interpolator = HeadingInterpolator.tangent.reverse()) {
+                +secondBallsCollectPose
+                +scorePose
+                callbacks {
+                    temporalCallback(1.seconds) {
+                        intake.isOuttake = true
+                        Log.d("Auto", "Started Outtake ball")
+                    }
+                    parametricCallback(0.85) {
+                        launchJob.start()
+                    }
+                }
+            }
+        }
+//        scoreBalls2 = follower.pathBuilder()
+//            .addPath(BezierLine(secondBallsCollectPose, scorePose))
+//            .addTemporalCallback(1000.0) {
+//                intake.isOuttake = true
+//                Log.d("Auto", "Started Outtake ball")
+//            }
+//            .addParametricCallback(0.85) { launchJob.start() }
+//            .build()
+
+        scoreBallsGate = pathChain(follower) {
             path(
                 interpolator = HeadingInterpolator.piecewise(
                     HeadingInterpolator.PiecewiseNode(
@@ -136,13 +172,16 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     HeadingInterpolator.PiecewiseNode(0.1, 1.0, HeadingInterpolator.tangent.reverse())
                 )
             ) {
-                +secondBallsCollectPose
+                +collectAndFreeGoalPose
                 +scorePose
                 callbacks {
-                    parametricCallback(0.60) {
-                        assert(!launchJob.start())
+                    parametricCallback(0.85) {
+                        launchJob.start()
                     }
-                    outtakeBall(intake)
+                    temporalCallback(1.seconds) {
+                        intake.isOuttake = true
+                        Log.d("Auto", "Started Outtake ball")
+                    }
                 }
             }
         }
@@ -164,6 +203,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             var job = shooter.shoot(distanceFlow)
             follower.followSuspend(scorePreload)
             shooter.alignToPose(follower.pose, goalPose)
+            delay(300L)
             fastShoot(sorter, job)
             follower.setMaxPower(0.8)
             follower.followAndIntake(intake, sorter, collectBalls1)
@@ -177,6 +217,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followAndIntake(intake, sorter, collectBalls2)
             shooter.angleDegrees = -75.0 * if (isMirrored) -1 else 1
             job = shooter.shoot(distanceFlow)
+            sorter.prepareFastShoot()
             launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
             follower.followSuspend(scoreBalls2)
             launchJob.join()
@@ -185,8 +226,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 delay(5.seconds)
             }
             job = shooter.shoot(distanceFlow)
+            sorter.prepareFastShoot()
             launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
-            follower.followAndIntake(intake, sorter, scoreBalls2)
+            follower.followSuspend(scoreBallsGate)
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
@@ -194,7 +236,8 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
             job = shooter.shoot(distanceFlow)
             launchJob = launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, patternList.await()) }
-            follower.followAndIntake(intake, sorter, scoreBalls2)
+            scoreBallsGate.resetCallbacks()
+            follower.followSuspend(scoreBallsGate)
             launchJob.join()
             follower.followSuspend(leavePath)
         }

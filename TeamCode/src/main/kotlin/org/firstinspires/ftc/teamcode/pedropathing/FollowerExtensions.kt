@@ -55,7 +55,7 @@ suspend inline fun Follower.followAndIntake(
         intake.isRunning = true
         val intakeJob = launch {
             delay(500L)
-            Log.d("FollowAndIntake", "Intake started, size is: ${sorter.size}")
+            Log.d(TAG, "Intake started, size is: ${sorter.size}")
             intake.distanceFlow
                 .filter { it }
                 .take(3 - sorter.size)
