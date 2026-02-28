@@ -12,15 +12,13 @@ import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
-import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
-import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.fastShoot
+import org.firstinspires.ftc.teamcode.shooter.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @Config
@@ -48,6 +46,11 @@ abstract class FullTeleOp : CoroutineOpMode() {
     @OptIn(ExperimentalAtomicApi::class)
     val updatedByCam = AtomicBoolean(false)
 
+    @Volatile
+    var isShootPattern = false
+
+    lateinit var patternList: List<ArtefactType>
+
     companion object {
         @JvmField
         var ANGLE_ADJUSTMENT_STEP = -0.5
@@ -70,12 +73,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
         limelight = opModeGraph.limelight
         observers += sorter
         limelight.pipelineSwitch(limelightPipeline)
+
+        patternList = pattern ?: emptyList()
     }
 
     override fun start() {
         super.start()
         follower.setStartingPose(lastPose ?: startPose)
         lastPose = null
+        patternList = pattern ?: emptyList()
+        pattern = null
         follower.startTeleopDrive(true)
         shooter.stateFlow
             .map { (_, canShoot) -> canShoot }
@@ -90,7 +97,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 //            .onEach { delay(250.milliseconds) }
 //            .launchIn(opModeScope + Dispatchers.IO)
 
-        intake.distanceFlow
+        val distanceIntakeJob = intake.distanceFlow
             .filter { it }
             .onEach { Log.d("Intake", "Detected artefact") }
             .onEach { sorter.intake(PURPLE) }
@@ -104,7 +111,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope + Dispatchers.IO)
 
-        opModeScope.launch {
+        opModeScope.launch(Dispatchers.IO) {
             var lastIsFull = false
             var lastIsEmpty = true
             while (true) {
@@ -119,11 +126,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         sorter.prepareShoot()
                         if (currentShooterJob?.isCancelled != false)
                             currentShooterJob = shooter.shoot(distanceFlow)
-                        opModeScope.launch {
-                            intake.isOuttake = true
-                            delay(500.milliseconds)
-                            intake.isServoRunning = true
-                        }
+                        intake.isOuttake = true
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -133,6 +136,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
         }
 
+        opModeScope.launch(Dispatchers.IO) {
+            delay(2.minutes - 35.seconds)
+            distanceIntakeJob.cancel()
+            intake.artefactFlow
+                .onEach { Log.d("Intake", "Detected artefact $it") }
+                .onEach { sorter.intake(it) }
+                .onEach { delay(250.milliseconds) }
+                .launchIn(opModeScope + Dispatchers.IO)
+            isShootPattern = true
+        }
         limelight.start()
     }
 
@@ -197,10 +210,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         if (autoShoot) {
             opModeScope.launch {
-                // TODO: Remove test code
-                (shooter as ShooterImpl).isUpdatingHood = false
-                fastShoot(sorter, currentShooterJob!!)
-                (shooter as ShooterImpl).isUpdatingHood = true
+                val isClose = distanceFlow.value < 2.0
+                intake.isServoRunning = true
+                if (isClose)
+                    (shooter as ShooterImpl).isUpdatingHood = false
+                if (isShootPattern)
+                    shootPattern(sorter, currentShooterJob!!, patternList)
+                else
+                    fastShoot(sorter, currentShooterJob!!)
+                if (isClose)
+                    (shooter as ShooterImpl).isUpdatingHood = true
             }
         }
 
