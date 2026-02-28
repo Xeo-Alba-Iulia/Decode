@@ -120,7 +120,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
         limelight = opModeGraph.limelight
-        observers += sorter
         follower.setStartingPose(startPose)
         limelight.pipelineSwitch(0)
         limelight.start()

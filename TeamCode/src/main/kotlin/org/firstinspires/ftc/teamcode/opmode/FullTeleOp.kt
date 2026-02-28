@@ -13,36 +13,16 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
-/**Control Scheme:
- * GAMEPAD 1 (Driver):
- * - Left Stick: Strafe/Forward movement
- * - Right Stick X: Rotation
- * - A: Start intake
- * - B: Stop intake
- * - Y: Toggle field-centric mode
- * - Left Bumper: Slow mode (hold)
- *
- * GAMEPAD 2 (Sisteme):
- * - A: Start shooting sequence
- * - B: Stop shooting sequence
- * - X: Decrease shooter velocityOffset
- * - Y: Increase shooter velocityOffset
- * - Dpad Up/Down: Adjust hood position
- * - Dpad Left/Right: Adjust shooter angle
- * - Left Bumper: Prepare shoot (purple artefact)
- * - Right Bumper: Prepare shoot (green artefact)
- * - Back: Prepare shoot (any artefact)
- * - Start: Prepare intake
- * - Left Trigger: Decrease sorter position
- * - Right Trigger: Increase sorter position
- * - Left Stick Button: Intake purple artefact
- * - Right Stick Button: Intake green artefact
- */
 @Config
 abstract class FullTeleOp : CoroutineOpMode() {
     // Subsystems
@@ -64,6 +44,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
     abstract val limelightPipeline: Int
 
     val distanceFlow = MutableStateFlow(0.0)
+
+    @OptIn(ExperimentalAtomicApi::class)
+    val updatedByCam = AtomicBoolean(false)
 
     companion object {
         @JvmField
@@ -134,6 +117,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         gamepad2.rumble(500)
                         sorter.position = 0.0
                         sorter.prepareShoot()
+                        if (currentShooterJob?.isCancelled != false)
+                            currentShooterJob = shooter.shoot(distanceFlow)
                         opModeScope.launch {
                             intake.isOuttake = true
                             delay(500.milliseconds)
@@ -151,6 +136,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         limelight.start()
     }
 
+    @OptIn(ExperimentalAtomicApi::class)
     override fun loop() {
         handleSorter()
         follower.setTeleOpDrive(
@@ -161,7 +147,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         )
         follower.update()
         drawDebug(follower)
-        distanceFlow.value = goalPose.distanceFrom(follower.pose) / 39.37
+        if (!updatedByCam.load())
+            distanceFlow.value = goalPose.distanceFrom(follower.pose) / 39.37
         telemetry.addData("Distance", distanceFlow.value)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
@@ -181,8 +168,19 @@ abstract class FullTeleOp : CoroutineOpMode() {
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
         limelight.latestResult.fiducialResults.singleOrNull()?.let {
-            if (gamepad1.crossWasPressed())
+            if (gamepad1.crossWasPressed()) {
                 turretOffset -= it.targetXDegrees
+                if (!updatedByCam.compareAndSet(expectedValue = false, newValue = true)) return@let
+                opModeScope.launch(Dispatchers.IO) {
+                    delay(200.milliseconds)
+                    val pos = it.targetPoseCameraSpace.position
+                    distanceFlow.value =
+                        limelight.latestResult.fiducialResults.singleOrNull()?.targetPoseCameraSpace?.position?.z
+                            ?: sqrt(pos.z * pos.z + pos.x * pos.x)
+                    delay(2.seconds)
+                    val _ = updatedByCam.exchange(false)
+                }
+            }
         }
 
         if (gamepad1.triangleWasPressed())
@@ -198,7 +196,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         if (autoShoot) {
-            opModeScope.launch { fastShoot(sorter, currentShooterJob!!) }
+            opModeScope.launch {
+                // TODO: Remove test code
+                (shooter as ShooterImpl).isUpdatingHood = false
+                fastShoot(sorter, currentShooterJob!!)
+                (shooter as ShooterImpl).isUpdatingHood = true
+            }
         }
 
         if (gamepad2.bWasPressed() || gamepad1.leftBumperWasPressed()) {

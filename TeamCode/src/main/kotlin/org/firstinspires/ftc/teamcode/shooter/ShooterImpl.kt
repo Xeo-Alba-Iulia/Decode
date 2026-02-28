@@ -9,6 +9,7 @@ import dev.nextftc.control.KineticState
 import dev.nextftc.control.builder.controlSystem
 import dev.nextftc.control.feedback.PIDCoefficients
 import dev.nextftc.control.feedforward.BasicFeedforwardParameters
+import dev.nextftc.control.filters.LowPassFilter
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.*
@@ -48,12 +49,12 @@ class ShooterImpl(
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1580.0, 1680.0, 1780.0, 1850.0, 1960.0, 2160.0, 2340.0),
+        /* output = */ listOf(1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2160.0, 2340.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
-        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.9, 37.2, 39.5, 41.4, 43.8, 46.2),
+        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.9, 37.6, 40.0, 42.8, 44.5, 46.8),
         (0..10).map { it / 10.0 },
         true
     ).createLUT()
@@ -92,8 +93,8 @@ class ShooterImpl(
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double? {
-        val g = 9
-        val height = 0.65
+        val g = 8.95
+        val height = 0.66
         val d = distance
         val v = velocity
         val sin = sin(guess)
@@ -111,17 +112,21 @@ class ShooterImpl(
         return findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
     }
 
+    private val hoodFilter = LowPassFilter(0.4, 45.0)
+    var isUpdatingHood = true
+
     private fun update(distance: Double) {
         val position = encoder.currentPosition.toDouble()
         val velocity = encoder.velocity
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        if (distance == 0.0 || velocity == 0.0)
+        // TODO: Test not moving hood
+        if (distance == 0.0 || velocity == 0.0 || !isUpdatingHood)
             return
         stateFlow.value =
             Shooter.State(velocity, findLaunchAngle(distance, ((velocity) / 28) * .086)?.let { result ->
-                hood = hoodLUT[Math.toDegrees(result)]
+                hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
                 true
             } ?: false)
     }
@@ -153,7 +158,7 @@ class ShooterImpl(
                     controller.goal = KineticState(velocity = velocityFn())
                     hood = hoodFn()
                     update(0.0)
-                    delay(50L)
+                    delay(25L)
                 }
             } finally {
                 setPower(0.0)
