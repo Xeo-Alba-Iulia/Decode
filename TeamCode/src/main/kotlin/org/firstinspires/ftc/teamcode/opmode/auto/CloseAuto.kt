@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
-import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.HeadingInterpolator
@@ -11,9 +10,11 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flowOf
 import org.firstinspires.ftc.teamcode.Alliance
+import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
+import org.firstinspires.ftc.teamcode.opmode.pattern
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
@@ -53,10 +54,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawSecondBallsCollectPose = Pose(11.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
 
-    private val rawCollectAndFreeGoalPose = Pose(13.8, 61.5, Math.toRadians(150.0))
+    private val rawCollectAndFreeGoalPose = Pose(13.7, 61.5, Math.toRadians(150.0))
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
-    private val rawFreeGatePose = Pose(19.2, 79.8, Math.toRadians(180.0))
+    private val rawFreeGatePose = Pose(19.4, 79.8, Math.toRadians(180.0))
     private val freeGatePose = mirrorAlliance(rawFreeGatePose)
 
     private lateinit var scorePreload: PathChain
@@ -112,6 +113,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
 
     lateinit var launchJob: Job
+    var patternList: List<ArtefactType> = emptyList()
 
     override fun init() {
         follower = opModeGraph.follower.apply { setStartingPose(startPose) }
@@ -139,10 +141,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +mirrorAlliance(Pose(rawScorePose.x, rawSecondBallsCollectPose.y))
                 +mirrorAlliance(Pose(rawScorePose.x - 4.0, rawSecondBallsCollectPose.y))
                 +secondBallsCollectPose
-                callbacks {
-                    parametricCallback(0.35) { intake.isRunning = true; follower.setMaxPower(0.8) }
-                    parametricCallback(1.0) { follower.setMaxPower(1.0) }
-                }
             }
         }
         scoreBalls2 = pathChain(follower) {
@@ -150,10 +148,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +secondBallsCollectPose
                 +scorePose
                 callbacks {
-                    temporalCallback(1.seconds) {
-                        intake.isOuttake = true
-                        Log.d("Auto", "Started Outtake ball")
-                    }
                     parametricCallback(0.78) {
                         launchJob.start()
                     }
@@ -177,10 +171,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     parametricCallback(0.78) {
                         launchJob.start()
                     }
-                    temporalCallback(1.seconds) {
-                        intake.isOuttake = true
-                        Log.d("Auto", "Started Outtake ball")
-                    }
                 }
             }
         }
@@ -188,7 +178,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
-        val distanceFlow = flowOf(goalPose.distanceFrom(scorePose) / 39.37 + 0.05)
+        val distanceFlow = flowOf(goalPose.distanceFrom(scorePose) / 39.37)
         val followerDispatcher = Dispatchers.Default.limitedParallelism(1)
         intake.isServoRunning = true
         opModeScope.launch(followerDispatcher) {
@@ -199,7 +189,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         opModeScope.launch(followerDispatcher) {
             follower.setMaxPower(0.8)
-            val patternList = async(Dispatchers.IO) { getPatternList(limelight) }
+            val pattern = async(Dispatchers.IO) { getPatternList(limelight) }
             var job = shooter.shoot(distanceFlow)
             launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
             follower.followSuspend(scorePreload)
@@ -207,18 +197,22 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.setMaxPower(0.7)
             follower.followAndIntake(intake, sorter, collectBalls1)
             follower.followSuspend(freeGate)
+            intake.isOuttake = true
             sorter.prepareFastShoot()
             follower.setMaxPower(1.0)
             job = shooter.shoot(distanceFlow)
             follower.followSuspend(scoreBalls1)
+            intake.isServoRunning = true
 //            shooter.alignToPose(follower.pose, goalPose)
             fastShoot(sorter, job)
             follower.followAndIntake(intake, sorter, collectBalls2)
             shooter.angleDegrees = -75.0 * if (isMirrored) -1 else 1
             job = shooter.shoot(distanceFlow)
             sorter.prepareFastShoot()
+            intake.isOuttake = true
             launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
             follower.followSuspend(scoreBalls2)
+            intake.isServoRunning = true
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
@@ -232,8 +226,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
             job = shooter.shoot(distanceFlow)
             sorter.prepareFastShoot()
+            intake.isOuttake = true
             launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
             follower.followSuspend(scoreBallsGate)
+            intake.isServoRunning = true
             launchJob.join()
             follower.followAndIntake(intake, sorter) {
                 follower.followSuspend(freeGateAndCollect)
@@ -246,9 +242,12 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
             }
             job = shooter.shoot(distanceFlow)
-            launchJob = launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, patternList.await()) }
+            patternList = pattern.await()
+            launchJob = launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, patternList) }
+            intake.isOuttake = true
             scoreBallsGate.resetCallbacks()
             follower.followSuspend(scoreBallsGate)
+            intake.isServoRunning = true
             launchJob.join()
             follower.followSuspend(leavePath)
         }
@@ -258,5 +257,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         super.stop()
         limelight?.stop()
         lastPose = follower.pose
+        pattern = patternList
     }
 }

@@ -22,7 +22,9 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
-import org.firstinspires.ftc.teamcode.shooter.*
+import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.alignToPose
+import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
@@ -116,7 +118,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     override fun init() {
         follower = opModeGraph.follower
         telemetry = opModeGraph.telemetry
-        sorter = opModeGraph.sorter.apply { prepareFastShoot() }
+        sorter = opModeGraph.sorter.apply { position = 0.5 }
         intake = opModeGraph.intake
         shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
         limelight = opModeGraph.limelight
@@ -199,18 +201,19 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch(followerDispatcher) {
             var shooterJob = shooter.shoot(distanceFlow)
             follower.followSuspend(scorePreload)
-            delay(2.seconds)
-            fastShoot(sorter, shooterJob)
+            delay(5.seconds)
+            shootPattern(sorter, shooterJob, emptyList())
             intake.isRunning = true
             follower.setMaxPower(0.7)
-            follower.followAndIntake(intake, sorter, firstBalls)
+            follower.followAndIntake(intake, sorter, firstBalls, colorList = listOf(GREEN, PURPLE, PURPLE))
+            intake.isOuttake = true
             follower.setMaxPower(1.0)
             shooterJob = shooter.shoot(distanceFlow)
-            sorter.prepareFastShoot()
+            sorter.position = 0.5
             follower.followSuspend(scoreFirstBalls)
             delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose)
-            fastShoot(sorter, shooterJob)
+            shootPattern(sorter, shooterJob, pattern)
             follower.setMaxPower(0.7)
             follower.followAndIntake(
                 intake,
@@ -218,6 +221,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                 cornerPath,
                 lastBallPositionPath,
                 lastBallCollectPath,
+                colorList = listOf(PURPLE, GREEN, PURPLE),
                 timeout = 10.seconds
             )
             follower.setMaxPower(1.0)

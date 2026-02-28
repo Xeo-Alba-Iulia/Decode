@@ -54,7 +54,7 @@ class ShooterImpl(
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
-        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.9, 37.6, 40.0, 42.8, 44.5, 46.8),
+        listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.5, 36.8, 39.1, 42.0, 44.3, 46.5),
         (0..10).map { it / 10.0 },
         true
     ).createLUT()
@@ -121,7 +121,6 @@ class ShooterImpl(
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        // TODO: Test not moving hood
         if (distance == 0.0 || velocity == 0.0 || !isUpdatingHood)
             return
         stateFlow.value =

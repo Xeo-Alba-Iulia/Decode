@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.intake
 
 import android.graphics.Color
-import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotorEx
+import dev.nextftc.control.filters.LowPassFilter
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
@@ -74,10 +74,11 @@ class Intake(
     val stateFlow =
         flow {
             val hsvArr = FloatArray(3)
+            val hueFilter = LowPassFilter(0.6, 200.0)
             with(sensorList) {
                 while (true) {
                     if (isRunning || isDebug) {
-                        val red = sensorList.maxOf { it.red() }
+                        val red = hueFilter.filter(sensorList.maxOf { it.red() }.toDouble()).toInt()
                         val green = sensorList.maxOf { it.green() }
                         val blue = sensorList.maxOf { it.blue() }
                         Color.RGBToHSV(red, green, blue, hsvArr)
@@ -108,12 +109,8 @@ class Intake(
             stateFlow.map { (hue, sat, value, dist) ->
                 when {
                     dist >= MAX_DISTANCE || value > 2 -> null
-                    hue > 200 && sat <= 0.5 -> ArtefactType.PURPLE
-                    hue < 200 && sat >= 0.55 -> ArtefactType.GREEN
-                    else -> {
-                        Log.e("Intake", "Wrong read: hue: $hue, sat: $sat, value: $value")
-                        null
-                    }
+                    hue in 220f..320f && sat <= 0.5 -> ArtefactType.PURPLE
+                    else -> ArtefactType.GREEN
                 }
             }.distinctUntilChanged()
                 .debounce(120L)
