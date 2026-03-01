@@ -54,7 +54,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawSecondBallsCollectPose = Pose(11.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
 
-    private val rawCollectAndFreeGoalPose = Pose(13.7, 61.5, Math.toRadians(150.0))
+    private val rawCollectAndFreeGoalPose = Pose(13.8, 61.0, Math.toRadians(150.0))
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
     private val rawFreeGatePose = Pose(19.4, 79.8, Math.toRadians(180.0))
