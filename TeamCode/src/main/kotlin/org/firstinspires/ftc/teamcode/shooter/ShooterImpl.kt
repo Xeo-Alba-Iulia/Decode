@@ -113,6 +113,8 @@ class ShooterImpl(
     }
 
     private val hoodFilter = LowPassFilter(0.4, 45.0)
+
+    @Volatile
     var isUpdatingHood = true
 
     private fun update(distance: Double) {
@@ -123,11 +125,17 @@ class ShooterImpl(
         setPower(controller.calculate(KineticState(position, velocity)))
         if (distance == 0.0 || velocity == 0.0 || !isUpdatingHood)
             return
+
         stateFlow.value =
-            Shooter.State(velocity, findLaunchAngle(distance, ((velocity) / 28) * .086)?.let { result ->
-                hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
-                true
-            } ?: false)
+            Shooter.State(
+                velocity,
+                findLaunchAngle(
+                    distance, (if (distance < 2.1) desiredVelocity * .08 else velocity * .086) / 28
+                )?.let { result ->
+                    hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
+                    true
+                } ?: false
+            )
     }
 
     override fun shoot(distanceFlow: Flow<Double>): Job =

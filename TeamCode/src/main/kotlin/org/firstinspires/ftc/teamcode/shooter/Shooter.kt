@@ -72,9 +72,9 @@ suspend fun shootPattern(
 
 suspend fun fastShoot(sorter: Sorter, shooterJob: Job) {
     sorter.isLifting = true
-    delay(150L)
+    delay(200L)
     sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
-    delay(350L)
+    delay(250L)
     sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
     delay(300L)
     sorter.isLifting = false

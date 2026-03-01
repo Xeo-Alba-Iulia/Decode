@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
-import org.firstinspires.ftc.teamcode.shooter.*
+import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
+import org.firstinspires.ftc.teamcode.shooter.alignToPose
+import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -180,17 +183,14 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
-        limelight.latestResult.fiducialResults.singleOrNull()?.let {
-            if (gamepad1.crossWasPressed()) {
-                turretOffset -= it.targetXDegrees
-                if (!updatedByCam.compareAndSet(expectedValue = false, newValue = true)) return@let
+        val result = limelight.latestResult
+        if (result.isValid() && gamepad1.crossWasPressed()) {
+            turretOffset -= result.tx
+            if (updatedByCam.compareAndSet(expectedValue = false, newValue = true)) {
                 opModeScope.launch(Dispatchers.IO) {
-                    delay(200.milliseconds)
-                    val pos = it.targetPoseCameraSpace.position
-                    distanceFlow.value =
-                        limelight.latestResult.fiducialResults.singleOrNull()?.targetPoseCameraSpace?.position?.z
-                            ?: sqrt(pos.z * pos.z + pos.x * pos.x)
-                    delay(2.seconds)
+                    val pos = result.fiducialResults.single().targetPoseCameraSpace.position
+                    distanceFlow.value = sqrt(pos.z * pos.z + pos.x * pos.x) + 0.15
+                    delay(3.seconds)
                     val _ = updatedByCam.exchange(false)
                 }
             }
@@ -209,15 +209,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
         }
 
         if (autoShoot) {
-            opModeScope.launch {
-                val isClose = distanceFlow.value < 2.0
+            opModeScope.launch(Dispatchers.Unconfined) {
+                val isClose = distanceFlow.value < 2.1
                 intake.isServoRunning = true
                 if (isClose)
                     (shooter as ShooterImpl).isUpdatingHood = false
-                if (isShootPattern)
-                    shootPattern(sorter, currentShooterJob!!, patternList)
-                else
-                    fastShoot(sorter, currentShooterJob!!)
+                fastShoot(sorter, currentShooterJob!!)
                 if (isClose)
                     (shooter as ShooterImpl).isUpdatingHood = true
             }
