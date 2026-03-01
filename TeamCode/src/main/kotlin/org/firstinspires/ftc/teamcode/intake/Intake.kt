@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.intake
 
 import android.graphics.Color
+import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotorEx
-import dev.nextftc.control.filters.LowPassFilter
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Named
 import kotlinx.coroutines.CoroutineScope
@@ -74,11 +74,10 @@ class Intake(
     val stateFlow =
         flow {
             val hsvArr = FloatArray(3)
-            val hueFilter = LowPassFilter(0.6, 200.0)
             with(sensorList) {
                 while (true) {
                     if (isRunning || isDebug) {
-                        val red = hueFilter.filter(sensorList.maxOf { it.red() }.toDouble()).toInt()
+                        val red = sensorList.maxOf { it.red() }
                         val green = sensorList.maxOf { it.green() }
                         val blue = sensorList.maxOf { it.blue() }
                         Color.RGBToHSV(red, green, blue, hsvArr)
@@ -88,7 +87,9 @@ class Intake(
                                 hue,
                                 saturation,
                                 value,
-                                minOf { it.getDistance(DistanceUnit.CM) }.takeUnless { it.isNaN() } ?: 25.0
+                                minOf { sensor ->
+                                    sensor.getDistance(DistanceUnit.CM).takeUnless { it.isNaN() } ?: 25.0
+                                }
                             )
                         )
                     }
@@ -109,11 +110,17 @@ class Intake(
             stateFlow.map { (hue, sat, value, dist) ->
                 when {
                     dist >= MAX_DISTANCE || value > 2 -> null
-                    hue in 220f..320f && sat <= 0.5 -> ArtefactType.PURPLE
-                    else -> ArtefactType.GREEN
+                    hue in 220f..320f && sat <= 0.65 -> ArtefactType.PURPLE
+                    hue in 100f..160f && sat >= 0.5 -> ArtefactType.GREEN
+                    else -> {
+                        Log.e("Intake", "Problem reading: hue $hue, sat: $sat, value: $value")
+                        null
+                    }
+                }?.also {
+                    Log.v("Intake", "Found $it, hue: $hue, sat: $sat, value: $value")
                 }
             }.distinctUntilChanged()
-                .debounce(120L)
+                .debounce(110L)
                 .filterNotNull()
 
     companion object {

@@ -16,6 +16,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.InterpLUT
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -126,14 +127,15 @@ class ShooterImpl(
         if (distance == 0.0 || velocity == 0.0 || !isUpdatingHood)
             return
 
+        val shouldUpdate = distance > 2.3
         stateFlow.value =
             Shooter.State(
                 velocity,
                 findLaunchAngle(
-                    distance, (if (distance < 2.1) desiredVelocity * .08 else velocity * .086) / 28
+                    distance, (if (shouldUpdate) velocity * .086 else desiredVelocity * .082) / 28
                 )?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
-                    true
+                    if (shouldUpdate) true else abs(velocity - desiredVelocity) <= 80.0
                 } ?: false
             )
     }

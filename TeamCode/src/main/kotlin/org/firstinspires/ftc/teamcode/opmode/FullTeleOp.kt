@@ -13,7 +13,6 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -21,7 +20,6 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @Config
@@ -91,7 +89,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
             .map { (_, canShoot) -> canShoot }
             .distinctUntilChanged()
             .filter { it }
-            .onEach { gamepad2.rumble(100) }
+            .onEach { gamepad1.rumble(100); gamepad2.rumble(100) }
             .launchIn(opModeScope + Dispatchers.IO)
 
 //        intake.artefactFlow
@@ -137,17 +135,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 lastIsEmpty = isEmpty
                 delay(150L)
             }
-        }
-
-        opModeScope.launch(Dispatchers.IO) {
-            delay(2.minutes - 35.seconds)
-            distanceIntakeJob.cancel()
-            intake.artefactFlow
-                .onEach { Log.d("Intake", "Detected artefact $it") }
-                .onEach { sorter.intake(it) }
-                .onEach { delay(250.milliseconds) }
-                .launchIn(opModeScope + Dispatchers.IO)
-            isShootPattern = true
         }
         limelight.start()
     }
@@ -210,13 +197,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         if (autoShoot) {
             opModeScope.launch(Dispatchers.Unconfined) {
-                val isClose = distanceFlow.value < 2.1
                 intake.isServoRunning = true
-                if (isClose)
-                    (shooter as ShooterImpl).isUpdatingHood = false
                 fastShoot(sorter, currentShooterJob!!)
-                if (isClose)
-                    (shooter as ShooterImpl).isUpdatingHood = true
             }
         }
 
