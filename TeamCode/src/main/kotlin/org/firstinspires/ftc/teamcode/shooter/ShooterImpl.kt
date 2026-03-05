@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.shooter
 import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.ftcrobotcontroller.BuildConfig
-import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.Servo
 import dev.nextftc.control.KineticState
@@ -32,22 +31,19 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        var coefficients = PIDCoefficients(0.0015)
+        var coefficients = PIDCoefficients(0.01)
 
         @JvmField
-        var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
+        var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.00035)
 
-        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.083 / 28
+        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.082 / 28
+        const val TURRET_ROTATION_PER_DEGREE = (.794 - .2025) / 180
     }
 
-    init {
-        motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
-    }
-
-    val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
+    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2160.0, 2340.0),
+        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2160.0, 2340.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -57,10 +53,18 @@ class ShooterImpl(
         true
     ).createLUT()
 
+    private var _angleDegrees = 0.0
+        set(value) {
+            field = value
+            turretServos.forEach { it.position = .5 - field * TURRET_ROTATION_PER_DEGREE }
+        }
     override var angleDegrees = 0.0
         set(value) {
-            field = value.coerceIn(-151.2, 151.2)
-            turretServos.forEach { it.position = 0.5 - field * ((.5 - .2025) / 90) }
+            val maxAngle = .5 / TURRET_ROTATION_PER_DEGREE
+            field = value.coerceIn(-maxAngle, maxAngle)
+            if (abs(field - _angleDegrees) >= 0.5) {
+                _angleDegrees = field
+            }
         }
 
     var hood by hoodServo::position
@@ -94,7 +98,7 @@ class ShooterImpl(
         repetitions: Int = 4
     ): Double? {
         val g = 8.95
-        val height = 0.66
+        val height = 0.65
         val d = distance
         val v = velocity
         val sin = sin(guess)
@@ -113,9 +117,8 @@ class ShooterImpl(
         }
     }
 
-    private val hoodFilter = LowPassFilter(0.4, 45.0)
+    private val hoodFilter = LowPassFilter(0.6, 45.0)
 
-    @Volatile
     var isUpdatingHood = true
 
     private fun update(distance: Double) {
@@ -130,7 +133,7 @@ class ShooterImpl(
             Shooter.State(
                 velocity,
                 isControllingServo && findLaunchAngle(
-                    distance, (if (isFar) velocity else desiredVelocity) * TICKS_PER_SEC_TO_METERS_PER_SEC
+                    distance, (if (isFar) velocity else desiredVelocity - 50.0) * TICKS_PER_SEC_TO_METERS_PER_SEC
                 )?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
                     isFar || abs(velocity - desiredVelocity) <= 80.0
@@ -138,14 +141,14 @@ class ShooterImpl(
             )
     }
 
-    override fun shoot(distanceFlow: Flow<Double>): Job {
-        var dist = 0.0
-        distanceFlow.onEach { distance ->
-            dist = distance
-            controller.goal = KineticState(velocity = velocityLUT[distance])
-        }.launchIn(opModeScope + Dispatchers.IO)
-        return opModeScope.launch {
+    override fun shoot(distanceFlow: Flow<Double>): Job =
+        opModeScope.launch {
             try {
+                var dist = 0.0
+                distanceFlow.onEach { distance ->
+                    dist = distance
+                    controller.goal = KineticState(velocity = velocityLUT[distance])
+                }.launchIn(this + Dispatchers.IO)
                 while (true) {
                     update(dist)
                     delay(50L)
@@ -155,7 +158,6 @@ class ShooterImpl(
                 stateFlow.value = Shooter.State(0.0, false)
             }
         }
-    }
 
     fun shoot(velocityFn: () -> Double, hoodFn: () -> Double): Job =
         opModeScope.launch {

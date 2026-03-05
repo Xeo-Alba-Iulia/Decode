@@ -32,7 +32,7 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.
         targetPose.x - currentPose.x
     )
     val normalizedAngle = MathFunctions.normalizeAngle(currentPose.heading).let {
-        if (it > PI * (3.0 / 2.0)) it - 2 * PI else it
+        if (it > PI + angle) it - 2 * PI else it
     }
     angleDegrees = Math.toDegrees(angle - normalizedAngle) + offset
 }
@@ -76,12 +76,11 @@ suspend fun fastShoot(sorter: Sorter) {
     sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
     delay(250L)
     sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
-    delay(300L)
-    sorter.isLifting = false
     delay(400L)
     sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
     (sorter as? SorterImpl)?.run { size = 0 }
     sorter.prepareIntake()
+    sorter.isLifting = false
 }
 
 fun Sorter.prepareFastShoot() {

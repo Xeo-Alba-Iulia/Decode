@@ -219,8 +219,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.followAndIntake(intake, sorter, collectBalls1, colorList = listOf(PURPLE, PURPLE, GREEN))
             shooter.alignToPose(mirrorAlliance(rawScorePose.withHeading(PI)), goalPose, if (isMirrored) 1.0 else -1.0)
             sorter.position = 0.5
+            intake.isOuttake = true
             launchJob = launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, patternList) }
             follower.followSuspend(scoreBalls1)
+            intake.isServoRunning = true
             launchJob.join()
             follower.followSuspend(leavePath)
         }
