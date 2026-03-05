@@ -70,7 +70,7 @@ suspend fun shootPattern(
     shooterJob.cancel()
 }
 
-suspend fun fastShoot(sorter: Sorter, shooterJob: Job) {
+suspend fun fastShoot(sorter: Sorter) {
     sorter.isLifting = true
     delay(200L)
     sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
@@ -78,7 +78,6 @@ suspend fun fastShoot(sorter: Sorter, shooterJob: Job) {
     sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
     delay(300L)
     sorter.isLifting = false
-    shooterJob.cancel()
     delay(400L)
     sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
     (sorter as? SorterImpl)?.run { size = 0 }

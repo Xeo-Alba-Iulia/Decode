@@ -21,10 +21,12 @@ interface ShooterProviders {
     fun provideShooterHoodServo(map: HardwareMap): Servo = map.servo["hood"]
 
     @Provides
-    @Named("shooterRotationServo")
-    fun provideShooterRotationServo(map: HardwareMap): Servo = map.servo["rotation"].apply {
-        direction = Servo.Direction.REVERSE
-    }
+    @Named("turret")
+    fun provideShooterRotationServos(map: HardwareMap): List<Servo> =
+        listOf(
+            map.servo["turret right"],
+            map.servo["turret left"],
+        )
 
     @Provides
     @Named("shooterMotor")
@@ -40,10 +42,7 @@ interface ShooterProviders {
 
     @Provides
     @Named("shooter")
-    fun provideShooterMotors(
-        @Named("shooterMotor") motor1: DcMotorEx,
-        @Named("shooterSecondary") motor2: DcMotorEx,
-    ): List<DcMotorEx> = listOf(motor1, motor2)
+    fun provideShooterMotors(@Named("shooterMotor") motor1: DcMotorEx): List<DcMotorEx> = listOf(motor1)
 
     @Provides
     fun provideLimelight(map: HardwareMap): Limelight3A = map.getAll(Limelight3A::class.java).single()

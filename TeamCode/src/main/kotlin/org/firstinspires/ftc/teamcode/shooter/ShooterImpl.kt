@@ -25,7 +25,7 @@ import kotlin.math.sin
 class ShooterImpl(
     @Named("shooter") private val motors: List<DcMotorEx>,
     @Named("shooterHoodServo") private val hoodServo: Servo,
-    @Named("shooterRotationServo") private val rotationServo: Servo,
+    @Named("turret") private val turretServos: List<Servo>,
     @Named("shooterEncoder") private val encoder: DcMotorEx,
     private val opModeScope: CoroutineScope,
 ) : Shooter {
@@ -38,15 +38,6 @@ class ShooterImpl(
         var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
     }
 
-    /*
-       0.92: 1420 0.0
-       1.40: 1500 0.053
-       1.67: 1800 0.41
-       1.97: 1750 0.35
-       2.3:  1750 0.31
-       3.01: 2010 0.35
-       3.42: 2040 0.332
-     */
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
@@ -62,8 +53,8 @@ class ShooterImpl(
 
     override var angleDegrees = 0.0
         set(value) {
-            field = value.coerceIn(-80.0, 80.0)
-            rotationServo.position = 0.5 - field / 160.0
+            field = value.coerceIn(-151.2, 151.2)
+            turretServos.forEach { it.position = 0.5 - field * ((.5 - .2025) / 90) }
         }
 
     var hood by hoodServo::position
@@ -126,7 +117,6 @@ class ShooterImpl(
         setPower(controller.calculate(KineticState(position, velocity)))
         if (distance == 0.0 || velocity == 0.0 || !isUpdatingHood)
             return
-
         val shouldUpdate = distance > 2.3
         stateFlow.value =
             Shooter.State(
@@ -135,7 +125,7 @@ class ShooterImpl(
                     distance, (if (shouldUpdate) velocity * .086 else desiredVelocity * .082) / 28
                 )?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
-                    if (shouldUpdate) true else abs(velocity - desiredVelocity) <= 80.0
+                    shouldUpdate || abs(velocity - desiredVelocity) <= 80.0
                 } ?: false
             )
     }
@@ -167,7 +157,7 @@ class ShooterImpl(
                     controller.goal = KineticState(velocity = velocityFn())
                     hood = hoodFn()
                     update(0.0)
-                    delay(25L)
+                    delay(50L)
                 }
             } finally {
                 setPower(0.0)

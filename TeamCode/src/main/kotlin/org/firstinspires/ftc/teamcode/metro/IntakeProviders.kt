@@ -23,5 +23,5 @@ interface IntakeProviders {
 
     @Provides
     fun provideColorSensors(map: HardwareMap): List<ColorRangeSensor> =
-        listOf(map.getCast("sensor"), map.getCast("sensor2"))
+        listOf(map.getCast("sensor"))
 }
