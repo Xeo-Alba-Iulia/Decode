@@ -52,9 +52,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawCollectAndFreeGoalPose = Pose(13.8, 61.0, Math.toRadians(150.0))
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
-    private val rawFreeGatePose = Pose(19.4, 79.8, Math.toRadians(180.0))
-    private val freeGatePose = mirrorAlliance(rawFreeGatePose)
-
     private lateinit var scorePreload: PathChain
 
     private val collectBalls1 = pathChain {
@@ -62,14 +59,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             +scorePose
             +firstBallsCollectPose
         }
-    }
-    private val freeGate = pathChain {
-        pathConstantHeading(scorePose.heading) {
-            +scorePose
-            +mirrorAlliance(Pose(rawFirstBallsCollectPose.x + 5.0, rawFirstBallsCollectPose.y, PI))
-        }
-        pathToPose(mirrorAlliance(Pose(rawFirstBallsCollectPose.x + 5.0, rawFreeGatePose.y, PI)))
-        pathToPose(freeGatePose)
     }
     private val freeGateAndCollect = pathChain {
         path(
@@ -192,16 +181,15 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch(followerDispatcher) {
             follower.setMaxPower(0.8)
             val pattern = async(Dispatchers.IO) { getPatternList(limelight) }
-            var job = shooter.shoot(distanceFlow)
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
+            val job = shooter.shoot(distanceFlow)
+            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
             follower.followSuspend(scorePreload)
             launchJob.join()
             follower.followAndIntake(intake, sorter, collectBalls2)
             shooter.angleDegrees = -75.0 * if (isMirrored) -1 else 1
-            job = shooter.shoot(distanceFlow)
             sorter.prepareFastShoot()
             intake.isOuttake = true
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
+            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
             follower.followSuspend(scoreBalls2)
             intake.isServoRunning = true
             launchJob.join()
@@ -209,10 +197,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 follower.followSuspend(freeGateAndCollect)
                 holdSuspend(collectAndFreeGoalPose, 3.seconds)
             }
-            job = shooter.shoot(distanceFlow)
             sorter.prepareFastShoot()
             intake.isOuttake = true
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
+            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
             follower.followSuspend(scoreBallsGate)
             intake.isServoRunning = true
             launchJob.join()
@@ -220,10 +207,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 follower.followSuspend(freeGateAndCollect)
                 holdSuspend(collectAndFreeGoalPose, 3.seconds)
             }
-            job = shooter.shoot(distanceFlow)
             patternList = pattern.await()
             sorter.prepareFastShoot()
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter, job) }
+            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
             intake.isOuttake = true
             scoreBallsGate.resetCallbacks()
             follower.followSuspend(scoreBallsGate)
@@ -232,7 +218,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.setMaxPower(0.7)
             follower.followAndIntake(intake, sorter, collectBalls1, colorList = listOf(PURPLE, PURPLE, GREEN))
             shooter.alignToPose(mirrorAlliance(rawScorePose.withHeading(PI)), goalPose, if (isMirrored) 1.0 else -1.0)
-            job = shooter.shoot(distanceFlow)
             sorter.position = 0.5
             launchJob = launch(start = CoroutineStart.LAZY) { shootPattern(sorter, job, patternList) }
             follower.followSuspend(scoreBalls1)

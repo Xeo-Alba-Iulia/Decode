@@ -11,7 +11,7 @@ import kotlin.math.sin
 @TeleOp
 class BasicOpMode : OpMode() {
     companion object {
-        const val IS_FIELD_CENTRIC = true
+        const val IS_FIELD_CENTRIC = false
     }
 
     lateinit var drive: Drive

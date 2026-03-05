@@ -98,7 +98,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
 //            .onEach { delay(250.milliseconds) }
 //            .launchIn(opModeScope + Dispatchers.IO)
 
-        val distanceIntakeJob = intake.distanceFlow
+        intake.distanceFlow
             .filter { it }
             .onEach { Log.d("Intake", "Detected artefact") }
             .onEach { sorter.intake(PURPLE) }
@@ -198,7 +198,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         if (autoShoot) {
             opModeScope.launch(Dispatchers.Unconfined) {
                 intake.isServoRunning = true
-                fastShoot(sorter, currentShooterJob!!)
+                fastShoot(sorter)
             }
         }
 
