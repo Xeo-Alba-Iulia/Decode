@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.shooter
 import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.ftcrobotcontroller.BuildConfig
+import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.Servo
 import dev.nextftc.control.KineticState
@@ -23,10 +24,9 @@ import kotlin.math.sin
 @Config
 @ContributesBinding(OpModeScope::class)
 class ShooterImpl(
-    @Named("shooter") private val motors: List<DcMotorEx>,
+    @Named("shooter") private val motor: DcMotorEx,
     @Named("shooterHoodServo") private val hoodServo: Servo,
     @Named("turret") private val turretServos: List<Servo>,
-    @Named("shooterEncoder") private val encoder: DcMotorEx,
     private val opModeScope: CoroutineScope,
 ) : Shooter {
 
@@ -36,6 +36,12 @@ class ShooterImpl(
 
         @JvmField
         var parameters = BasicFeedforwardParameters(kS = 0.05, kV = 0.00033)
+
+        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.083 / 28
+    }
+
+    init {
+        motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
     }
 
     val distances = listOf(0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
@@ -68,16 +74,18 @@ class ShooterImpl(
     final override val stateFlow: StateFlow<Shooter.State>
         field = MutableStateFlow(Shooter.State(0.0, false))
 
-    private fun setPower(power: Double) = motors.forEach { it.power = power }
+    private fun setPower(power: Double) {
+        motor.power = power
+    }
 
     /**
      * Finds the launch angle for a given distance and velocity using Newton's method.
      *
      * @param distance The horizontal distance to the target in meters.
      * @param velocity The launch velocity in meters per second.
-     * @param guess An initial guess for the launch angle in degrees.
+     * @param guess An initial guess for the launch angle in radians.
      *
-     * @return The launch angle in degrees that will hit the target at the given distance and velocity.
+     * @return The launch angle in radians that will hit the target at the given distance and velocity.
      */
     private tailrec fun findLaunchAngle(
         distance: Double,
@@ -92,16 +100,17 @@ class ShooterImpl(
         val sin = sin(guess)
         val cos = cos(guess)
         val f = d * sin / cos - (d * d * g) / (2 * v * v * cos * cos) - height
-        if (repetitions == 0) {
-            val guess = guess.takeIf { f >= -0.1 }
+        return if (repetitions == 0) {
+            val validatedGuess = guess.takeIf { f >= -0.1 }
             if (BuildConfig.DEBUG) {
-                val guessDeg = guess?.let { Math.toDegrees(it) }
+                val guessDeg = validatedGuess?.let { Math.toDegrees(it) }
                 Log.v("Angle", "Found: $guessDeg, distance = $distance, velocity = $velocity, f = $f")
             }
-            return guess
+            validatedGuess
+        } else {
+            val df = d / (cos * cos) - (d * d * g * sin) / (v * v * cos * cos * cos)
+            findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
         }
-        val df = d / (cos * cos) - (d * d * g * sin) / (v * v * cos * cos * cos)
-        return findLaunchAngle(distance, velocity, guess - f / df, repetitions - 1)
     }
 
     private val hoodFilter = LowPassFilter(0.4, 45.0)
@@ -110,45 +119,43 @@ class ShooterImpl(
     var isUpdatingHood = true
 
     private fun update(distance: Double) {
-        val position = encoder.currentPosition.toDouble()
-        val velocity = encoder.velocity
+        val position = motor.currentPosition.toDouble()
+        val velocity = motor.velocity
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        if (distance == 0.0 || velocity == 0.0 || !isUpdatingHood)
-            return
-        val shouldUpdate = distance > 2.3
+        val isFar = distance > 2.3
+        val isControllingServo = distance != 0.0 && velocity != 0.0 && isUpdatingHood
         stateFlow.value =
             Shooter.State(
                 velocity,
-                findLaunchAngle(
-                    distance, (if (shouldUpdate) velocity * .086 else desiredVelocity * .082) / 28
+                isControllingServo && findLaunchAngle(
+                    distance, (if (isFar) velocity else desiredVelocity) * TICKS_PER_SEC_TO_METERS_PER_SEC
                 )?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
-                    shouldUpdate || abs(velocity - desiredVelocity) <= 80.0
+                    isFar || abs(velocity - desiredVelocity) <= 80.0
                 } ?: false
             )
     }
 
-    override fun shoot(distanceFlow: Flow<Double>): Job =
-        opModeScope.launch {
+    override fun shoot(distanceFlow: Flow<Double>): Job {
+        var dist = 0.0
+        distanceFlow.onEach { distance ->
+            dist = distance
+            controller.goal = KineticState(velocity = velocityLUT[distance])
+        }.launchIn(opModeScope + Dispatchers.IO)
+        return opModeScope.launch {
             try {
-                var dist = 0.0
-                distanceFlow.onEach { distance ->
-                    dist = distance
-                    controller.goal = KineticState(velocity = velocityLUT[distance])
-                }.launchIn(this + Dispatchers.IO)
-                withContext(Dispatchers.Default) {
-                    while (true) {
-                        update(dist)
-                        delay(50L)
-                    }
+                while (true) {
+                    update(dist)
+                    delay(50L)
                 }
             } finally {
                 setPower(0.0)
                 stateFlow.value = Shooter.State(0.0, false)
             }
         }
+    }
 
     fun shoot(velocityFn: () -> Double, hoodFn: () -> Double): Job =
         opModeScope.launch {
