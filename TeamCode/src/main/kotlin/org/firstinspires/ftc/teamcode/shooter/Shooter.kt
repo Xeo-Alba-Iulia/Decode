@@ -34,7 +34,9 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.
     val normalizedAngle = MathFunctions.normalizeAngle(currentPose.heading).let {
         if (it > PI + angle) it - 2 * PI else it
     }
-    angleDegrees = Math.toDegrees(angle - normalizedAngle) + offset
+    val maxSetAngle = ShooterImpl.MAX_TURRET_ANGLE + 8.0
+    (Math.toDegrees(angle - normalizedAngle) + offset)
+        .takeIf { it in -maxSetAngle..maxSetAngle }?.let { angleDegrees = it }
 }
 
 suspend fun shootPattern(

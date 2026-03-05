@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.math.hypot
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -151,7 +152,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower.update()
         drawDebug(follower)
         if (!updatedByCam.load())
-            distanceFlow.value = goalPose.distanceFrom(follower.pose) / 39.37
+            distanceFlow.value = (hypot(13.0 - follower.pose.x, (141.5 - 13.0) - follower.pose.y)) / 39.37
         telemetry.addData("Distance", distanceFlow.value)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning

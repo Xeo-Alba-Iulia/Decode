@@ -31,19 +31,19 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        var coefficients = PIDCoefficients(0.01)
-
+        var coefficients = PIDCoefficients(0.005)
         @JvmField
-        var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.00035)
+        var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.000345)
 
         const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.082 / 28
         const val TURRET_ROTATION_PER_DEGREE = (.794 - .2025) / 180
+        const val MAX_TURRET_ANGLE = .5 / TURRET_ROTATION_PER_DEGREE
     }
 
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2160.0, 2340.0),
+        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2180.0, 2370.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -60,8 +60,7 @@ class ShooterImpl(
         }
     override var angleDegrees = 0.0
         set(value) {
-            val maxAngle = .5 / TURRET_ROTATION_PER_DEGREE
-            field = value.coerceIn(-maxAngle, maxAngle)
+            field = value.coerceIn(-MAX_TURRET_ANGLE, MAX_TURRET_ANGLE)
             if (abs(field - _angleDegrees) >= 0.5) {
                 _angleDegrees = field
             }
@@ -98,7 +97,7 @@ class ShooterImpl(
         repetitions: Int = 4
     ): Double? {
         val g = 8.95
-        val height = 0.65
+        val height = 0.63
         val d = distance
         val v = velocity
         val sin = sin(guess)
