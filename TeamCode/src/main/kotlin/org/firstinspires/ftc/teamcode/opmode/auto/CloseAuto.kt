@@ -182,14 +182,14 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             follower.setMaxPower(0.8)
             val pattern = async(Dispatchers.IO) { getPatternList(limelight) }
             val job = shooter.shoot(distanceFlow)
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
+            launchJob = launch(start = CoroutineStart.LAZY) { sorter.fastShoot() }
             follower.followSuspend(scorePreload)
             launchJob.join()
             follower.followAndIntake(intake, sorter, collectBalls2)
             shooter.angleDegrees = -75.0 * if (isMirrored) -1 else 1
             sorter.prepareFastShoot()
             intake.isOuttake = true
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
+            launchJob = launch(start = CoroutineStart.LAZY) { sorter.fastShoot() }
             follower.followSuspend(scoreBalls2)
             intake.isServoRunning = true
             launchJob.join()
@@ -199,7 +199,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
             sorter.prepareFastShoot()
             intake.isOuttake = true
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
+            launchJob = launch(start = CoroutineStart.LAZY) { sorter.fastShoot() }
             follower.followSuspend(scoreBallsGate)
             intake.isServoRunning = true
             launchJob.join()
@@ -209,7 +209,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
             patternList = pattern.await()
             sorter.prepareFastShoot()
-            launchJob = launch(start = CoroutineStart.LAZY) { fastShoot(sorter) }
+            launchJob = launch(start = CoroutineStart.LAZY) { sorter.fastShoot() }
             intake.isOuttake = true
             scoreBallsGate.resetCallbacks()
             follower.followSuspend(scoreBallsGate)

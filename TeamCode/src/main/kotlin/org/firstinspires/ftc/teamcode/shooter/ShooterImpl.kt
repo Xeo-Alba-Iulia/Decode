@@ -35,15 +35,15 @@ class ShooterImpl(
         @JvmField
         var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.000345)
 
-        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.082 / 28
+        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.078 / 28
         const val TURRET_ROTATION_PER_DEGREE = (.794 - .2025) / 180
-        const val MAX_TURRET_ANGLE = .5 / TURRET_ROTATION_PER_DEGREE
+        const val MAX_TURRET_ANGLE = 90.0
     }
 
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2180.0, 2370.0),
+        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2200.0, 2300.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -96,8 +96,8 @@ class ShooterImpl(
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double? {
-        val g = 8.95
-        val height = 0.63
+        val g = 8.5
+        val height = 0.65
         val d = distance
         val v = velocity
         val sin = sin(guess)
@@ -126,13 +126,13 @@ class ShooterImpl(
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        val isFar = distance > 2.3
+        val isFar = distance > 2.5
         val isControllingServo = distance != 0.0 && velocity != 0.0 && isUpdatingHood
         stateFlow.value =
             Shooter.State(
                 velocity,
                 isControllingServo && findLaunchAngle(
-                    distance, (if (isFar) velocity else desiredVelocity - 50.0) * TICKS_PER_SEC_TO_METERS_PER_SEC
+                    distance, (if (isFar) velocity else desiredVelocity) * TICKS_PER_SEC_TO_METERS_PER_SEC
                 )?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
                     isFar || abs(velocity - desiredVelocity) <= 80.0

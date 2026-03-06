@@ -12,9 +12,10 @@ import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
-import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
+import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -27,7 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 abstract class FullTeleOp : CoroutineOpMode() {
     // Subsystems
     lateinit var intake: Intake
-    lateinit var shooter: Shooter
+    lateinit var shooter: ShooterImpl
     lateinit var sorter: Sorter
     lateinit var follower: Follower
     lateinit var limelight: Limelight3A
@@ -47,9 +48,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
     @OptIn(ExperimentalAtomicApi::class)
     val updatedByCam = AtomicBoolean(false)
-
-    @Volatile
-    var isShootPattern = false
 
     lateinit var patternList: List<ArtefactType>
 
@@ -124,11 +122,9 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         intake.isServoRunning = true
                         gamepad1.rumble(500)
                         gamepad2.rumble(500)
-                        sorter.position = 0.0
-                        sorter.prepareShoot()
+                        sorter.prepareFastShoot()
                         if (currentShooterJob?.isCancelled != false)
                             currentShooterJob = shooter.shoot(distanceFlow)
-                        intake.isOuttake = true
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -152,7 +148,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower.update()
         drawDebug(follower)
         if (!updatedByCam.load())
-            distanceFlow.value = (hypot(13.0 - follower.pose.x, (141.5 - 13.0) - follower.pose.y)) / 39.37
+            distanceFlow.value = (hypot(10.0 - follower.pose.x, (141.5 - 10.0) - follower.pose.y)) / 39.37
         telemetry.addData("Distance", distanceFlow.value)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
@@ -188,18 +184,28 @@ abstract class FullTeleOp : CoroutineOpMode() {
             isRobotCentric = !isRobotCentric
     }
 
+    var velocity = 1800.0
+    var hood = 0.5
+
     private fun handleShooter() {
         val autoShoot = gamepad2.triangleWasPressed() || gamepad1.rightTriggerWasPressed()
 
+        velocity += gamepad2.right_stick_y.toDouble()
+        hood += gamepad2.left_stick_y.toDouble() * (-0.001)
+
+        telemetry.addData("Velocity", velocity)
+        telemetry.addData("Hood", hood)
+
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = shooter.shoot(distanceFlow)
+            currentShooterJob = shooter.shoot(::velocity, ::hood)
         }
 
         if (autoShoot) {
             opModeScope.launch(Dispatchers.Unconfined) {
                 intake.isServoRunning = true
-                fastShoot(sorter)
+                sorter.fastShoot()
+                currentShooterJob?.cancel()
             }
         }
 

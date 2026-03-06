@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 interface Shooter {
     var angleDegrees: Double
@@ -34,7 +35,7 @@ fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.
     val normalizedAngle = MathFunctions.normalizeAngle(currentPose.heading).let {
         if (it > PI + angle) it - 2 * PI else it
     }
-    val maxSetAngle = ShooterImpl.MAX_TURRET_ANGLE + 8.0
+    val maxSetAngle = ShooterImpl.MAX_TURRET_ANGLE + 20.0
     (Math.toDegrees(angle - normalizedAngle) + offset)
         .takeIf { it in -maxSetAngle..maxSetAngle }?.let { angleDegrees = it }
 }
@@ -72,23 +73,19 @@ suspend fun shootPattern(
     shooterJob.cancel()
 }
 
-suspend fun fastShoot(sorter: Sorter) {
-    sorter.isLifting = true
-    delay(200L)
-    sorter.position = SorterImpl.SHOOTER_POSITIONS[1]
-    delay(250L)
-    sorter.position = SorterImpl.SHOOTER_POSITIONS[2]
-    delay(400L)
-    sorter.artefacts.indices.forEach { sorter.artefacts[it] = null }
-    (sorter as? SorterImpl)?.run { size = 0 }
-    sorter.prepareIntake()
-    sorter.isLifting = false
+suspend fun Sorter.fastShoot() {
+    isLifting = true
+    position = SorterImpl.SHOOTER_POSITIONS[2]
+    delay(1.5.seconds)
+    artefacts.indices.forEach { artefacts[it] = null }
+    (this as? SorterImpl)?.run { size = 0 }
+    isLifting = false
+    prepareIntake()
 }
 
 fun Sorter.prepareFastShoot() {
     val size = size
     if (size != 3)
         Log.e("Auto", "Prepare fast shoot with size: $size")
-    position = 0.0
-    prepareShoot()
+    position = SorterImpl.SHOOTER_POSITIONS[0] - .02
 }
