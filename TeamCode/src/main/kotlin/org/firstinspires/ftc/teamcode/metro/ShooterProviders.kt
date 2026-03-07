@@ -10,7 +10,7 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 
-@ContributesTo(OpModeScope::class)
+@ContributesTo(HardwareScope::class)
 interface ShooterProviders {
     val shooter: Shooter
     val limelight: Limelight3A

@@ -8,7 +8,7 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 
-@ContributesTo(OpModeScope::class)
+@ContributesTo(HardwareScope::class)
 interface SorterProviders {
     val sorter: Sorter
 

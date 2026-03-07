@@ -9,7 +9,7 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import org.firstinspires.ftc.teamcode.intake.Intake
 
-@ContributesTo(OpModeScope::class)
+@ContributesTo(HardwareScope::class)
 interface IntakeProviders {
     val intake: Intake
 

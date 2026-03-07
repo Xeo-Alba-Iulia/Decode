@@ -8,7 +8,7 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import org.firstinspires.ftc.teamcode.elevator.Elevator
 
-@ContributesTo(OpModeScope::class)
+@ContributesTo(HardwareScope::class)
 interface ElevatorProviders {
     val elevator: Elevator
 

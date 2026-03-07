@@ -8,12 +8,15 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import org.firstinspires.ftc.robotcore.external.Telemetry
 
-@DependencyGraph(OpModeScope::class)
+@DependencyGraph(OpModeScope::class, additionalScopes = [HardwareScope::class])
 interface OpModeGraph {
     val opMode: OpMode
     val telemetry: Telemetry
+    val opModeScope: CoroutineScope
 
     @Provides
     fun provideHardwareMap(opMode: OpMode): HardwareMap = opMode.hardwareMap
@@ -30,6 +33,10 @@ interface OpModeGraph {
             FtcDashboard.getInstance().telemetry,
             telemetry
         )
+
+    @Provides
+    @SingleIn(OpModeScope::class)
+    fun provideOpModeScope(): CoroutineScope = CoroutineScope(SupervisorJob())
 
     @DependencyGraph.Factory
     interface Factory {
