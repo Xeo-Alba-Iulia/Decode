@@ -1,25 +1,31 @@
 package org.firstinspires.ftc.teamcode.opmode
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
+import org.firstinspires.ftc.robotcore.external.Telemetry
+import org.firstinspires.ftc.teamcode.constrainedDouble
 import org.firstinspires.ftc.teamcode.elevator.Elevator
 
 @TeleOp(group = "Systems")
+@Disabled
 class ElevatorOpMode : CoroutineOpMode() {
+    @Suppress("PROPERTY_HIDES_JAVA_FIELD")
+    lateinit var telemetry: Telemetry
     lateinit var elevator: Elevator
+
+    private var targetPosition by constrainedDouble(0.0..1300.0, 0.0)
 
     override fun init() {
         elevator = opModeGraph.elevator
         telemetry = opModeGraph.telemetry
-        observers += elevator
     }
 
     override fun loop() {
         when {
-            gamepad1.dpad_up -> elevator.goUp()
-            gamepad1.dpad_down -> elevator.goDown()
+            gamepad1.dpadUpWasPressed() -> targetPosition += 50.0
+            gamepad1.dpadDownWasPressed() -> targetPosition -= 50.0
         }
-
-        elevator.position += (gamepad1.right_trigger - gamepad1.left_trigger) * 0.01
-        telemetry.addData("Position", elevator.position)
+        if (gamepad1.aWasPressed())
+            elevator.lift(targetPosition)
     }
 }

@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.sorter
 import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.TestScope
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.metro.CoroutineProviders
 import org.firstinspires.ftc.teamcode.metro.IntakeProviders
@@ -24,4 +26,7 @@ interface TestOpModeGraph {
 
     @Provides
     fun provideIsAuto(): Boolean = false
+
+    @Provides
+    fun provideCoroutineScope(): CoroutineScope = TestScope()
 }
