@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.metro
 
 import com.qualcomm.robotcore.hardware.DcMotorEx
-import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
@@ -14,6 +13,5 @@ interface ElevatorProviders {
 
     @Provides
     @Named("elevator")
-    fun provideElevatorMotor(map: HardwareMap): DcMotorEx =
-        map.getCast<DcMotorEx>("elevator").apply { direction = DcMotorSimple.Direction.REVERSE }
+    fun provideElevatorMotor(map: HardwareMap): DcMotorEx = map.getCast("elevator")
 }
