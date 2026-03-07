@@ -23,7 +23,9 @@ class Elevator(
 ) : OpModeObserver {
     companion object {
         @JvmField
-        var HEIGHT = 1200.0
+        var HEIGHT_UP = 1200.0
+        @JvmField
+        var HEIGHT_PARK = 800.0
         @JvmField
         var coefficients = PIDCoefficients(kP = 0.01, kD = 0.0001)
     }
@@ -33,19 +35,17 @@ class Elevator(
     val positionFlow: StateFlow<Double>
         field = MutableStateFlow(0.0)
 
-    var height = HEIGHT
     var power by motor::power
 
 
-    private val controller = controlSystem {
-        posPid(coefficients)
-    }
+    private val controller = controlSystem { posPid(coefficients) }
 
     /**
      * Lifts the elevator to the specified height.
      * Not safe to call from more than one thread at a time.
      */
-    fun lift(height: Double = this.height) {
+    @IgnorableReturnValue
+    fun lift(height: Double): Job {
         liftJob?.cancel("New liftJob launched")
         liftJob = opModeScope.launch {
             controller.goal = KineticState(position = height)
@@ -65,5 +65,13 @@ class Elevator(
                 power = 0.0
             }
         }
+        return liftJob!!
     }
+
+    @IgnorableReturnValue
+    fun goDown() = lift(0.0)
+    @IgnorableReturnValue
+    fun goUp() = lift(HEIGHT_UP)
+    @IgnorableReturnValue
+    fun goPark() = lift(HEIGHT_PARK)
 }
