@@ -3,12 +3,17 @@ package org.firstinspires.ftc.teamcode.opmode
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.constrainedDouble
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
+import org.firstinspires.ftc.teamcode.shooter.fastShoot
+import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @TeleOp(group = "Systems")
 class ShooterOpMode : CoroutineOpMode() {
@@ -52,11 +57,12 @@ class ShooterOpMode : CoroutineOpMode() {
             gamepad1.dpad_right -> shooter.angleDegrees -= 1.0
             gamepad1.dpad_left -> shooter.angleDegrees += 1.0
         }
-        limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
-            val distance = it.targetPoseCameraSpace.position.z
+        limelight?.latestResult?.takeIf { it.isValid }?.let {
+            val pose = it.fiducialResults.single().targetPoseCameraSpace.position
+            val distance = sqrt(pose.x.pow(2) + pose.y.pow(2) + pose.z.pow(2))
             telemetry.addData("Distance", distance)
             if (gamepad1.triangleWasPressed())
-                shooter.angleDegrees -= it.targetXDegrees
+                shooter.angleDegrees -= it.tx
         }
 
         when {
@@ -65,12 +71,14 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         if (gamepad1.rightBumperWasPressed())
             intake.isRunning = !intake.isRunning
+        if (gamepad1.leftBumperWasPressed())
+            opModeScope.launch { sorter.fastShoot() }
 
         when {
             gamepad1.dpadUpWasPressed() -> {
                 sorter.intake(ArtefactType.PURPLE)
                 if (sorter.isFull)
-                    sorter.prepareShoot()
+                    sorter.prepareFastShoot()
             }
 
             gamepad1.dpadDownWasPressed() -> {

@@ -27,29 +27,29 @@ class ShooterImpl(
 
     companion object {
         @JvmField
-        var coefficients = PIDCoefficients(0.005)
+        var coefficients = PIDCoefficients(0.01, kD = 0.0003)
         @JvmField
-        var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.000345)
+        var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.000318)
 
         const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.078 / 28
         const val TURRET_ROTATION_PER_DEGREE = (.794 - .2025) / 180
         const val MAX_TURRET_ANGLE = 90.0
     }
 
-    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
+    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.22)
     val velocityLUT: InterpLUT = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2400.0, 2500.0),
+        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2400.0, 2620.0),
         /* safeMode = */ true
     ).createLUT()
 
     val hoodLUT: InterpLUT = InterpLUT(
         distances,
-        listOf(0.0, 0.0, 0.05, 0.05, 0.05, 0.12, 0.22, 0.25).map { 1.0 - it },
+        listOf(0.0, 0.0, 0.05, 0.05, 0.05, 0.12, 0.22, 0.55).map { 1.0 - it },
         true
     ).createLUT()
 
-    private var _angleDegrees = 0.0
+    private var _angleDegrees = Double.NaN
         set(value) {
             field = value
             turretServos.forEach { it.position = .5 - field * TURRET_ROTATION_PER_DEGREE }
@@ -57,7 +57,7 @@ class ShooterImpl(
     override var angleDegrees = 0.0
         set(value) {
             field = value.coerceIn(-MAX_TURRET_ANGLE, MAX_TURRET_ANGLE)
-            if (abs(field - _angleDegrees) >= 0.5) {
+            if (abs(field - _angleDegrees) >= 0.5 || _angleDegrees.isNaN()) {
                 _angleDegrees = field
             }
         }
