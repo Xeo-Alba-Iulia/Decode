@@ -25,9 +25,9 @@ class Elevator(
         @JvmField
         var HEIGHT_UP = 1200.0
         @JvmField
-        var HEIGHT_PARK = 800.0
+        var HEIGHT_PARK = 950.0
         @JvmField
-        var coefficients = PIDCoefficients(kP = 0.01, kD = 0.0001)
+        var coefficients = PIDCoefficients(kP = 0.005, kD = 0.00005)
     }
 
     private var liftJob: Job? = null
