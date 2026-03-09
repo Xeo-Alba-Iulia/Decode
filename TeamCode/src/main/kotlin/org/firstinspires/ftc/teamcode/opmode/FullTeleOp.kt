@@ -10,6 +10,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.elevator.Elevator
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.Shooter
@@ -31,6 +32,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     lateinit var sorter: Sorter
     lateinit var follower: Follower
     lateinit var limelight: Limelight3A
+    lateinit var elevator: Elevator
 
     // Drive state
     private var isRobotCentric = false
@@ -52,6 +54,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
     var isShootPattern = false
 
     lateinit var patternList: List<ArtefactType>
+    var isLifting = false
 
     companion object {
         @JvmField
@@ -73,7 +76,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
         sorter = opModeGraph.sorter
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
-        observers += sorter
+        elevator = opModeGraph.elevator
+        observers.addAll(listOf(sorter, elevator))
         limelight.pipelineSwitch(limelightPipeline)
 
         patternList = pattern ?: emptyList()
@@ -111,6 +115,12 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 val packet = TelemetryPacket().apply { put("Intake State", it) }
                 FtcDashboard.getInstance().sendTelemetryPacket(packet)
             }
+            .launchIn(opModeScope + Dispatchers.IO)
+
+        elevator.positionFlow
+            .filter { it >= 550.0 }
+            .onEach { shooter.angleDegrees = 0.0 }
+            .take(1)
             .launchIn(opModeScope + Dispatchers.IO)
 
         opModeScope.launch(Dispatchers.IO) {
@@ -169,7 +179,20 @@ abstract class FullTeleOp : CoroutineOpMode() {
             turretOffset += TURET_OFFSET_ADJUSTMENT_STEP
         }
 
-        shooter.alignToPose(follower.pose, goalPose, turretOffset)
+        if (gamepad1.squareWasPressed()) {
+            isLifting = true
+            elevator.goNextStep()
+            shooter.angleDegrees = -90.0
+        }
+
+        if (!isLifting) {
+            if (gamepad1.squareWasPressed()) {
+                isLifting = true
+                elevator.goNextStep()
+                shooter.angleDegrees = -90.0
+            } else
+                shooter.alignToPose(follower.pose, goalPose, turretOffset)
+        }
 
         val result = limelight.latestResult
         if (result.isValid() && gamepad1.crossWasPressed()) {

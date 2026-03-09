@@ -74,4 +74,15 @@ class Elevator(
     fun goUp() = lift(HEIGHT_UP)
     @IgnorableReturnValue
     fun goPark() = lift(HEIGHT_PARK)
+
+    private val stepList = listOf(::goUp, ::goPark, ::goDown)
+    private var iter = stepList.iterator()
+
+    @IgnorableReturnValue
+    fun goNextStep(): Job {
+        if (!iter.hasNext()) {
+            iter = stepList.iterator()
+        }
+        return iter.next()()
+    }
 }
