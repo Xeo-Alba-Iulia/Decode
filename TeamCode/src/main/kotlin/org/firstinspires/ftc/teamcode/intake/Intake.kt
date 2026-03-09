@@ -109,8 +109,8 @@ class Intake(
         get() =
             stateFlow.map { (hue, sat, value, dist) ->
                 when {
-                    dist >= MAX_DISTANCE || value > 2 -> null
-                    hue in 220f..320f && sat <= 0.65 -> ArtefactType.PURPLE
+                    dist >= MAX_DISTANCE -> null
+                    hue in 200f..320f && sat <= 0.65 -> ArtefactType.PURPLE
                     hue in 100f..160f && sat >= 0.5 -> ArtefactType.GREEN
                     else -> {
                         Log.e("Intake", "Problem reading: hue $hue, sat: $sat, value: $value")
@@ -125,7 +125,7 @@ class Intake(
 
     companion object {
         @JvmField
-        var MAX_DISTANCE = 8.0
+        var MAX_DISTANCE = 3.0
         @JvmField
         var INTAKE_POWER = 0.7
         @JvmField

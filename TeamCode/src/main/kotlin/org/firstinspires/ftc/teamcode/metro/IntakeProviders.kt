@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.metro
 
+import com.qualcomm.hardware.rev.RevColorSensorV3
 import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.ColorRangeSensor
 import com.qualcomm.robotcore.hardware.DcMotorEx
@@ -23,5 +24,5 @@ interface IntakeProviders {
 
     @Provides
     fun provideColorSensors(map: HardwareMap): List<ColorRangeSensor> =
-        listOf(map.getCast("sensor"))
+        listOf(map.getCast<RevColorSensorV3>("sensor"))
 }
