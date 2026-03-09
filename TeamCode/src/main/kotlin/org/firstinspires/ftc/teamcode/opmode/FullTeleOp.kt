@@ -119,12 +119,14 @@ abstract class FullTeleOp : CoroutineOpMode() {
                 val isEmpty = sorter.isEmpty
                 when {
                     isFull && !lastIsFull -> {
-                        intake.isServoRunning = true
                         gamepad1.rumble(500)
                         gamepad2.rumble(500)
-                        sorter.prepareFastShoot()
                         if (currentShooterJob?.isCancelled != false)
                             currentShooterJob = shooter.shoot(distanceFlow)
+                        intake.isOuttake = true
+                        delay(1.seconds)
+                        intake.isServoRunning = true
+                        sorter.prepareFastShoot()
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true
                 }
@@ -205,7 +207,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
             opModeScope.launch(Dispatchers.Unconfined) {
                 intake.isServoRunning = true
                 sorter.fastShoot()
-                currentShooterJob?.cancel()
+//                currentShooterJob?.cancel()
             }
         }
 
