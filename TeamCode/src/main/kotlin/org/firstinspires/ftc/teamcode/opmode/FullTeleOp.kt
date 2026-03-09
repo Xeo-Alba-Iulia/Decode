@@ -148,7 +148,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         follower.update()
         drawDebug(follower)
         if (!updatedByCam.load())
-            distanceFlow.value = (hypot(10.0 - follower.pose.x, (141.5 - 10.0) - follower.pose.y)) / 39.37
+            distanceFlow.value = (hypot(12.0 - follower.pose.x, (141.5 - 12.0) - follower.pose.y)) / 39.37
         telemetry.addData("Distance", distanceFlow.value)
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning

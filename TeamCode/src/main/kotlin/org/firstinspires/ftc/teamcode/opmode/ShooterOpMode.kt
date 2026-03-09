@@ -59,7 +59,7 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         limelight?.latestResult?.takeIf { it.isValid }?.let {
             val pose = it.fiducialResults.single().targetPoseCameraSpace.position
-            val distance = sqrt(pose.x.pow(2) + pose.y.pow(2) + pose.z.pow(2))
+            val distance = sqrt(pose.x.pow(2) + pose.z.pow(2))
             telemetry.addData("Distance", distance)
             if (gamepad1.triangleWasPressed())
                 shooter.angleDegrees -= it.tx
