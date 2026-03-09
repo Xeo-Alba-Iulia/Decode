@@ -37,7 +37,7 @@ class ShooterImpl(
 
         const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.082 / 28
         const val TURRET_ROTATION_PER_DEGREE = (.794 - .2025) / 180
-        const val MAX_TURRET_ANGLE = .5 / TURRET_ROTATION_PER_DEGREE
+        const val MAX_TURRET_ANGLE = 90.0
     }
 
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
