@@ -41,13 +41,15 @@ class ShooterImpl(
     }
 
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
-    val velocityLUT: InterpLUT = InterpLUT(
+
+    private val ticksToVelocity: InterpLUT = TODO("Collect data")
+    private val distanceToTicks: InterpLUT = InterpLUT(
         /* input = */ distances,
         /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2200.0, 2300.0),
         /* safeMode = */ true
     ).createLUT()
 
-    val hoodLUT: InterpLUT = InterpLUT(
+    private val hoodLUT: InterpLUT = InterpLUT(
         listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.5, 36.8, 39.1, 42.0, 44.3, 46.5),
         (0..10).map { it / 10.0 },
         true
@@ -96,7 +98,7 @@ class ShooterImpl(
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double? {
-        val g = 8.5
+        val g = 9
         val height = 0.65
         val d = distance
         val v = velocity
@@ -120,22 +122,24 @@ class ShooterImpl(
 
     var isUpdatingHood = true
 
-    private fun update(distance: Double) {
+    private var lastDistance = 0.0
+
+    private fun update(distance: Double = 0.0) {
+        if (distance != lastDistance) {
+            controller.goal = KineticState(velocity = distanceToTicks[distance])
+            lastDistance = distance
+        }
         val position = motor.currentPosition.toDouble()
         val velocity = motor.velocity
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        val isFar = distance > 2.5
-        val isControllingServo = distance != 0.0 && velocity != 0.0 && isUpdatingHood
         stateFlow.value =
             Shooter.State(
                 velocity,
-                isControllingServo && findLaunchAngle(
-                    distance, (if (isFar) velocity else desiredVelocity) * TICKS_PER_SEC_TO_METERS_PER_SEC
-                )?.let { result ->
+                isUpdatingHood && findLaunchAngle(distance, ticksToVelocity[velocity])?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
-                    isFar || abs(velocity - desiredVelocity) <= 80.0
+                    true
                 } ?: false
             )
     }
@@ -143,13 +147,13 @@ class ShooterImpl(
     override fun shoot(distanceFlow: Flow<Double>): Job =
         opModeScope.launch {
             try {
-                var dist = 0.0
-                distanceFlow.onEach { distance ->
-                    dist = distance
-                    controller.goal = KineticState(velocity = velocityLUT[distance])
-                }.launchIn(this + Dispatchers.IO)
+                var distance = 0.0
+                distanceFlow
+                    .distinctUntilChanged { first, second -> abs(first - second) < 0.05 }
+                    .onEach { distance = it }
+                    .launchIn(this + Dispatchers.IO)
                 while (true) {
-                    update(dist)
+                    update(distance)
                     delay(50L)
                 }
             } finally {
@@ -164,7 +168,7 @@ class ShooterImpl(
                 while (true) {
                     controller.goal = KineticState(velocity = velocityFn())
                     hood = hoodFn()
-                    update(0.0)
+                    update()
                     delay(50L)
                 }
             } finally {

@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
+import androidx.annotation.NonNull;
+import org.jetbrains.annotations.Contract;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +77,9 @@ public class InterpLUT {
      * @throws IllegalArgumentException if the X or Y arrays are null, have different lengths or have fewer than 2 values.
      * @throws IllegalArgumentException if the X values are not strictly increasing.
      */
-    public InterpLUT createLUT() {
+
+    @Contract(value = " -> this", mutates = "this")
+    public @NonNull InterpLUT createLUT() {
         List<Double> x = this.mX;
         List<Double> y = this.mY;
 
