@@ -42,8 +42,13 @@ class ShooterImpl(
 
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
 
-    private val ticksToVelocity: InterpLUT = TODO("Collect data")
-    private val distanceToTicks: InterpLUT = InterpLUT(
+    private val ticksToVelocity = InterpLUT(
+        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2000.0, 2400.0),
+        listOf(5.24, 5.535, 5.8, 6.0, 6.14, 6.68),
+        true
+    ).createLUT()
+
+    private val distanceToTicks = InterpLUT(
         /* input = */ distances,
         /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2200.0, 2300.0),
         /* safeMode = */ true
@@ -134,10 +139,11 @@ class ShooterImpl(
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
+        val shouldCalculate = isUpdatingHood && distance > 0.0
         stateFlow.value =
             Shooter.State(
                 velocity,
-                isUpdatingHood && findLaunchAngle(distance, ticksToVelocity[velocity])?.let { result ->
+                shouldCalculate && findLaunchAngle(distance, ticksToVelocity[velocity])?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
                     true
                 } ?: false

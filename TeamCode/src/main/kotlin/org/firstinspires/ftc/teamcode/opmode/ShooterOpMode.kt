@@ -4,7 +4,6 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.constrainedDouble
 import org.firstinspires.ftc.teamcode.intake.Intake
@@ -17,8 +16,6 @@ import kotlin.math.sqrt
 
 @TeleOp(group = "Systems")
 class ShooterOpMode : CoroutineOpMode() {
-    @Suppress("PROPERTY_HIDES_JAVA_FIELD")
-    lateinit var telemetry: Telemetry
     lateinit var shooter: ShooterImpl
     lateinit var intake: Intake
     lateinit var sorter: Sorter
@@ -30,7 +27,7 @@ class ShooterOpMode : CoroutineOpMode() {
     override fun init() {
         intake = opModeGraph.intake
         sorter = opModeGraph.sorter.apply { prepareIntake() }
-        shooter = opModeGraph.shooter as ShooterImpl
+        shooter = opModeGraph.shooter
         telemetry = opModeGraph.telemetry
         telemetry = opModeGraph.telemetry
         limelight = opModeGraph.limelight.apply { pipelineSwitch(1) }
