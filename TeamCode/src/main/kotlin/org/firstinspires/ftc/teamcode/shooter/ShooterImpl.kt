@@ -35,19 +35,26 @@ class ShooterImpl(
         @JvmField
         var parameters = BasicFeedforwardParameters(kS = 0.09, kV = 0.000345)
 
-        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.082 / 28
+        const val TICKS_PER_SEC_TO_METERS_PER_SEC = 0.078 / 28
         const val TURRET_ROTATION_PER_DEGREE = (.794 - .2025) / 180
         const val MAX_TURRET_ANGLE = 90.0
     }
 
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
-    val velocityLUT: InterpLUT = InterpLUT(
+
+    private val ticksToVelocity = InterpLUT(
+        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2000.0, 2400.0),
+        listOf(5.24, 5.535, 5.8, 6.0, 6.14, 6.68),
+        true
+    ).createLUT()
+
+    private val distanceToTicks = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2180.0, 2370.0),
+        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2300.0, 2400.0),
         /* safeMode = */ true
     ).createLUT()
 
-    val hoodLUT: InterpLUT = InterpLUT(
+    private val hoodLUT: InterpLUT = InterpLUT(
         listOf(25.5, 26.6, 29.0, 30.6, 32.3, 34.5, 36.8, 39.1, 42.0, 44.3, 46.5),
         (0..10).map { it / 10.0 },
         true
@@ -96,8 +103,8 @@ class ShooterImpl(
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double? {
-        val g = 8.95
-        val height = 0.63
+        val g = 9.6
+        val height = 0.8
         val d = distance
         val v = velocity
         val sin = sin(guess)
@@ -120,22 +127,25 @@ class ShooterImpl(
 
     var isUpdatingHood = true
 
-    private fun update(distance: Double) {
+    private var lastDistance = 0.0
+
+    private fun update(distance: Double = 0.0) {
+        if (distance != lastDistance) {
+            controller.goal = KineticState(velocity = distanceToTicks[distance])
+            lastDistance = distance
+        }
         val position = motor.currentPosition.toDouble()
         val velocity = motor.velocity
         val desiredVelocity = controller.goal.velocity
         Log.v("ShooterImpl", "Velocity: $velocity, Desired: $desiredVelocity")
         setPower(controller.calculate(KineticState(position, velocity)))
-        val isFar = distance > 2.3
-        val isControllingServo = distance != 0.0 && velocity != 0.0 && isUpdatingHood
+        val shouldCalculate = isUpdatingHood && distance > 0.0
         stateFlow.value =
             Shooter.State(
                 velocity,
-                isControllingServo && findLaunchAngle(
-                    distance, (if (isFar) velocity else desiredVelocity - 50.0) * TICKS_PER_SEC_TO_METERS_PER_SEC
-                )?.let { result ->
+                shouldCalculate && findLaunchAngle(distance, ticksToVelocity[velocity])?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
-                    isFar || abs(velocity - desiredVelocity) <= 80.0
+                    true
                 } ?: false
             )
     }
@@ -143,13 +153,13 @@ class ShooterImpl(
     override fun shoot(distanceFlow: Flow<Double>): Job =
         opModeScope.launch {
             try {
-                var dist = 0.0
-                distanceFlow.onEach { distance ->
-                    dist = distance
-                    controller.goal = KineticState(velocity = velocityLUT[distance])
-                }.launchIn(this + Dispatchers.IO)
+                var distance = 0.0
+                distanceFlow
+                    .distinctUntilChanged { first, second -> abs(first - second) < 0.05 }
+                    .onEach { distance = it }
+                    .launchIn(this + Dispatchers.IO)
                 while (true) {
-                    update(dist)
+                    update(distance)
                     delay(50L)
                 }
             } finally {
@@ -164,7 +174,7 @@ class ShooterImpl(
                 while (true) {
                     controller.goal = KineticState(velocity = velocityFn())
                     hood = hoodFn()
-                    update(0.0)
+                    update()
                     delay(50L)
                 }
             } finally {

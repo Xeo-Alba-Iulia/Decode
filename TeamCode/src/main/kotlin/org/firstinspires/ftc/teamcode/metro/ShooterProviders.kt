@@ -8,11 +8,11 @@ import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
-import org.firstinspires.ftc.teamcode.shooter.Shooter
+import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 
 @ContributesTo(HardwareScope::class)
 interface ShooterProviders {
-    val shooter: Shooter
+    val shooter: ShooterImpl
     val limelight: Limelight3A
 
     @Provides
