@@ -4,21 +4,22 @@
         <LynxModule name="Expansion Hub" port="2">
             <goBILDA5202SeriesMotor name="backRight" port="0" />
             <goBILDA5202SeriesMotor name="backLeft" port="1" />
-            <goBILDA5202SeriesMotor name="shooter" port="2" />
-            <goBILDA5202SeriesMotor name="shooter1" port="3" />
+            <goBILDA5202SeriesMotor name="elevator" port="2" />
+            <goBILDA5202SeriesMotor name="shooter" port="3" />
             <Servo name="turret left" port="0" />
             <Servo name="turret right" port="1" />
             <Servo name="sorter" port="2" />
             <Servo name="hood" port="5" />
+            <RevColorSensorV3 name="slot right" bus="0" port="0" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
             <goBILDA5202SeriesMotor name="intake" port="0" />
             <goBILDA5202SeriesMotor name="frontRight" port="1" />
             <goBILDA5202SeriesMotor name="frontLeft" port="2" />
             <goBILDA5202SeriesMotor name="transfer" port="3" />
-            <ControlHubImuBHI260AP name="imu" bus="0" port="0" />
             <goBILDAPinpoint name="pinpoint" bus="0" port="0" />
-            <LynxColorSensor name="sensor" bus="2" port="0" />
+            <RevColorSensorV3 name="sensor" bus="2" port="0" />
+            <RevColorSensorV3 name="slot left" bus="3" port="0" />
         </LynxModule>
     </LynxUsbDevice>
     <EthernetDevice name="Limelight" ipAddress="172.29.0.1" port="-1" serialNumber="EthernetOverUsb:eth0:172.29.0.23" />
