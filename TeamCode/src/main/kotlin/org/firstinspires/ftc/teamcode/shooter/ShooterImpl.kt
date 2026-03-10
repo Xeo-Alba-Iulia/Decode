@@ -60,7 +60,7 @@ class ShooterImpl(
         true
     ).createLUT()
 
-    private var _angleDegrees = 0.0
+    private var _angleDegrees = Double.NaN
         set(value) {
             field = value
             turretServos.forEach { it.position = .5 - field * TURRET_ROTATION_PER_DEGREE }
@@ -68,7 +68,7 @@ class ShooterImpl(
     override var angleDegrees = 0.0
         set(value) {
             field = value.coerceIn(-MAX_TURRET_ANGLE, MAX_TURRET_ANGLE)
-            if (abs(field - _angleDegrees) >= 0.5) {
+            if (abs(field - _angleDegrees) >= 0.5 || _angleDegrees.isNaN()) {
                 _angleDegrees = field
             }
         }

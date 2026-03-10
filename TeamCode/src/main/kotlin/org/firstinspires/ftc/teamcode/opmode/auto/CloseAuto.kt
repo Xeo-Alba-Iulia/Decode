@@ -34,7 +34,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
-    private val rawStartPose = Pose(32.0, 135.0)
+    private val rawStartPose = Pose(18.0, 123.5, Math.toRadians(144.1846))
     private val startPose = mirrorAlliance(rawStartPose)
 
     private val rawGoalPose = Pose(13.0, 141.5 - 13.0)
@@ -43,13 +43,13 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawScorePose = Pose(58.0, 90.0).run { withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x)) }
     private val scorePose = mirrorAlliance(rawScorePose)
 
-    private val rawFirstBallsCollectPose = Pose(17.5, 88.0, PI)
+    private val rawFirstBallsCollectPose = Pose(17.5, 84.0, PI)
     private val firstBallsCollectPose = mirrorAlliance(rawFirstBallsCollectPose)
 
     private val rawSecondBallsCollectPose = Pose(11.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
 
-    private val rawCollectAndFreeGoalPose = Pose(13.8, 61.0, Math.toRadians(150.0))
+    private val rawCollectAndFreeGoalPose = Pose(13.8, 61.0, Math.toRadians(155.0))
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
     private lateinit var scorePreload: PathChain
@@ -98,17 +98,15 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         follower = opModeGraph.follower.apply { setStartingPose(startPose) }
         sorter = opModeGraph.sorter.apply { prepareFastShoot() }
         intake = opModeGraph.intake
-        shooter = opModeGraph.shooter.apply { angleDegrees = -3.0 * if (isMirrored) -1 else 1 }
-        limelight = opModeGraph.limelight
+        shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
+        limelight = opModeGraph.limelight.apply { pipelineSwitch(0); start() }
         telemetry = opModeGraph.telemetry
-        limelight?.pipelineSwitch(0)
-        limelight?.start()
         scorePreload = pathChain(follower) {
             pathLinearHeading(endTime = .55) {
                 +startPose
                 +scorePose
                 callbacks {
-                    parametricCallback(0.7) {
+                    parametricCallback(0.68) {
                         launchJob.start()
                     }
                 }
@@ -216,7 +214,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             intake.isServoRunning = true
             launchJob.join()
             follower.setMaxPower(0.7)
-            follower.followAndIntake(intake, sorter, collectBalls1, colorList = listOf(PURPLE, PURPLE, GREEN))
+            follower.followAndIntake(intake, sorter, colorList = listOf(PURPLE, PURPLE, GREEN)) {
+                followSuspend(collectBalls1)
+                delay(500L)
+            }
             shooter.alignToPose(mirrorAlliance(rawScorePose.withHeading(PI)), goalPose, if (isMirrored) 1.0 else -1.0)
             sorter.position = 0.5
             intake.isOuttake = true

@@ -14,9 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 buildscript {
     repositories {
         mavenCentral()
-        maven {
-            url = "https://repo.dairy.foundation/releases"
-        }
+        maven { url = "https://repo.dairy.foundation/releases" }
     }
     dependencies {
         classpath "dev.frozenmilk:Load:0.2.4"
@@ -24,8 +22,8 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.android' version '2.3.0'
-    id 'dev.zacsweers.metro' version '0.10.2'
+    id 'org.jetbrains.kotlin.android' version '2.3.10'
+    id 'dev.zacsweers.metro' version '0.11.2'
 }
 
 // Include common definitions from above.

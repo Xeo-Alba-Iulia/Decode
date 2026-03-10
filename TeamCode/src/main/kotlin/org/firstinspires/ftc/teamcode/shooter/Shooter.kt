@@ -76,7 +76,7 @@ suspend fun shootPattern(
 suspend fun Sorter.fastShoot() {
     isLifting = true
     position = SorterImpl.SHOOTER_POSITIONS[2]
-    delay(1.5.seconds)
+    delay(0.9.seconds)
     artefacts.indices.forEach { artefacts[it] = null }
     (this as? SorterImpl)?.run { size = 0 }
     isLifting = false
