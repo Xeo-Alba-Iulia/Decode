@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.sorter
 
-import com.qualcomm.robotcore.hardware.HardwareMap
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import kotlinx.coroutines.CoroutineScope
@@ -14,14 +13,9 @@ interface TestOpModeGraph {
     val sorterImpl: SorterImpl
 
     @Provides
-    fun provideHardwareMap(): HardwareMap = error("Not available in tests")
-
-    @Provides
     fun provideTelemetry(): Telemetry = error("Not available in tests")
-
     @Provides
     fun provideIsAuto(): Boolean = false
-
     @Provides
     fun provideCoroutineScope(): CoroutineScope = TestScope(SupervisorJob())
 }

@@ -14,8 +14,8 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.MapKey
 import dev.zacsweers.metro.createGraphFactory
 import org.firstinspires.ftc.robotcore.external.Telemetry
+import org.firstinspires.ftc.teamcode.metro.HardwareScope
 import org.firstinspires.ftc.teamcode.metro.OpModeGraph
-import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
 import kotlin.math.pow
 
@@ -64,7 +64,7 @@ fun stopRobot(follower: Follower) {
 @MapKey(unwrapValue = false)
 annotation class TuningOpModeKey(val folder: String, val name: String)
 
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Motor Directions")
 class MotorDirectionsTest(follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val drivetrain = follower.drivetrain ?: error("Follower has no drivetrain, wtf?")
@@ -110,7 +110,7 @@ class MotorDirectionsTest(follower: Follower, private val telemetryA: Telemetry)
  * @author Baron Henderson - 20077 The Indubitables
  * @version 1.0, 5/6/2024
  */
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Localization", name = "Localization Test")
 class LocalizationTest(
     private val follower: Follower,
@@ -168,7 +168,7 @@ class LocalizationTest(
  * @version 1.0, 5/6/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Localization", name = "Forward Tuner")
 class ForwardTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     override fun init() {
@@ -220,7 +220,7 @@ class ForwardTuner(private val follower: Follower, private val telemetryA: Telem
  * @version 2.0, 6/26/2025
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Localization", name = "Lateral Tuner")
 class LateralTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     override fun init() {
@@ -272,7 +272,7 @@ class LateralTuner(private val follower: Follower, private val telemetryA: Telem
  * @version 1.0, 5/6/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Localization", name = "Turn Tuner")
 class TurnTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     override fun init() {
@@ -327,7 +327,7 @@ class TurnTuner(private val follower: Follower, private val telemetryA: Telemetr
  * @version 1.0, 3/13/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Automatic", name = "Forward Velocity Tuner")
 class ForwardVelocityTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val velocities = ArrayList<Double>()
@@ -432,7 +432,7 @@ class ForwardVelocityTuner(private val follower: Follower, private val telemetry
  * @version 1.0, 3/13/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Automatic", name = "Lateral Velocity Tuner")
 class LateralVelocityTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val velocities = arrayListOf<Double>()
@@ -532,7 +532,7 @@ class LateralVelocityTuner(private val follower: Follower, private val telemetry
  * @version 1.0, 3/13/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Automatic", name = "Forward Zero Power Acceleration Tuner")
 class ForwardZeroPowerAccelerationTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val accelerations = arrayListOf<Double>()
@@ -637,7 +637,7 @@ class ForwardZeroPowerAccelerationTuner(private val follower: Follower, private 
  * @version 1.0, 3/13/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Automatic", name = "Lateral Zero Power Acceleration Tuner")
 class LateralZeroPowerAccelerationTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val accelerations = ArrayList<Double>()
@@ -737,7 +737,7 @@ class LateralZeroPowerAccelerationTuner(private val follower: Follower, private 
  * @version 1.0, 3/12/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Manual", name = "Translational Tuner")
 class TranslationalTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
@@ -811,7 +811,7 @@ class TranslationalTuner(private val follower: Follower, private val telemetryA:
  * @version 1.0, 3/12/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Manual", name = "Heading Tuner")
 class HeadingTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
@@ -888,7 +888,7 @@ class HeadingTuner(private val follower: Follower, private val telemetryA: Telem
  * @version 1.0, 3/12/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Manual", name = "Drive Tuner")
 class DriveTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
@@ -966,7 +966,7 @@ class DriveTuner(private val follower: Follower, private val telemetryA: Telemet
  * @version 1.0, 3/12/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Line")
 class Line(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
@@ -1040,7 +1040,7 @@ class Line(private val follower: Follower, private val telemetryA: Telemetry) : 
  * @version 1.0, 3/13/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Manual", name = "Centripetal Tuner")
 class CentripetalTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
@@ -1116,7 +1116,7 @@ class CentripetalTuner(private val follower: Follower, private val telemetryA: T
  * @version 1.0, 12/30/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Triangle")
 @OptIn(PathLinearExperimental::class)
 class Triangle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
@@ -1187,7 +1187,7 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
  * @version 1.0, 3/12/2024
  */
 @Config
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Circle")
 class Circle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private val circle = pathChain(follower) {

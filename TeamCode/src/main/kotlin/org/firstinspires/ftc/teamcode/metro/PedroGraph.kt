@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.pedropathing.mecanumConstants
 import org.firstinspires.ftc.teamcode.pedropathing.pathConstraints
 import org.firstinspires.ftc.teamcode.pedropathing.pinpointConstants
 
-@ContributesTo(OpModeScope::class)
+@ContributesTo(HardwareScope::class)
 interface PedroGraph {
     val follower: Follower
 

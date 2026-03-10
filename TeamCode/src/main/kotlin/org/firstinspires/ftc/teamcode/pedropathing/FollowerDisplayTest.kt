@@ -6,9 +6,9 @@ import com.pedropathing.follower.Follower
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.util.RobotLog
 import dev.zacsweers.metro.ContributesIntoMap
-import org.firstinspires.ftc.teamcode.metro.OpModeScope
+import org.firstinspires.ftc.teamcode.metro.HardwareScope
 
-@ContributesIntoMap(OpModeScope::class)
+@ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Custom", name = FollowerDisplayTest.TAG)
 class FollowerDisplayTest(follower: Follower) : OpMode() {
     companion object {
