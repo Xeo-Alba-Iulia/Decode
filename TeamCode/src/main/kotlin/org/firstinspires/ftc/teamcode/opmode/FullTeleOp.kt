@@ -216,11 +216,13 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         }
 
         if (autoShoot) {
-            opModeScope.launch(Dispatchers.Unconfined) {
-                intake.isServoRunning = true
-                sorter.fastShoot()
-//                currentShooterJob?.cancel()
-            }
+            if (!sorter.isFull)
+                sorter.prepareFastShoot()
+            else
+                opModeScope.launch(Dispatchers.Unconfined) {
+                    intake.isServoRunning = true
+                    sorter.fastShoot()
+                }
         }
 
         if (gamepad2.bWasPressed() || gamepad1.leftBumperWasPressed()) {
