@@ -9,15 +9,18 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.elevator.Elevator
 import org.firstinspires.ftc.teamcode.intake.Intake
+import org.firstinspires.ftc.teamcode.opmode.auto.mirrorAlliance
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -26,7 +29,10 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 @Config
-abstract class FullTeleOp : CoroutineOpMode() {
+abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: Int) : CoroutineOpMode() {
+
+    constructor(alliance: Alliance, limelightPipeline: Int) : this(alliance == Alliance.RED, limelightPipeline)
+
     // Subsystems
     lateinit var intake: Intake
     lateinit var shooter: ShooterImpl
@@ -42,9 +48,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
     private var currentShooterJob: Job? = null
     private var turretOffset = 0.0
 
-    abstract val goalPose: Pose
-    abstract val startPose: Pose
-    abstract val limelightPipeline: Int
+    protected open val startPose = Pose(60.0, 7.0, PI / 2).mirrorAlliance(isMirrored)
+    protected open val goalPose = Pose(5.0, 141.5 - 5.0).mirrorAlliance(isMirrored)
 
     val distanceFlow = MutableStateFlow(0.0)
 

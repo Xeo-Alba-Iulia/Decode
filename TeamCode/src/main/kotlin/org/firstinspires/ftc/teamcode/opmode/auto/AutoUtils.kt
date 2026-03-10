@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
+import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
@@ -18,3 +19,5 @@ suspend inline fun getPatternList(limelight: Limelight3A?, timeout: Duration = 5
         @Suppress("KotlinUnreachableCode") // make compiler happy
         0
     }?.toArtefactList() ?: emptyList()
+
+fun Pose.mirrorAlliance(isMirrored: Boolean): Pose = if (isMirrored) pose.mirror() else pose
