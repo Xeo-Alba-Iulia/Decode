@@ -18,12 +18,12 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.hypot
+import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 @Config
 abstract class FullTeleOp : CoroutineOpMode() {
@@ -48,22 +48,16 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
     val distanceFlow = MutableStateFlow(0.0)
 
-    @OptIn(ExperimentalAtomicApi::class)
-    val updatedByCam = AtomicBoolean(false)
-
-    lateinit var patternList: List<ArtefactType>
-    var isLifting = false
+    private lateinit var patternList: List<ArtefactType>
+    private var startedLifting = false
+    private var distanceTimeMark = TimeSource.Monotonic.markNow()
+    private var isShootingFar = false
 
     companion object {
-        @JvmField
-        var ANGLE_ADJUSTMENT_STEP = -0.5
         @JvmField
         var SORTER_POSITION_MULTIPLIER = -0.02
         @JvmField
         var TURET_OFFSET_ADJUSTMENT_STEP = 1
-
-        @JvmField
-        var HEIGHT_LIST = mutableListOf(1200.0, 800.0, 0.0)
 
         const val TAG = "TeleOp"
     }
@@ -115,12 +109,6 @@ abstract class FullTeleOp : CoroutineOpMode() {
             }
             .launchIn(opModeScope + Dispatchers.IO)
 
-        elevator.positionFlow
-            .filter { it >= 550.0 }
-            .onEach { shooter.angleDegrees = 0.0 }
-            .take(1)
-            .launchIn(opModeScope + Dispatchers.IO)
-
         opModeScope.launch(Dispatchers.IO) {
             var lastIsFull = false
             var lastIsEmpty = true
@@ -134,7 +122,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
                         if (currentShooterJob?.isCancelled != false)
                             currentShooterJob = shooter.shoot(distanceFlow)
                         intake.isOuttake = true
-                        delay(1.seconds)
+                        delay(0.5.seconds)
                         intake.isServoRunning = true
                         sorter.prepareFastShoot()
                     }
@@ -148,9 +136,7 @@ abstract class FullTeleOp : CoroutineOpMode() {
         limelight.start()
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
     override fun loop() {
-        handleSorter()
         follower.setTeleOpDrive(
             /* forward = */ -gamepad1.left_stick_y.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
             /* strafe = */ -gamepad1.left_stick_x.toDouble() * if (!isRobotCentric && this is BlueTeleOp) -1 else 1,
@@ -159,71 +145,69 @@ abstract class FullTeleOp : CoroutineOpMode() {
         )
         follower.update()
         drawDebug(follower)
-        if (!updatedByCam.load())
-            distanceFlow.value = (hypot(12.0 - follower.pose.x, (141.5 - 12.0) - follower.pose.y)) / 39.37
+
+        handleIntake()
+        handleSorter()
+        handleShooter()
+        handleElevator()
+
+        limelight.latestResult.takeIf { it.isValid() && gamepad1.crossWasPressed() }?.let { result ->
+            turretOffset -= result.tx
+            val pos = result.fiducialResults.single().targetPoseCameraSpace.position
+            distanceFlow.value = sqrt(pos.z * pos.z + pos.x * pos.x) + 0.15
+            distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
+        }
+
+        if (distanceTimeMark.hasPassedNow()) {
+            val distance = (hypot(12.0 - follower.pose.x, (141.5 - 12.0) - follower.pose.y)) / 39.37
+            distanceFlow.value = distance.takeUnless { isShootingFar } ?: min(distance, 3.0)
+            if (!startedLifting)
+                shooter.alignToPose(follower.pose, goalPose, turretOffset)
+        }
+
+        if (gamepad1.triangleWasPressed())
+            isRobotCentric = !isRobotCentric
+
         telemetry.addData("Distance", distanceFlow.value)
+    }
+
+    private fun handleIntake() {
         when {
             gamepad1.rightBumperWasPressed() -> intake.isRunning = !intake.isRunning
             gamepad1.circleWasPressed() -> intake.isOuttake = true
             gamepad1.circleWasReleased() -> intake.isOuttake = false
         }
-
-        handleShooter()
-
-        if (gamepad2.dpad_right) {
-            turretOffset -= TURET_OFFSET_ADJUSTMENT_STEP
-        }
-        if (gamepad2.dpad_left) {
-            turretOffset += TURET_OFFSET_ADJUSTMENT_STEP
-        }
-
-        if (gamepad1.squareWasPressed()) {
-            isLifting = true
-            elevator.goNextStep()
-            shooter.angleDegrees = -90.0
-        }
-
-        if (!isLifting) {
-            if (gamepad1.squareWasPressed()) {
-                isLifting = true
-                elevator.goNextStep()
-                shooter.angleDegrees = -90.0
-            } else
-                shooter.alignToPose(follower.pose, goalPose, turretOffset)
-        }
-
-        val result = limelight.latestResult
-        if (result.isValid() && gamepad1.crossWasPressed()) {
-            turretOffset -= result.tx
-            if (updatedByCam.compareAndSet(expectedValue = false, newValue = true)) {
-                opModeScope.launch(Dispatchers.IO) {
-                    val pos = result.fiducialResults.single().targetPoseCameraSpace.position
-                    distanceFlow.value = sqrt(pos.z * pos.z + pos.x * pos.x) + 0.15
-                    delay(3.seconds)
-                    val _ = updatedByCam.exchange(false)
-                }
-            }
-        }
-
-        if (gamepad1.triangleWasPressed())
-            isRobotCentric = !isRobotCentric
     }
 
-    var velocity = 1800.0
-    var hood = 0.5
+    private fun handleElevator() {
+        if (gamepad1.squareWasPressed())
+            if (!startedLifting) {
+                startedLifting = true
+                currentShooterJob?.cancel()
+                intake.isRunning = false
+                sorter.isLifting = false
+                shooter.angleDegrees = -90.0
+                elevator.goUp()
+                opModeScope.launch(Dispatchers.IO) {
+                    elevator.positionFlow
+                        .filter { it >= 400.0 }
+                        .first()
+                    shooter.angleDegrees = 90.0
+                    elevator.positionFlow
+                        .filter { it >= 900.0 }
+                        .first()
+                    shooter.angleDegrees = 0.0
+                }
+            } else
+                elevator.goPark()
+    }
 
     private fun handleShooter() {
         val autoShoot = gamepad2.triangleWasPressed() || gamepad1.rightTriggerWasPressed()
 
-        velocity += gamepad2.right_stick_y.toDouble()
-        hood += gamepad2.left_stick_y.toDouble() * (-0.001)
-
-        telemetry.addData("Velocity", velocity)
-        telemetry.addData("Hood", hood)
-
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
-            currentShooterJob = shooter.shoot(::velocity, ::hood)
+            currentShooterJob = shooter.shoot(distanceFlow)
         }
 
         if (autoShoot) {
@@ -240,8 +224,8 @@ abstract class FullTeleOp : CoroutineOpMode() {
 
         // Adjust shooter angle
         when {
-            gamepad2.dpad_right -> shooter.angleDegrees += ANGLE_ADJUSTMENT_STEP
-            gamepad2.dpad_left -> shooter.angleDegrees -= ANGLE_ADJUSTMENT_STEP
+            gamepad2.dpad_right -> turretOffset -= TURET_OFFSET_ADJUSTMENT_STEP
+            gamepad2.dpad_left -> turretOffset += TURET_OFFSET_ADJUSTMENT_STEP
         }
     }
 

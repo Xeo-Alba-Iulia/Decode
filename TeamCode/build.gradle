@@ -66,8 +66,7 @@ repositories {
 }
 
 metro {
-    contributesAsInject = true
-//    reportsDestination.set(layout.buildDirectory.dir("reports/metro"))
+    reportsDestination.set(layout.buildDirectory.dir("reports/metro"))
 }
 
 dependencies {
