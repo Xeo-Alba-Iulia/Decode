@@ -19,9 +19,8 @@ open class SorterOpMode : CoroutineOpMode() {
 
     override fun init() {
         dashTelemetry = FtcDashboard.getInstance().telemetry
-        sorter = opModeGraph.sorter
+        sorter = opModeGraph.sorter.apply { prepareIntake() }
         intake = opModeGraph.intake.apply { isDebug = true }
-        observers += sorter
 
         intake.artefactFlow
             .onEach {

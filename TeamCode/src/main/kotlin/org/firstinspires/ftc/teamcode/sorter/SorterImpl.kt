@@ -1,26 +1,23 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
-import dev.zacsweers.metro.binding
 import org.firstinspires.ftc.teamcode.ArtefactType
-import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped.Companion.HALF_ROTATION
 import org.firstinspires.ftc.teamcode.sorter.SorterWrapped.Companion.OFFSET
 
 @Config
 @SingleIn(OpModeScope::class)
-@ContributesBinding(OpModeScope::class, binding<Sorter>())
+@ContributesBinding(OpModeScope::class)
 class SorterImpl(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
     isAuto: Boolean
-) : Sorter, OpModeObserver {
+) : Sorter {
 
     companion object {
         @JvmField
@@ -78,8 +75,6 @@ class SorterImpl(
             true
         } ?: false
     }
-
-    override suspend fun onStart(opMode: OpMode) = prepareIntake()
 
     override fun toString() = "SorterImpl(artefacts = ${artefacts.contentToString()}, position = $position)"
 }

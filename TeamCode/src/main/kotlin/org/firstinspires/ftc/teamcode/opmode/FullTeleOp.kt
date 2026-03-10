@@ -74,7 +74,6 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         follower = opModeGraph.follower
         limelight = opModeGraph.limelight
         elevator = opModeGraph.elevator
-        observers.addAll(listOf(sorter, elevator))
         limelight.pipelineSwitch(limelightPipeline)
 
         patternList = pattern ?: emptyList()
@@ -87,6 +86,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         patternList = pattern ?: emptyList()
         pattern = null
         follower.startTeleopDrive(true)
+        sorter.prepareIntake()
         shooter.stateFlow
             .map { (_, canShoot) -> canShoot }
             .distinctUntilChanged()

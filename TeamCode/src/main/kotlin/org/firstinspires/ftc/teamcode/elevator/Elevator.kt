@@ -11,7 +11,6 @@ import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 
 @Config
@@ -20,7 +19,7 @@ import org.firstinspires.ftc.teamcode.metro.OpModeScope
 class Elevator(
     @Named("elevator") private val motor: DcMotorEx,
     private val opModeScope: CoroutineScope,
-) : OpModeObserver {
+) {
     companion object {
         @JvmField
         var HEIGHT_UP = 1200.0
