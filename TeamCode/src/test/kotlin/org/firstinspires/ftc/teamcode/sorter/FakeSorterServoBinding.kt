@@ -2,11 +2,9 @@ package org.firstinspires.ftc.teamcode.sorter
 
 import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.Servo
-import dev.zacsweers.metro.Binds
-import dev.zacsweers.metro.ContributesTo
-import dev.zacsweers.metro.Named
-import dev.zacsweers.metro.Provides
-import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.*
+import org.firstinspires.ftc.teamcode.FakeCRServo
+import org.firstinspires.ftc.teamcode.FakeServo
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import org.firstinspires.ftc.teamcode.metro.SorterProviders
 

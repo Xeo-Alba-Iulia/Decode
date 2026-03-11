@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.sorter
+package org.firstinspires.ftc.teamcode
 
 import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.DcMotorSimple

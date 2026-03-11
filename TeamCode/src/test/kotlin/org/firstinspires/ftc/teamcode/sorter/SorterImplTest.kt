@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.createGraph
 import kotlinx.coroutines.test.runTest
 import org.firstinspires.ftc.teamcode.ArtefactType
+import org.firstinspires.ftc.teamcode.TestOpModeGraph
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
