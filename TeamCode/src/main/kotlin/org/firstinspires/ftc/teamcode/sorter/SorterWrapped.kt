@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.sorter
 
+import android.util.Log
 import com.acmerobotics.dashboard.config.Config
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.Servo
-import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.binding
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
@@ -13,7 +15,7 @@ import kotlin.math.abs
 
 @Config
 @SingleIn(OpModeScope::class)
-@Inject
+@ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
 open class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
@@ -59,7 +61,10 @@ open class SorterWrapped(
     }
 
     override fun intake(type: ArtefactType) {
-        if (currentIntakeSlot == -1) return
+        if (currentIntakeSlot == -1) {
+            Log.e("SorterWrapped", "Intake called without prepareIntake")
+            return
+        }
         artefacts[currentIntakeSlot] = type
         currentIntakeSlot = -1
         if (!isFull) prepareIntake()

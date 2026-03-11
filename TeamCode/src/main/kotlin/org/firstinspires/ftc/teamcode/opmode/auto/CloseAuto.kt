@@ -8,7 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.Alliance
@@ -55,10 +55,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val scorePose = Pose(60.0, 78.0, Math.toRadians(-140.0))
     private val scoreLastBallsPose = Pose(57.0, 105.0)
 
-    private val collectBalls1Pose = Pose(12.0, 57.0)
+    private val collectBalls1Pose = Pose(10.0, 57.0)
     private val collectBalls2Pose = Pose(15.0, 84.0)
 
-    private val gatePose = Pose(13.0, 57.0, Math.toRadians(140.0))
+    private val gatePose = Pose(13.3, 59.6, Math.toRadians(150.0))
 
     private val collectBalls1 = pathChain {
         path {
@@ -69,15 +69,15 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
 
     private val collectGateBalls = pathChain {
-        val hitGatePose = Pose(20.0, 63.0, PI)
+        val hitGatePose = Pose(24.0, 64.0, PI)
         path {
             +scorePose
-            +Pose(39.0, 63.0)
+            +Pose(40.0, 62.0)
             +hitGatePose
         }
         pathLinearHeading {
             +hitGatePose
-            +Pose(18.0, 57.0)
+//            +Pose(18.0, 57.0)
             +gatePose
         }
     }
@@ -99,7 +99,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private var patternList: List<ArtefactType> = emptyList()
 
     private fun Flow<Pose>.alignShooterFollowing(offset: Double = 0.0) =
-        onEach { pose -> shooter.alignToPose(pose, goalPose, offset) }
+        onEach { pose -> shooter.alignToPose(pose, goalPose, offset); drawRobot(pose); sendPacket() }
 
     private fun CallbackBuilder.launchFromCallback(parametricValue: Double) {
         parametricCallback(parametricValue) {
@@ -114,7 +114,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         follower = opModeGraph.follower.apply { setStartingPose(startPose) }
         sorter = opModeGraph.sorter.apply { prepareFastShoot() }
         intake = opModeGraph.intake
-        shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
+        shooter = opModeGraph.shooter.apply { angleDegrees = 0.0; hood = 1.0 }
         limelight = opModeGraph.limelight.apply { pipelineSwitch(0); start() }
         telemetry = opModeGraph.telemetry
         scorePreload = pathChain(follower) {
@@ -161,37 +161,36 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     override fun start() {
         opModeScope.launch {
-            val distanceFlow = flowOf(goalPose.distanceFrom(scorePose) / 39.37)
-            val _ = shooter.shoot(distanceFlow)
-            follower.followSuspendFlow(scorePreload)
-                .onEach {
-                    drawRobot(it)
-                    sendPacket()
-                }.alignShooterFollowing()
-                .collect()
-            launchJob.join()
-            follower.setMaxPower(0.7)
-            follower.followAndIntake(intake, sorter) {
-                followSuspend(collectBalls1)
-                delay(200L)
-            }
-            follower.setMaxPower(1.0)
-            intake.isOuttake = true
-            follower.followSuspendFlow(scoreBalls1).alignShooterFollowing(10.0).collect()
-            launchJob.join()
-            repeat(3) {
-                follower.followAndIntake(intake, sorter, timeout = 7.seconds) {
-                    followSuspend(collectGateBalls)
-                    holdSuspend(gatePose, 3.seconds)
+            val distanceFlow = flow {
+                emit(goalPose.distanceFrom(scorePose) / 39.37)
+                follower.followSuspendFlow(scorePreload)
+                    .alignShooterFollowing()
+                    .collect()
+                launchJob.join()
+                follower.followAndIntake(intake, sorter) {
+                    followSuspend(collectBalls1)
+                    delay(500L)
                 }
                 intake.isOuttake = true
-                follower.followSuspendFlow(scoreGateBalls).alignShooterFollowing(5.0).collect()
-                scoreGateBalls.resetCallbacks()
+                follower.followSuspendFlow(scoreBalls1).alignShooterFollowing(9.0).collect()
                 launchJob.join()
+                repeat(3) {
+                    follower.followAndIntake(intake, sorter, timeout = 7.seconds) {
+                        followSuspend(collectGateBalls)
+                        holdSuspend(gatePose, 2.seconds)
+                    }
+                    intake.isOuttake = true
+                    follower.followSuspendFlow(scoreGateBalls).alignShooterFollowing(8.0).collect()
+                    scoreGateBalls.resetCallbacks()
+                    launchJob.join()
+                }
+                emit(goalPose.distanceFrom(scoreLastBallsPose) / 39.37)
+                follower.followAndIntake(intake, sorter, collectBalls2)
+                intake.isOuttake = true
+                follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(12.0).collect()
+                requestOpModeStop()
             }
-            follower.followAndIntake(intake, sorter, collectBalls2)
-            intake.isOuttake = true
-            follower.followSuspendFlow(scoreBalls2).alignShooterFollowing().collect()
+            val _ = shooter.shoot(distanceFlow)
         }
     }
 

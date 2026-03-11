@@ -100,8 +100,10 @@ suspend inline fun Follower.followAndIntake(
                 .take(3 - sorter.size)
                 .collect {
                     sorter.intake(listIter.next())
-                    RobotLog.dd(TAG, "Intake $it, sorter now has ${sorter.size} artefacts")
-                    delay(200L)
+                    val size = sorter.size
+                    RobotLog.dd(TAG, "Intake $it, sorter now has $size artefacts")
+                    if (size != 3)
+                        delay(150L)
                 }
         }
         val followerJob = launch { followFunction() }

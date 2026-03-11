@@ -125,7 +125,7 @@ class Intake(
 
     companion object {
         @JvmField
-        var MAX_DISTANCE = 3.0
+        var MAX_DISTANCE = 4.0
         @JvmField
         var INTAKE_POWER = 0.7
         @JvmField
