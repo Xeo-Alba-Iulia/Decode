@@ -16,7 +16,10 @@ import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.opmode.pattern
-import org.firstinspires.ftc.teamcode.pedropathing.*
+import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
+import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
+import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
+import org.firstinspires.ftc.teamcode.pedropathing.holdSuspend
 import org.firstinspires.ftc.teamcode.shooter.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
@@ -34,7 +37,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
-    private val rawStartPose = Pose(18.0, 123.5, Math.toRadians(144.1846))
+    private val rawStartPose = Pose(19.5, 122.0, Math.toRadians(144.0))
     private val startPose = mirrorAlliance(rawStartPose)
 
     private val rawGoalPose = Pose(13.0, 141.5 - 13.0)
@@ -49,7 +52,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawSecondBallsCollectPose = Pose(11.0, 60.0, PI)
     private val secondBallsCollectPose = mirrorAlliance(rawSecondBallsCollectPose)
 
-    private val rawCollectAndFreeGoalPose = Pose(13.8, 61.0, Math.toRadians(155.0))
+    private val rawCollectAndFreeGoalPose = Pose(12.5, 63.0, Math.toRadians(155.0))
     private val collectAndFreeGoalPose = mirrorAlliance(rawCollectAndFreeGoalPose)
 
     private lateinit var scorePreload: PathChain
@@ -62,10 +65,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     }
     private val freeGateAndCollect = pathChain {
         path(
-            pathConstraints = pathConstraints.copy().apply {
-                brakingStart = 0.5
-                brakingStrength = 1.0
-            },
             interpolator = HeadingInterpolator.piecewise(
                 HeadingInterpolator.PiecewiseNode(0.0, 0.65, HeadingInterpolator.tangent),
                 HeadingInterpolator.PiecewiseNode(
@@ -106,7 +105,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +startPose
                 +scorePose
                 callbacks {
-                    parametricCallback(0.68) {
+                    parametricCallback(0.8) {
                         launchJob.start()
                     }
                 }
@@ -177,7 +176,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
             }
         opModeScope.launch(followerDispatcher) {
-            follower.setMaxPower(0.8)
             val pattern = async(Dispatchers.IO) { getPatternList(limelight) }
             val job = shooter.shoot(distanceFlow)
             launchJob = launch(start = CoroutineStart.LAZY) { sorter.fastShoot() }

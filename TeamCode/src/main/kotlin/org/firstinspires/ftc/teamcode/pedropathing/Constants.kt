@@ -23,7 +23,7 @@ var followerConstants: FollowerConstants = FollowerConstants()
     .drivePIDFCoefficients(FilteredPIDFCoefficients(0.007, 0.0, 0.00008, 0.6, 0.04))
 
 @JvmField
-var pathConstraints: PathConstraints = PathConstraints(0.99, 100.0, 0.65, 0.9)
+var pathConstraints: PathConstraints = PathConstraints(0.99, 100.0, 1.5, 0.9)
 
 @JvmField
 var pinpointConstants: PinpointConstants = PinpointConstants()
