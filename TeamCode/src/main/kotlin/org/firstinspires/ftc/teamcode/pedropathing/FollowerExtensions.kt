@@ -7,6 +7,7 @@ import com.pedropathing.paths.PathChain
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
@@ -25,6 +26,16 @@ suspend fun Follower.followSuspend(pathChain: PathChain, holdEnd: Boolean = cons
     }
 }
 
+fun Follower.followSuspendFlow(pathChain: PathChain, holdEnd: Boolean = constants.automaticHoldEnd) = flow {
+    followPath(pathChain, holdEnd)
+    while (isBusy) {
+        update()
+        emit(pose!!)
+        yield()
+    }
+    emit(pose!!)
+}
+
 suspend fun Follower.followSuspend(
     pathChain: PathChain,
     maxPower: Double,
@@ -35,6 +46,20 @@ suspend fun Follower.followSuspend(
         update()
         yield()
     }
+}
+
+fun Follower.followSuspendFlow(
+    pathChain: PathChain,
+    maxPower: Double,
+    holdEnd: Boolean = constants.automaticHoldEnd
+) = flow {
+    followPath(pathChain, maxPower, holdEnd)
+    while (isBusy) {
+        update()
+        emit(pose!!)
+        yield()
+    }
+    emit(pose!!)
 }
 
 suspend fun Follower.holdSuspend(pose: Pose, timeout: Duration) {
