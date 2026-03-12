@@ -10,6 +10,7 @@
             <Servo name="turret right" port="1" />
             <Servo name="sorter" port="2" />
             <Servo name="hood" port="5" />
+            <AnalogInput name="servo sensor" port="2" />
             <RevColorSensorV3 name="slot right" bus="0" port="0" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">

@@ -102,8 +102,11 @@ suspend inline fun Follower.followAndIntake(
                     sorter.intake(listIter.next())
                     val size = sorter.size
                     RobotLog.dd(TAG, "Intake $it, sorter now has $size artefacts")
-                    if (size != 3)
+                    if (size != 3) {
+                        intake.isRunning = false
                         delay(150L)
+                        intake.isRunning = true
+                    }
                 }
         }
         val followerJob = launch { followFunction() }

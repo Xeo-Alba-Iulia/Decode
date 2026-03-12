@@ -2,25 +2,24 @@ package org.firstinspires.ftc.teamcode.sorter
 
 import android.util.Log
 import com.acmerobotics.dashboard.config.Config
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
+import com.qualcomm.ftcrobotcontroller.BuildConfig
 import com.qualcomm.robotcore.hardware.Servo
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.SingleIn
-import dev.zacsweers.metro.binding
 import org.firstinspires.ftc.teamcode.ArtefactType
-import org.firstinspires.ftc.teamcode.OpModeObserver
 import org.firstinspires.ftc.teamcode.metro.OpModeScope
 import kotlin.math.abs
+import kotlin.time.measureTime
 
 @Config
 @SingleIn(OpModeScope::class)
-@ContributesBinding(OpModeScope::class, binding = binding<Sorter>(), replaces = [SorterImpl::class])
+@ContributesBinding(OpModeScope::class, replaces = [SorterImpl::class])
 open class SorterWrapped(
     @Named("sorterServo") private val servo: Servo,
     private val transfer: Transfer,
     isAuto: Boolean,
-) : Sorter, OpModeObserver {
+) : Sorter {
 
     companion object {
         @JvmField
@@ -40,7 +39,7 @@ open class SorterWrapped(
         else
             arrayOfNulls(3)
 
-    val positionsList = List(3) {
+    protected val positionsList = List(3) {
         buildList {
             var position = OFFSET - HALF_ROTATION + it * HALF_ROTATION * 2 / 3
             while (position < 1.0) {
@@ -51,7 +50,7 @@ open class SorterWrapped(
         }
     }
 
-    private var currentIntakeSlot = -1
+    protected var currentIntakeSlot = -1
 
     override fun prepareIntake() {
         if (isFull) return
@@ -66,14 +65,12 @@ open class SorterWrapped(
             return
         }
         artefacts[currentIntakeSlot] = type
+        size++
         currentIntakeSlot = -1
         if (!isFull) prepareIntake()
     }
 
-    /* TODO: This can be heavily optimized if needed by precomputing positions
-       From testing after warmup this takes 6-8ms when it has a match, and 500μs without one
-    */
-    override fun prepareShoot(type: ArtefactType?): Boolean {
+    private fun internalPrepareShoot(type: ArtefactType?): Boolean {
         val oldPosition = servo.position
         val validIndices =
             artefacts
@@ -81,16 +78,23 @@ open class SorterWrapped(
                 .filter { type?.equals(artefacts[it]) ?: (artefacts[it] != null) }
         val correctedList = validIndices.flatMap { positionsList[it] }
         val closest = correctedList.minByOrNull { (_, pos) -> abs(pos - oldPosition) }
-        return closest?.let { (idx, position) ->
+        closest?.let { (idx, position) ->
             servo.position = position
             artefacts[idx] = null
-            true
-        } ?: false
+            size--
+        }
+        return closest != null
     }
 
-    override suspend fun onStart(opMode: OpMode) = prepareIntake()
+    override fun prepareShoot(type: ArtefactType?) =
+        if (BuildConfig.DEBUG) {
+            val result: Boolean
+            val time = measureTime { result = internalPrepareShoot(type) }
+            Log.d("SorterWrapped", "prepareShoot took $time")
+            result
+        } else
+            internalPrepareShoot(type)
 
-    override val size get() = artefacts.count { it != null }
-
+    override var size = if (isAuto) 3 else 0
     override fun toString() = "SorterWrapped(artefacts = ${artefacts.contentToString()}, position = $position)"
 }

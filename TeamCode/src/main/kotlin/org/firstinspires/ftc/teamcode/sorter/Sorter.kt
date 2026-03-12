@@ -1,9 +1,8 @@
 package org.firstinspires.ftc.teamcode.sorter
 
 import org.firstinspires.ftc.teamcode.ArtefactType
-import org.firstinspires.ftc.teamcode.OpModeObserver
 
-interface Sorter : OpModeObserver {
+interface Sorter {
     /**
      * Prepares the sorter to receive a ball by preselecting a free slot
      *
