@@ -34,7 +34,7 @@ open class SorterWrapped(
 
     override val artefacts: Array<ArtefactType?> =
         if (isAuto)
-            arrayOf(ArtefactType.PURPLE, ArtefactType.GREEN, ArtefactType.PURPLE)
+            arrayOf(ArtefactType.GREEN, ArtefactType.PURPLE, ArtefactType.PURPLE)
         else
             arrayOfNulls(3)
 

@@ -22,6 +22,7 @@ import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
@@ -57,6 +58,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     private var startedLifting = false
     private var distanceTimeMark = TimeSource.Monotonic.markNow()
     private var isShootingFar = false
+    private var wasPrepared = false
 
     companion object {
         @JvmField
@@ -164,14 +166,20 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         }
 
         if (distanceTimeMark.hasPassedNow()) {
-            val distance = (hypot(12.0 - follower.pose.x, (141.5 - 12.0) - follower.pose.y)) / 39.37
-            distanceFlow.value = distance.takeUnless { isShootingFar } ?: min(distance, 3.0)
-            if (!startedLifting)
-                shooter.alignToPose(follower.pose, goalPose, turretOffset)
+            val distance = (hypot(9.0 - follower.pose.x, (144.0 - 9.0) - follower.pose.y)) / 39.37
+            distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
         }
+
+        if (!startedLifting)
+            shooter.alignToPose(follower.pose, goalPose, turretOffset)
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
+
+        if (gamepad2.triangleWasPressed()) {
+            isShootingFar = !isShootingFar
+            gamepad2.rumble(if (isShootingFar) 1000 else 200)
+        }
 
         telemetry.addData("Distance", distanceFlow.value)
     }
@@ -204,7 +212,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     }
 
     private fun handleShooter() {
-        val autoShoot = gamepad2.triangleWasPressed() || gamepad1.rightTriggerWasPressed()
+        val autoShoot = gamepad1.rightTriggerWasPressed()
 
         // Start/stop shooting sequence
         if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
@@ -212,11 +220,14 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         }
 
         if (autoShoot) {
-            if (!sorter.isFull)
+            if (!sorter.isFull && !wasPrepared) {
                 sorter.prepareFastShoot()
+                wasPrepared = true
+            }
             else
                 opModeScope.launch(Dispatchers.Unconfined) {
                     intake.isServoRunning = true
+                    wasPrepared = false
                     sorter.fastShoot()
                 }
         }

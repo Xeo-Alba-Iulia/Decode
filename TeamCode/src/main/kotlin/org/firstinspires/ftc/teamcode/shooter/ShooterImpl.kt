@@ -44,7 +44,7 @@ class ShooterImpl(
 
     private val ticksToVelocity = InterpLUT(
         listOf(1600.0, 1760.0, 1853.0, 1940.0, 2000.0, 2400.0),
-        listOf(5.24, 5.535, 5.8, 6.0, 6.14, 6.68),
+        listOf(5.24, 5.535, 5.8, 6.04, 6.18, 6.68),
         true
     ).createLUT()
 
@@ -146,7 +146,10 @@ class ShooterImpl(
                 shouldCalculate && findLaunchAngle(distance, ticksToVelocity[velocity])?.let { result ->
                     hood = hoodFilter.filter(hoodLUT[Math.toDegrees(result)])
                     true
-                } ?: false
+                } ?: run {
+                    this@ShooterImpl.hood = 1.0
+                    false
+                }
             )
     }
 

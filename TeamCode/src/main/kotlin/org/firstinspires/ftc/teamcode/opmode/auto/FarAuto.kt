@@ -45,7 +45,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
 
     // raw poses (defined for the blue alliance), then mirrored when needed
     private val startPose: Pose = mirrorAlliance(Pose(60.0, 7.0, PI / 2))
-    private val rawGoalPose = Pose(12.0, 144.0 - 12.0)
+    private val rawGoalPose = Pose(10.0, 144.0 - 10.0)
     private val goalPose = mirrorAlliance(rawGoalPose)
     private val rawScorePose: Pose = Pose(60.0, 20.0).run { withHeading(atan2(rawGoalPose.y - y, rawGoalPose.x - x)) }
     private val scorePose: Pose = mirrorAlliance(rawScorePose)
