@@ -121,7 +121,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +Pose(60.0, 78.0, Math.toRadians(-140.0))
                 callbacks {
                     addCallback { sorter.prepareFastShoot() }
-                    launchFromCallback(0.8)
+                    launchFromCallback(0.85)
                 }
             }
         }
@@ -131,7 +131,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +scorePose
                 callbacks {
                     addCallback { sorter.prepareFastShoot() }
-                    launchFromCallback(0.8)
+                    launchFromCallback(0.85)
                 }
             }
         }
@@ -141,7 +141,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +scoreLastBallsPose
                 callbacks {
                     addCallback { sorter.position = 0.5 }
-                    parametricCallback(0.7) {
+                    parametricCallback(0.75) {
                         opModeScope.launch { shootPattern(sorter, launchJob, patternList) }
                     }
                 }
@@ -153,7 +153,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +scorePose
                 callbacks {
                     addCallback { sorter.prepareFastShoot() }
-                    launchFromCallback(0.78)
+                    launchFromCallback(0.85)
                 }
             }
         }

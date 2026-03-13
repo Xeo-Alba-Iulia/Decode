@@ -4,7 +4,6 @@ import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
-import com.pedropathing.paths.HeadingInterpolator
 import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
@@ -22,9 +21,7 @@ import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
-import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.shootPattern
+import org.firstinspires.ftc.teamcode.shooter.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
@@ -56,9 +53,10 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     private val firstBallPose: Pose = mirrorAlliance(rawFirstBallPose)
     private val firstBallPositionPose: Pose = mirrorAlliance(Pose(rawFirstBallPose.x + 28.0, rawFirstBallPose.y, PI))
 
-    private val rawCornerBallPreposition = Pose(13.0, 18.0, 7 * PI / 6)
+//    private val rawCornerBallPreposition = Pose(13.0, 18.0, 7 * PI / 6)
+    private val rawCornerBallPreposition = Pose(13.0, 22.0, 7 * PI / 6)
     private val cornerBallPreposition: Pose = mirrorAlliance(rawCornerBallPreposition)
-    private val rawCornerBallPose = Pose(12.3, 9.4, 5 * PI / 6)
+    private val rawCornerBallPose = Pose(12.3, 14.0, 7 * PI / 6)
     private val cornerBallPose: Pose = mirrorAlliance(rawCornerBallPose)
 
     private lateinit var cornerPath: PathChain
@@ -67,9 +65,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         pathLinearHeading {
             +cornerBallPose
             +scorePose
-//            callbacks {
-//                temporalCallback(700.milliseconds) {intake.isRunning = false}
-//            }
         }
     }
 
@@ -77,9 +72,9 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         pathLinearHeading {
             +cornerBallPose
             +cornerBallPose.withX(cornerBallPose.x + 5.0)
-            callbacks {
-                addCallback { intake.isRunning = false }
-            }
+//            callbacks {
+//                addCallback { intake.isRunning = false }
+//            }
         }
     }
 
@@ -112,9 +107,9 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     }
 
     private val leavePathChain = pathChain {
-        pathConstantHeading(PI) {
+        pathConstantHeading(if (isMirrored) PI else -PI) {
             +scorePose
-            +mirrorAlliance(Pose(rawScorePose.x - 10.0, rawScorePose.y))
+            +mirrorAlliance(Pose(rawScorePose.x + if (isMirrored) 10.0 else 10.0, rawScorePose.y))
         }
     }
 
@@ -146,30 +141,30 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             .launchIn(opModeScope + Dispatchers.IO)
 
         cornerPath = pathChain(follower, decelerationType = PathChain.DecelerationType.NONE) {
-            pathLinearHeading(0.9) {
+            pathLinearHeading {
                 +scorePose
                 +cornerBallPreposition
                 callbacks { parametricCallback(0.6) { follower.setMaxPower(0.6) } }
             }
-            path(
-                interpolator = HeadingInterpolator.piecewise(
-                    HeadingInterpolator.PiecewiseNode(
-                        0.0,
-                        0.6,
-                        HeadingInterpolator.constant(cornerBallPreposition.heading)
-                    ),
-                    HeadingInterpolator.PiecewiseNode(
-                        0.6, 1.0, HeadingInterpolator.linear(
-                            cornerBallPreposition.heading,
-                            cornerBallPose.heading
-                        )
-                    )
-                )
-            ) {
-                +cornerBallPreposition
-                +cornerBallPose
-                callbacks { addCallback { follower.setMaxPower(0.7) } }
-            }
+//            path(
+//                interpolator = HeadingInterpolator.piecewise(
+//                    HeadingInterpolator.PiecewiseNode(
+//                        0.0,
+//                        0.6,
+//                        HeadingInterpolator.constant(cornerBallPreposition.heading)
+//                    ),
+//                    HeadingInterpolator.PiecewiseNode(
+//                        0.6, 1.0, HeadingInterpolator.linear(
+//                            cornerBallPreposition.heading,
+//                            cornerBallPose.heading
+//                        )
+//                    )
+//                )
+//            ) {
+//                +cornerBallPreposition
+//                +cornerBallPose
+//                callbacks { addCallback { follower.setMaxPower(0.7) } }
+//            }
         }
         firstBalls = pathChain(follower) {
             pathLinearHeading(endTime = 0.8) {
@@ -204,36 +199,49 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch(followerDispatcher) {
             var shooterJob = shooter.shoot(distanceFlow)
             follower.followSuspend(scorePreload)
+            sorter.prepareFastShoot()
             delay(2.seconds)
-            shootPattern(sorter, shooterJob, emptyList())
+            sorter.fastShoot()
             intake.isRunning = true
-            follower.setMaxPower(0.7)
+            follower.setMaxPower(0.9)
             follower.followAndIntake(intake, sorter, firstBalls, colorList = listOf(GREEN, PURPLE, PURPLE))
             intake.isOuttake = true
             follower.setMaxPower(1.0)
             shooterJob = shooter.shoot(distanceFlow)
             sorter.position = 0.5
             follower.followSuspend(scoreFirstBalls)
+            sorter.prepareFastShoot()
             delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose)
-            shootPattern(sorter, shooterJob, pattern)
-            repeat(3) {
-                follower.setMaxPower(0.7)
+            sorter.fastShoot()
+            val n = 3
+            repeat(n) { index ->
+                follower.setMaxPower(0.9)
                 follower.followAndIntake(
                     intake,
                     sorter,
                     cornerPath,
                     lastBallPositionPath,
-                    lastBallCollectPath,
+//                    lastBallCollectPath,
                     colorList = listOf(PURPLE, GREEN, PURPLE),
                     timeout = 10.seconds
                 )
-                intake.isOuttake = true
+                delay(500.milliseconds)
+                if (sorter.isFull) {
+                    intake.isOuttake = true
+                }
                 follower.setMaxPower(1.0)
                 shooterJob = shooter.shoot(distanceFlow)
                 follower.followSuspend(scoreFromCornerPath)
-                shooter.alignToPose(follower.pose, goalPose, 0.0)
-                shootPattern(sorter, shooterJob, pattern)
+                if (index >= n - 2) {
+                    sorter.prepareFastShoot()
+                    shooter.alignToPose(follower.pose, goalPose, 0.0)
+                    sorter.fastShoot()
+                }
+                else {
+                    shooter.alignToPose(follower.pose, goalPose, 0.0)
+                    shootPattern(sorter, shooterJob, pattern)
+                }
             }
             shooterJob.cancel()
             follower.followSuspend(leavePathChain)
