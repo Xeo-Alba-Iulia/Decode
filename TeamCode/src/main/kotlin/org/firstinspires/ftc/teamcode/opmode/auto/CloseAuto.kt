@@ -4,14 +4,11 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.*
 import com.qualcomm.hardware.limelightvision.Limelight3A
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.intake.Intake
@@ -159,6 +156,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
         opModeScope.launch {
             val distanceFlow = flow {
@@ -191,7 +189,11 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     follower.followSuspend(collectBalls2)
                     delay(500L)
                 }
-                patternList = asyncList.await()
+                patternList = try {
+                    asyncList.getCompleted()
+                } catch (_: Exception) {
+                    emptyList()
+                }
                 intake.isOuttake = true
                 follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(12.0).collect()
                 requestOpModeStop()
