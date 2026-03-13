@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
+import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
@@ -67,6 +68,9 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         pathLinearHeading {
             +cornerBallPose
             +scorePose
+//            callbacks {
+//                temporalCallback(700.milliseconds) {intake.isRunning = false}
+//            }
         }
     }
 
@@ -201,7 +205,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
         opModeScope.launch(followerDispatcher) {
             var shooterJob = shooter.shoot(distanceFlow)
             follower.followSuspend(scorePreload)
-            delay(5.seconds)
+            delay(2.seconds)
             shootPattern(sorter, shooterJob, emptyList())
             intake.isRunning = true
             follower.setMaxPower(0.7)
@@ -214,21 +218,23 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             delay(200.milliseconds)
             shooter.alignToPose(follower.pose, goalPose)
             shootPattern(sorter, shooterJob, pattern)
-            follower.setMaxPower(0.7)
-            follower.followAndIntake(
-                intake,
-                sorter,
-                cornerPath,
-                lastBallPositionPath,
-                lastBallCollectPath,
-                colorList = listOf(PURPLE, GREEN, PURPLE),
-                timeout = 10.seconds
-            )
-            follower.setMaxPower(1.0)
-            shooterJob = shooter.shoot(distanceFlow)
-            follower.followSuspend(scoreFromCornerPath)
-            shooter.alignToPose(follower.pose, goalPose, 0.0)
-            shootPattern(sorter, shooterJob, pattern)
+            repeat(3) {
+                follower.setMaxPower(0.7)
+                follower.followAndIntake(
+                    intake,
+                    sorter,
+                    cornerPath,
+                    lastBallPositionPath,
+                    lastBallCollectPath,
+                    colorList = listOf(PURPLE, GREEN, PURPLE),
+                    timeout = 10.seconds
+                )
+                follower.setMaxPower(1.0)
+                shooterJob = shooter.shoot(distanceFlow)
+                follower.followSuspend(scoreFromCornerPath)
+                shooter.alignToPose(follower.pose, goalPose, 0.0)
+                shootPattern(sorter, shooterJob, pattern)
+            }
             shooterJob.cancel()
             follower.followSuspend(leavePathChain)
         }

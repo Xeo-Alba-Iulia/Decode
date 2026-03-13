@@ -66,7 +66,7 @@ suspend fun shootPattern(
         assert(sorter.shootOrDefault(orderIterator.nextOrNull()))
         delay(270.milliseconds)
         sorter.isLifting = true
-        delay(110.milliseconds)
+        delay(130.milliseconds)
         sorter.isLifting = false
     }
     sorter.prepareIntake()
