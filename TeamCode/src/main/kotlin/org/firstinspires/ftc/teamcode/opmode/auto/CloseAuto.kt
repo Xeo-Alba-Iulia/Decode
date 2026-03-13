@@ -5,6 +5,7 @@ import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.*
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -18,10 +19,7 @@ import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.opmode.pattern
 import org.firstinspires.ftc.teamcode.pedropathing.*
-import org.firstinspires.ftc.teamcode.shooter.Shooter
-import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.fastShoot
-import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
+import org.firstinspires.ftc.teamcode.shooter.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.time.Duration.Companion.seconds
@@ -142,8 +140,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +collectBalls2Pose
                 +scoreLastBallsPose
                 callbacks {
-                    addCallback { sorter.prepareFastShoot() }
-                    launchFromCallback(0.7)
+                    addCallback { sorter.position = 0.5 }
+                    parametricCallback(0.7) {
+                        opModeScope.launch { shootPattern(sorter, launchJob, patternList) }
+                    }
                 }
             }
         }
@@ -167,6 +167,8 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     .alignShooterFollowing()
                     .collect()
                 launchJob.join()
+                shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
+                val asyncList = async { getPatternList(limelight) }
                 follower.followAndIntake(intake, sorter) {
                     followSuspend(collectBalls1)
                     delay(500L)
@@ -189,11 +191,12 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     follower.followSuspend(collectBalls2)
                     delay(500L)
                 }
+                patternList = asyncList.await()
                 intake.isOuttake = true
                 follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(12.0).collect()
                 requestOpModeStop()
             }
-            val _ = shooter.shoot(distanceFlow)
+            launchJob = shooter.shoot(distanceFlow)
         }
     }
 

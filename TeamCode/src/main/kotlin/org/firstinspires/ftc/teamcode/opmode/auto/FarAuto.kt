@@ -24,7 +24,6 @@ import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
-import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
@@ -229,6 +228,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                     colorList = listOf(PURPLE, GREEN, PURPLE),
                     timeout = 10.seconds
                 )
+                intake.isOuttake = true
                 follower.setMaxPower(1.0)
                 shooterJob = shooter.shoot(distanceFlow)
                 follower.followSuspend(scoreFromCornerPath)

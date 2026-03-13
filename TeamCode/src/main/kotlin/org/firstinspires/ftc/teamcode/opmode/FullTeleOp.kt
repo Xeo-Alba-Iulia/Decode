@@ -195,11 +195,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
                 elevator.goUp()
                 opModeScope.launch(Dispatchers.IO) {
                     elevator.positionFlow
-                        .filter { it >= 400.0 }
-                        .first()
-                    shooter.angleDegrees = 90.0
-                    elevator.positionFlow
-                        .filter { it >= 900.0 }
+                        .filter { it >= 500.0 }
                         .first()
                     shooter.angleDegrees = 0.0
                 }
@@ -250,7 +246,8 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
                 gamepad2.leftStickButtonWasPressed() -> sorter.prepareShoot(ArtefactType.GREEN)
                 gamepad2.backWasPressed() -> sorter.prepareShoot()
             }
-        else if (gamepad2.rightStickButtonWasPressed() ||
+        else if (
+            gamepad2.rightStickButtonWasPressed() ||
             gamepad2.leftStickButtonWasPressed() ||
             gamepad2.backWasPressed()
         ) {
