@@ -87,7 +87,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     private val lastBallCollectPath = pathChain {
         pathLinearHeading {
             +cornerBallPose.withY(cornerBallPose.y + 5.0)
-            +mirrorAlliance(Pose(rawCornerBallPose.x + 5.0, rawCornerBallPose.y + 7.0))
+            +mirrorAlliance(Pose(rawCornerBallPose.x + 5.0, rawCornerBallPose.y + if (isMirrored) -7 else 7))
             +mirrorAlliance(Pose(rawCornerBallPose.x + 10.0, rawCornerBallPose.y))
             +mirrorAlliance(Pose(rawCornerBallPose.x, rawCornerBallPose.y, PI))
             callbacks {
