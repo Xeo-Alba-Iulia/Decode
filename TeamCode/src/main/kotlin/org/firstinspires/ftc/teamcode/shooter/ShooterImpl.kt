@@ -103,7 +103,7 @@ class ShooterImpl(
         guess: Double = Math.toRadians(31.0),
         repetitions: Int = 4
     ): Double? {
-        val g = 9.6
+        val g = 9.5
         val height = 0.8
         val d = distance
         val v = velocity

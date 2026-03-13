@@ -56,7 +56,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val scoreLastBallsPose = Pose(57.0, 105.0)
 
     private val collectBalls1Pose = Pose(10.0, 57.0)
-    private val collectBalls2Pose = Pose(15.0, 84.0)
+    private val collectBalls2Pose = Pose(19.0, 84.0)
 
     private val gatePose = Pose(13.3, 59.6, Math.toRadians(150.0))
 
@@ -133,7 +133,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +scorePose
                 callbacks {
                     addCallback { sorter.prepareFastShoot() }
-                    launchFromCallback(0.85)
+                    launchFromCallback(0.8)
                 }
             }
         }
@@ -153,7 +153,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 +scorePose
                 callbacks {
                     addCallback { sorter.prepareFastShoot() }
-                    launchFromCallback(0.85)
+                    launchFromCallback(0.78)
                 }
             }
         }
@@ -175,7 +175,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 follower.followSuspendFlow(scoreBalls1).alignShooterFollowing(9.0).collect()
                 launchJob.join()
                 repeat(3) {
-                    follower.followAndIntake(intake, sorter, timeout = 7.seconds) {
+                    follower.followAndIntake(intake, sorter, timeout = 4.seconds) {
                         followSuspend(collectGateBalls)
                         holdSuspend(gatePose, 2.seconds)
                     }
@@ -185,7 +185,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     launchJob.join()
                 }
                 emit(goalPose.distanceFrom(scoreLastBallsPose) / 39.37)
-                follower.followAndIntake(intake, sorter, collectBalls2)
+                follower.followAndIntake(intake, sorter) {
+                    follower.followSuspend(collectBalls2)
+                    delay(500L)
+                }
                 intake.isOuttake = true
                 follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(12.0).collect()
                 requestOpModeStop()
