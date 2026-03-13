@@ -99,7 +99,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private var patternList: List<ArtefactType> = emptyList()
 
     private fun Flow<Pose>.alignShooterFollowing(offset: Double = 0.0) =
-        onEach { pose -> shooter.alignToPose(pose, goalPose, offset); drawRobot(pose); sendPacket() }
+        onEach { pose -> shooter.alignToPose(pose, goalPose, if (isMirrored) -offset else offset); drawRobot(pose); sendPacket() }
 
     private fun CallbackBuilder.launchFromCallback(parametricValue: Double) {
         parametricCallback(parametricValue) {
