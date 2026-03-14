@@ -221,6 +221,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         if (autoShoot) {
             if (!sorter.isFull && !wasPrepared) {
                 sorter.prepareFastShoot()
+                intake.isServoRunning = true
                 wasPrepared = true
             }
             else

@@ -85,7 +85,7 @@ suspend fun Follower.holdSuspend(pose: Pose, timeout: Duration) {
 suspend inline fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
-    colorList: List<ArtefactType> = List(3) { PURPLE },
+    isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds,
     crossinline followFunction: suspend Follower.() -> Unit,
 ): Unit =
@@ -93,15 +93,19 @@ suspend inline fun Follower.followAndIntake(
         intake.isRunning = true
         val intakeJob = launch {
             delay(500L)
-            Log.d(TAG, "Intake started, size is: ${sorter.size}")
-            val listIter = colorList.iterator()
-            intake.distanceFlow
-                .filter { it }
+            Log.d("Intake", "Intake started, size is: ${sorter.size}")
+            val detectionFlow =
+                if (isDetectingColor)
+                    intake.artefactFlow
+                else
+                    intake.distanceFlow.filter { it }
+
+            detectionFlow
                 .take(3 - sorter.size)
                 .collect {
-                    sorter.intake(listIter.next())
+                    sorter.intake((it as? ArtefactType) ?: PURPLE)
                     val size = sorter.size
-                    RobotLog.dd(TAG, "Intake $it, sorter now has $size artefacts")
+                    RobotLog.dd("Intake", "Intake $it, sorter now has $size artefacts")
                     if (size != 3) {
                         intake.isRunning = false
                         delay(150L)
@@ -129,9 +133,9 @@ suspend inline fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
     path: PathChain,
-    colorList: List<ArtefactType> = List(3) { PURPLE },
+    isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds,
-) = followAndIntake(intake, sorter, colorList, timeout) { followSuspend(path) }
+) = followAndIntake(intake, sorter, isDetectingColor, timeout) { followSuspend(path) }
 
 /**
  * Deprecated version of followAndIntake that doesn't take a path.
@@ -146,7 +150,7 @@ suspend inline fun Follower.followAndIntake(
 fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
-    colorList: List<ArtefactType> = emptyList(),
+    isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds
 ): Unit = throw UnsupportedOperationException("No path provided to follow")
 
@@ -160,9 +164,9 @@ suspend inline fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
     vararg paths: PathChain,
-    colorList: List<ArtefactType> = List(3) { PURPLE },
+    isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds,
-) = followAndIntake(intake, sorter, colorList, timeout) {
+) = followAndIntake(intake, sorter, isDetectingColor, timeout) {
     assert(paths.isNotEmpty())
     paths.forEach { followSuspend(it) }
 }

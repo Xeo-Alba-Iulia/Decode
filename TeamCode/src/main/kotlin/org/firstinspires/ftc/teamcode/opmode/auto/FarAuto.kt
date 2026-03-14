@@ -204,7 +204,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
             sorter.fastShoot()
             intake.isRunning = true
             follower.setMaxPower(0.9)
-            follower.followAndIntake(intake, sorter, firstBalls, colorList = listOf(GREEN, PURPLE, PURPLE))
+            follower.followAndIntake(intake, sorter, firstBalls, isDetectingColor = true)
             intake.isOuttake = true
             follower.setMaxPower(1.0)
             shooterJob = shooter.shoot(distanceFlow)
@@ -223,7 +223,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                     cornerPath,
                     lastBallPositionPath,
 //                    lastBallCollectPath,
-                    colorList = listOf(PURPLE, GREEN, PURPLE),
+                    isDetectingColor = true,
                     timeout = 10.seconds
                 )
                 delay(500.milliseconds)
