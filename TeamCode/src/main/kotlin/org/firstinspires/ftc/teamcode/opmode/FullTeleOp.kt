@@ -9,6 +9,7 @@ import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
 import org.firstinspires.ftc.teamcode.Alliance
 import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.elevator.Elevator
@@ -55,9 +56,13 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
 
     private lateinit var patternList: List<ArtefactType>
     private var startedLifting = false
+    private var isOdometryDisabled = false
     private var distanceTimeMark = TimeSource.Monotonic.markNow()
+    private var odometrySwitchTimeMark: TimeSource.Monotonic.ValueTimeMark? = null
     private var isShootingFar = false
     private var wasPrepared = false
+
+    private val restartCameraMutex = Mutex()
 
     companion object {
         @JvmField
@@ -157,20 +162,47 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         handleShooter()
         handleElevator()
 
-        limelight.latestResult.takeIf { it.isValid() && gamepad1.crossWasPressed() }?.let { result ->
-            turretOffset -= result.tx
-            val pos = result.fiducialResults.single().targetPoseCameraSpace.position
-            distanceFlow.value = sqrt(pos.z * pos.z + pos.x * pos.x) + 0.15
-            distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
-        }
+        limelight
+            .takeIf { it.isConnected }
+            ?.latestResult
+            ?.takeIf { it.isValid() && gamepad1.crossWasPressed() }?.let { result ->
+                turretOffset -= result.tx
+                val pos = result.fiducialResults.single().targetPoseCameraSpace.position
+                distanceFlow.value = sqrt(pos.z * pos.z + pos.x * pos.x) + 0.15
+                distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
+            }
 
-        if (distanceTimeMark.hasPassedNow()) {
-            val distance = (hypot(9.0 - follower.pose.x, (144.0 - 9.0) - follower.pose.y)) / 39.37
-            distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
-        }
-
-        if (!startedLifting)
+        if (!isOdometryDisabled) {
             shooter.alignToPose(follower.pose, goalPose, turretOffset)
+            if (distanceTimeMark.hasPassedNow()) {
+                val distance = (hypot(9.0 - follower.pose.x, (144.0 - 9.0) - follower.pose.y)) / 39.37
+                distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
+            }
+        }
+
+        with(gamepad2) {
+            when {
+                crossWasPressed() -> odometrySwitchTimeMark = TimeSource.Monotonic.markNow() + 2.seconds
+                crossWasReleased() -> odometrySwitchTimeMark = null
+            }
+            if (odometrySwitchTimeMark?.hasPassedNow() == true && cross) {
+                odometrySwitchTimeMark = null
+                isOdometryDisabled = !isOdometryDisabled
+            }
+
+//            if (bWasPressed()) {
+//                opModeScope.launch {
+//                    if (restartCameraMutex.isLocked) return@launch
+//                    restartCameraMutex.withLock {
+//                        limelight.stop()
+//                        limelight.pipelineSwitch(limelightPipeline)
+//                        limelight.start()
+//                        Log.d("Limelight", limelight.status.toString())
+//                        rumble(0.0, 0.5, 1500)
+//                    }
+//                }
+//            }
+        }
 
         if (gamepad1.triangleWasPressed())
             isRobotCentric = !isRobotCentric
@@ -195,6 +227,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         if (gamepad1.squareWasPressed())
             if (!startedLifting) {
                 startedLifting = true
+                isOdometryDisabled = true
                 currentShooterJob?.cancel()
                 intake.isRunning = false
                 sorter.isLifting = false
@@ -214,7 +247,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         val autoShoot = gamepad1.rightTriggerWasPressed()
 
         // Start/stop shooting sequence
-        if ((gamepad2.aWasPressed() || gamepad1.leftTriggerWasPressed()) && currentShooterJob?.isCancelled != false) {
+        if (gamepad1.leftTriggerWasPressed() && currentShooterJob?.isCancelled != false) {
             currentShooterJob = shooter.shoot(distanceFlow)
         }
 
@@ -232,7 +265,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
                 }
         }
 
-        if (gamepad2.bWasPressed() || gamepad1.leftBumperWasPressed()) {
+        if (gamepad1.leftBumperWasPressed()) {
             currentShooterJob?.cancel()
         }
 
