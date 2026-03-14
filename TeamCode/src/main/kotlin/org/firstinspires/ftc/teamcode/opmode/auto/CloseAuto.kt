@@ -48,13 +48,13 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val goalPose = Pose(5.0, 141.5 - 5.0)
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
-    private val scorePose = Pose(60.0, 78.0, Math.toRadians(-140.0))
+    private val scorePose = Pose(62.0, 78.0, Math.toRadians(-140.0))
     private val scoreLastBallsPose = Pose(57.0, 105.0)
 
     private val collectBalls1Pose = Pose(10.0, 57.0)
     private val collectBalls2Pose = Pose(19.0, 84.0)
 
-    private val gatePose = Pose(13.3, 59.6, Math.toRadians(150.0))
+    private val gatePose = Pose(13.6, 59.6, Math.toRadians(150.0))
 
     private val collectBalls1 = pathChain {
         path {

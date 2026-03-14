@@ -23,7 +23,6 @@ import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -203,7 +202,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
                 elevator.goUp()
                 opModeScope.launch(Dispatchers.IO) {
                     elevator.positionFlow
-                        .filter { it >= 500.0 }
+                        .filter { it >= 800.0 }
                         .first()
                     shooter.angleDegrees = 0.0
                 }
