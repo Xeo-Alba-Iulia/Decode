@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.opmode.pattern
 import org.firstinspires.ftc.teamcode.pedropathing.*
 import org.firstinspires.ftc.teamcode.shooter.*
 import org.firstinspires.ftc.teamcode.sorter.Sorter
+import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.time.Duration.Companion.seconds
 
@@ -91,6 +92,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private lateinit var scoreBalls2: PathChain
 
     private lateinit var launchJob: Job
+
+    @Volatile
+    private var fiducialId = 21
     private var patternList: List<ArtefactType> = emptyList()
 
     private fun Flow<Pose>.alignShooterFollowing(offset: Double = 0.0) =
@@ -113,7 +117,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         limelight = opModeGraph.limelight.apply { pipelineSwitch(0); start() }
         telemetry = opModeGraph.telemetry
         scorePreload = pathChain(follower) {
-            pathLinearHeading(endTime = .8) {
+            pathLinearHeading(endTime = .75) {
                 +startPose
                 +Pose(60.0, 78.0, Math.toRadians(-140.0))
                 callbacks {
@@ -158,29 +162,34 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
+        val patternJob = opModeScope.launch {
+            while (isActive) {
+                limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
+                    fiducialId = it.fiducialId
+                }
+                delay(100L)
+            }
+        }
         opModeScope.launch {
             val distanceFlow = flow {
                 emit(goalPose.distanceFrom(scorePose) / 39.37)
-                follower.followSuspendFlow(scorePreload)
-                    .alignShooterFollowing()
-                    .collect()
+                follower.followSuspendFlow(scorePreload).alignShooterFollowing().collect()
                 launchJob.join()
-                shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
-                val asyncList = async { getPatternList(limelight) }
                 follower.followAndIntake(intake, sorter) {
                     followSuspend(collectBalls1)
                     delay(500L)
                 }
                 intake.isOuttake = true
-                follower.followSuspendFlow(scoreBalls1).alignShooterFollowing(9.0).collect()
+                follower.followSuspendFlow(scoreBalls1).alignShooterFollowing(3.0).collect()
                 launchJob.join()
+                shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
                 repeat(3) {
                     follower.followAndIntake(intake, sorter, timeout = 4.seconds) {
                         followSuspend(collectGateBalls)
                         holdSuspend(gatePose, 2.seconds)
                     }
                     intake.isOuttake = true
-                    follower.followSuspendFlow(scoreGateBalls).alignShooterFollowing(8.0).collect()
+                    follower.followSuspendFlow(scoreGateBalls).alignShooterFollowing(3.0).collect()
                     scoreGateBalls.resetCallbacks()
                     launchJob.join()
                 }
@@ -189,13 +198,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     follower.followSuspend(collectBalls2)
                     delay(500L)
                 }
-                patternList = try {
-                    asyncList.getCompleted()
-                } catch (_: Exception) {
-                    emptyList()
-                }
+                patternJob.cancel()
+                patternList = fiducialId.toArtefactList()
                 intake.isOuttake = true
-                follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(12.0).collect()
+                follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(10.0).collect()
                 requestOpModeStop()
             }
             launchJob = shooter.shoot(distanceFlow)
