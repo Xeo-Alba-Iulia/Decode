@@ -32,7 +32,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private lateinit var sorter: Sorter
     private lateinit var intake: Intake
     private lateinit var shooter: Shooter
-    private var limelight: Limelight3A? = null
+    private lateinit var limelight: Limelight3A
 
     /**
      * Alias to create a non-mirrored [com.pedropathing.geometry.Pose] to allow declaring the [Pose] function
@@ -164,14 +164,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
-        val patternJob = opModeScope.launch {
-            while (isActive) {
-                limelight?.latestResult?.fiducialResults?.singleOrNull()?.let {
-                    fiducialId = it.fiducialId
-                }
-                delay(100L)
-            }
-        }
+        val patternJob = opModeScope.getFiducialId(limelight)
         opModeScope.launch {
             val distanceFlow = flow {
                 emit(goalPose.distanceFrom(scorePose) / 39.37 - 0.1)
@@ -200,8 +193,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(collectBalls2)
                 }
-                patternJob.cancel()
-                patternList = fiducialId.toArtefactList()
+                patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
                 Log.d("Auto", "Fiducial id: $fiducialId")
                 intake.isOuttake = true
                 follower.followSuspendFlow(scoreBalls2).alignShooterFollowing(10.0).collect()
@@ -214,7 +206,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     override fun stop() {
         super.stop()
-        limelight?.stop()
+        limelight.stop()
         lastPose = follower.pose
         pattern = patternList
     }
