@@ -75,11 +75,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             +Pose(40.0, 62.0)
             +hitGatePose
         }
-        pathLinearHeading {
-            +hitGatePose
-//            +Pose(18.0, 57.0)
-            +gatePose
-        }
+        pathToPose(gatePose)
     }
 
     private val collectBalls2 = pathChain {
