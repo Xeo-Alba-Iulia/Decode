@@ -22,8 +22,8 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.android' version '2.3.10'
-    id 'dev.zacsweers.metro' version '0.11.2'
+    id 'org.jetbrains.kotlin.android' version '2.3.21'
+    id 'dev.zacsweers.metro' version '1.0.0'
 }
 
 // Include common definitions from above.
@@ -42,10 +42,6 @@ android {
             freeCompilerArgs.add("-Xexplicit-backing-fields")
             freeCompilerArgs.add("-Xcontext-sensitive-resolution")
         }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
     }
 
     packagingOptions {
@@ -63,15 +59,11 @@ repositories {
     mavenLocal()
 }
 
-metro {
-    reportsDestination.set(layout.buildDirectory.dir("reports/metro"))
-}
-
 dependencies {
     implementation project(':FtcRobotController')
     implementation project(':PedroPathingDSL')
 
-    implementation 'com.pedropathing:ftc:2.0.6'
+    implementation 'com.pedropathing:ftc:2.1.1'
     implementation 'com.pedropathing:telemetry:1.0.0'
 
     implementation 'dev.nextftc:control:1.0.0'

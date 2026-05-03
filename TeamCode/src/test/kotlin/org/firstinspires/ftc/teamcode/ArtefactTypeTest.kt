@@ -13,6 +13,6 @@ class ArtefactTypeTest {
     @Test fun `toArtefactList throws an exception for invalid IDs`() {
         val invalidIDs = listOf(0, 20, 24, 100)
         for (id in invalidIDs)
-            assertThrows<IllegalStateException>("Expected exception for ID: $id", id::toArtefactList)
+            assertThrows<IllegalStateException>("Expected exception for ID: $id") { val _ = id.toArtefactList() }
     }
 }
