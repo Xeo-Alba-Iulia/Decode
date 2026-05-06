@@ -23,7 +23,7 @@ buildscript {
 
 plugins {
     id 'org.jetbrains.kotlin.android' version '2.3.21'
-    id 'dev.zacsweers.metro' version '1.0.0'
+    id 'dev.zacsweers.metro' version '0.11.2'
 }
 
 // Include common definitions from above.
