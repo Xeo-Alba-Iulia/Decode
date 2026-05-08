@@ -18,6 +18,13 @@ android {
         buildConfig = true
     }
 
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt")
+        }
+    }
+
     compileSdkVersion = 35
 
     compileOptions {

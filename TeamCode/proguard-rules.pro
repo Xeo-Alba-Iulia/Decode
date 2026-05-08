@@ -2,19 +2,19 @@
 -keep @com.qualcomm.robotcore.eventloop.opmode.TeleOp class **
 
 -keepclassmembers class ** {
-    @org.firstinspires.ftc.robotcore.external.OnCreate <methods>;
+    @org.firstinspires.ftc.ftccommon.external.OnCreate <methods>;
 }
 -keepclassmembers class ** {
-    @org.firstinspires.ftc.robotcore.external.OnCreateEventLoop <methods>;
+    @org.firstinspires.ftc.ftccommon.external.OnCreateEventLoop <methods>;
 }
 -keepclassmembers class ** {
-    @org.firstinspires.ftc.robotcore.external.OnCreateMenu <methods>;
+    @org.firstinspires.ftc.ftccommon.external.OnCreateMenu <methods>;
 }
 -keepclassmembers class ** {
-    @org.firstinspires.ftc.robotcore.external.OnDestroy <methods>;
+    @org.firstinspires.ftc.ftccommon.external.OnDestroy <methods>;
 }
 -keepclassmembers class ** {
-    @org.firstinspires.ftc.robotcore.external.WebHandlerRegistrar <methods>;
+    @org.firstinspires.ftc.ftccommon.external.WebHandlerRegistrar <methods>;
 }
 
 -dontwarn javax.xml.stream.XMLInputFactory
