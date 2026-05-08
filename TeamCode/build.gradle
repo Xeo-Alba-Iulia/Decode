@@ -61,7 +61,7 @@ repositories {
 
 dependencies {
     implementation project(':FtcRobotController')
-    implementation project(':PedroPathingDSL')
+    implementation("com.pedropathing:builder-dsl:1.0.0")
 
     implementation 'com.pedropathing:ftc:2.1.1'
     implementation 'com.pedropathing:telemetry:1.0.0'

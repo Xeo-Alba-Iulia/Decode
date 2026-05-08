@@ -5,4 +5,4 @@ plugins {
 rootProject.name = "Decode"
 include ':FtcRobotController'
 include ':TeamCode'
-include ':PedroPathingDSL'
+// include ':PedroPathingDSL'

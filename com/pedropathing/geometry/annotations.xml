@@ -1,0 +1,33 @@
+<root>
+    <item name='com.pedropathing.geometry.Pose Pose()'>
+        <annotation name='org.jetbrains.annotations.Contract'>
+            <val name="pure" val="true" />
+        </annotation>
+    </item>
+    <item name='com.pedropathing.geometry.Pose Pose(double, double)'>
+        <annotation name='org.jetbrains.annotations.Contract'>
+            <val name="pure" val="true" />
+        </annotation>
+    </item>
+    <item name='com.pedropathing.geometry.Pose Pose(double, double, double)'>
+        <annotation name='org.jetbrains.annotations.Contract'>
+            <val name="pure" val="true" />
+        </annotation>
+    </item>
+    <item
+        name='com.pedropathing.geometry.Pose Pose(double, double, double, com.pedropathing.geometry.CoordinateSystem)'>
+        <annotation name='org.jetbrains.annotations.Contract'>
+            <val name="pure" val="true" />
+        </annotation>
+    </item>
+    <item name='com.pedropathing.geometry.Pose com.pedropathing.geometry.Pose withHeading(double)'>
+        <annotation name='org.jetbrains.annotations.NotNull' />
+    </item>
+    <item name='com.pedropathing.geometry.Pose com.pedropathing.geometry.Pose withY(double)'>
+        <annotation name='org.jetbrains.annotations.Contract'>
+            <val name="value" val="&quot;_-&gt;new&quot;" />
+            <val name="pure" val="true" />
+        </annotation>
+        <annotation name='org.jetbrains.annotations.NotNull' />
+    </item>
+</root>

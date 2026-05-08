@@ -77,7 +77,7 @@ suspend fun Sorter.fastShoot() {
     isLifting = true
     position = SorterImpl.SHOOTER_POSITIONS[2]
     delay(0.8.seconds)
-    for (i in 0 until artefacts.size)
+    for (i in artefacts.indices)
         artefacts[i] = null
     (this as? SorterImpl)?.run { size = 0 }
     isLifting = false
