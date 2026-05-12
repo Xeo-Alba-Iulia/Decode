@@ -5,7 +5,6 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.Vector
 import com.pedropathing.paths.HeadingInterpolator
-import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
@@ -742,19 +741,8 @@ class LateralZeroPowerAccelerationTuner(private val follower: Follower, private 
 class TranslationalTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private val forwards = pathChain(follower) {
-        pathConstantHeading(0.0) {
-            +Pose()
-            +Pose(DISTANCE, 0.0)
-        }
-    }
-
-    private val backwards = pathChain(follower) {
-        pathConstantHeading(0.0) {
-            +Pose(DISTANCE, 0.0)
-            +Pose()
-        }
-    }
+    private val forwards = follower.pathChain { pathConstantHeading(0.0, Pose(), Pose(DISTANCE, 0.0)) }
+    private val backwards = follower.pathChain { pathConstantHeading(0.0, Pose(DISTANCE, 0.0), Pose()) }
 
     override fun init() {}
 
@@ -816,18 +804,8 @@ class TranslationalTuner(private val follower: Follower, private val telemetryA:
 class HeadingTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private val forwards = pathChain(follower) {
-        pathConstantHeading(0.0) {
-            +Pose()
-            +Pose(DISTANCE, 0.0)
-        }
-    }
-    private val backwards = pathChain(follower) {
-        pathConstantHeading(0.0) {
-            +Pose(DISTANCE, 0.0)
-            +Pose()
-        }
-    }
+    private val forwards = follower.pathChain { pathConstantHeading(0.0, Pose(), Pose(DISTANCE, 0.0)) }
+    private val backwards = follower.pathChain { pathConstantHeading(0.0, Pose(DISTANCE, 0.0), Pose()) }
 
     override fun init() {}
 
@@ -893,18 +871,8 @@ class HeadingTuner(private val follower: Follower, private val telemetryA: Telem
 class DriveTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private val forwards = pathChain(follower, decelerationType = PathChain.DecelerationType.GLOBAL) {
-        pathConstantHeading(0.0) {
-            +Pose()
-            +Pose(DISTANCE, 0.0)
-        }
-    }
-    private val backwards = pathChain(follower, decelerationType = PathChain.DecelerationType.GLOBAL) {
-        pathConstantHeading(0.0) {
-            +Pose(DISTANCE, 0.0)
-            +Pose()
-        }
-    }
+    private val forwards = follower.pathChain { pathConstantHeading(0.0, Pose(), Pose(DISTANCE, 0.0)) }
+    private val backwards = follower.pathChain { pathConstantHeading(0.0, Pose(DISTANCE, 0.0), Pose()) }
 
     override fun init() {}
 
@@ -971,18 +939,8 @@ class DriveTuner(private val follower: Follower, private val telemetryA: Telemet
 class Line(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private val forwards = pathChain(follower) {
-        pathConstantHeading(0.0) {
-            +Pose()
-            +Pose(DISTANCE, 0.0)
-        }
-    }
-    private val backwards = pathChain(follower) {
-        pathConstantHeading(0.0) {
-            +Pose(DISTANCE, 0.0)
-            +Pose()
-        }
-    }
+    private val forwards = follower.pathChain { pathConstantHeading(0.0, Pose(), Pose(DISTANCE, 0.0)) }
+    private val backwards = follower.pathChain { pathConstantHeading(0.0, Pose(DISTANCE, 0.0), Pose()) }
 
     override fun init() {}
 
@@ -1045,19 +1003,15 @@ class Line(private val follower: Follower, private val telemetryA: Telemetry) : 
 class CentripetalTuner(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
     private var forward = true
 
-    private val forwards = pathChain(follower) {
-        path {
-            +Pose()
-            +Pose(abs(DISTANCE), 0.0)
-            +Pose(abs(DISTANCE), DISTANCE)
-        }
+
+    private val forwards = follower.pathChain {
+        path(Pose(), Pose(abs(DISTANCE), 0.0), Pose(abs(DISTANCE), DISTANCE))
     }
-    private val backwards = pathChain(follower) {
-        path(interpolator = HeadingInterpolator.tangent.reverse()) {
-            +Pose(abs(DISTANCE), DISTANCE)
-            +Pose(abs(DISTANCE), 0.0)
-            +Pose()
-        }
+    private val backwards = follower.pathChain {
+        path(
+            Pose(abs(DISTANCE), DISTANCE), Pose(abs(DISTANCE), 0.0), Pose(),
+            interpolator = HeadingInterpolator.tangent.reverse(),
+        )
     }
 
     override fun init() {}
@@ -1124,19 +1078,10 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
     private val interPose = Pose(DISTANCE, -DISTANCE, Math.toRadians(90.0))
     private val endPose = Pose(DISTANCE, DISTANCE, Math.toRadians(45.0))
 
-    private val triangle = pathChain(follower) {
-        pathLinearHeading {
-            +startPose
-            +interPose
-        }
-        pathLinearHeading {
-            +interPose
-            +endPose
-        }
-        pathLinearHeading {
-            +endPose
-            +startPose
-        }
+    private val triangle = follower.pathChain {
+        pathLinearHeading(startPose, interPose)
+        pathToPose(endPose)
+        pathToPose(startPose)
     }
 
     /**
@@ -1190,27 +1135,12 @@ class Triangle(private val follower: Follower, private val telemetryA: Telemetry
 @ContributesIntoMap(HardwareScope::class)
 @TuningOpModeKey(folder = "Tests", name = "Circle")
 class Circle(private val follower: Follower, private val telemetryA: Telemetry) : OpMode() {
-    private val circle = pathChain(follower) {
-        pathFacingPoint(0.0, RADIUS) {
-            +Pose()
-            +Pose(RADIUS, 0.0)
-            +Pose(RADIUS, RADIUS)
-        }
-        pathFacingPoint(0.0, RADIUS) {
-            +Pose(RADIUS, RADIUS)
-            +Pose(RADIUS, 2 * RADIUS)
-            +Pose(0.0, 2 * RADIUS)
-        }
-        pathFacingPoint(0.0, RADIUS) {
-            +Pose(0.0, 2 * RADIUS)
-            +Pose(-RADIUS, 2 * RADIUS)
-            +Pose(-RADIUS, RADIUS)
-        }
-        pathFacingPoint(0.0, RADIUS) {
-            +Pose(-RADIUS, RADIUS)
-            +Pose(-RADIUS, 0.0)
-            +Pose()
-        }
+    private val circle = follower.pathChain {
+        val targetPose = Pose(0.0, RADIUS)
+        pathFacingPoint(targetPose, Pose(), Pose(RADIUS, 0.0), Pose(RADIUS, RADIUS))
+        pathFacingPoint(targetPose, Pose(RADIUS, RADIUS), Pose(RADIUS, 2 * RADIUS), Pose(0.0, 2 * RADIUS))
+        pathFacingPoint(targetPose, Pose(0.0, 2 * RADIUS), Pose(-RADIUS, 2 * RADIUS), Pose(-RADIUS, RADIUS))
+        pathFacingPoint(targetPose, Pose(-RADIUS, RADIUS), Pose(-RADIUS, 0.0), Pose())
     }
 
     override fun start() {

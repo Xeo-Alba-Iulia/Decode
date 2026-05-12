@@ -56,14 +56,13 @@ repositories {
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://maven.brott.dev/" }
-    mavenLocal()
 }
 
 dependencies {
     implementation project(':FtcRobotController')
-    implementation("com.pedropathing:builder-dsl:1.0.0")
+    implementation project(':PedroPathingDSL')
 
-    implementation 'com.pedropathing:ftc:2.1.1'
+    implementation("com.pedropathing:ftc:2.1.1")
     implementation 'com.pedropathing:telemetry:1.0.0'
 
     implementation 'dev.nextftc:control:1.0.0'

@@ -2,27 +2,24 @@ package org.firstinspires.ftc.teamcode.opmode.auto
 
 import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket
-import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
+import com.pedropathing.paths.PathBuilderKt
 import com.pedropathing.paths.PathChain
 import com.pedropathing.paths.PathLinearExperimental
 import com.pedropathing.paths.pathChain
 import com.qualcomm.ftcrobotcontroller.BuildConfig
-import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.util.RobotLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.firstinspires.ftc.teamcode.Alliance
-import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.CoroutineOpMode
 import org.firstinspires.ftc.teamcode.opmode.lastPose
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.pedropathing.followAndIntake
 import org.firstinspires.ftc.teamcode.pedropathing.followSuspend
 import org.firstinspires.ftc.teamcode.shooter.*
-import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -31,11 +28,11 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(PathLinearExperimental::class)
 abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
-    private lateinit var follower: Follower
-    private lateinit var intake: Intake
-    private lateinit var sorter: Sorter
-    private lateinit var shooter: Shooter
-    private lateinit var limelight: Limelight3A
+    val follower by onInit { opModeGraph.follower.apply { setStartingPose(startPose) } }
+    val intake by onInit { opModeGraph.intake }
+    val sorter by onInit { opModeGraph.sorter.apply { position = 0.5 } }
+    val shooter: Shooter by onInit { opModeGraph.shooter.apply { angleDegrees = 0.0 } }
+    val limelight by onInit { opModeGraph.limelight.apply { pipelineSwitch(0); start() } }
     private lateinit var patternJob: Job
 
     private val isMirrored = alliance == Alliance.RED
@@ -59,70 +56,47 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     private val rawCornerBallPose = Pose(12.3, 14.0, 7 * PI / 6)
     private val cornerBallPose: Pose = mirrorAlliance(rawCornerBallPose)
 
-    private lateinit var cornerPath: PathChain
+    private fun initPathChain(block: PathBuilderKt.() -> Unit) = onInit { follower.pathChain { block() } }
 
-    private val scoreFromCornerPath = pathChain {
-        pathLinearHeading {
-            +cornerBallPose
-            +scorePose
-        }
+    private val scoreFromCornerPath by initPathChain { pathLinearHeading(cornerBallPose, scorePose) }
+    private val lastBallPositionPath by initPathChain {
+        pathLinearHeading(cornerBallPose, cornerBallPose.withX(cornerBallPose.x + 5.0))
     }
 
-    private val lastBallPositionPath = pathChain {
-        pathLinearHeading {
-            +cornerBallPose
-            +cornerBallPose.withX(cornerBallPose.x + 5.0)
-//            callbacks {
-//                addCallback { intake.isRunning = false }
-//            }
-        }
-    }
-
-    private val lastBallCollectPath = pathChain {
-        pathLinearHeading {
-            +cornerBallPose.withY(cornerBallPose.y + 5.0)
-            +mirrorAlliance(Pose(rawCornerBallPose.x + if (isMirrored) -5.0 else 5.0, rawCornerBallPose.y))
-            +mirrorAlliance(Pose(rawCornerBallPose.x + if (isMirrored) -10.0 else 10.0, rawCornerBallPose.y))
-            +mirrorAlliance(Pose(rawCornerBallPose.x, rawCornerBallPose.y, PI))
-            callbacks {
-                temporalCallback(200.milliseconds) { intake.isRunning = true }
-            }
+    private val lastBallCollectPath by initPathChain {
+        pathLinearHeading(
+            cornerBallPose.withY(cornerBallPose.y + 5.0),
+            mirrorAlliance(Pose(rawCornerBallPose.x + if (isMirrored) -5.0 else 5.0, rawCornerBallPose.y)),
+            mirrorAlliance(Pose(rawCornerBallPose.x + if (isMirrored) -10.0 else 10.0, rawCornerBallPose.y)),
+            mirrorAlliance(Pose(rawCornerBallPose.x, rawCornerBallPose.y, PI)),
+        ) {
+            temporalCallback(200.milliseconds) { intake.isRunning = true }
         }
     }
 
     @Volatile
     private var fiducialId = 21
-    private val scorePreload = pathChain {
-        pathLinearHeading {
-            +startPose
-            +scorePose
+    private val scorePreload by initPathChain { pathLinearHeading(startPose, scorePose) }
+    private val cornerPath by onInit {
+        follower.pathChain(decelerationType = PathChain.DecelerationType.NONE) {
+            pathLinearHeading(scorePose, cornerBallPreposition) {
+                parametricCallback(0.6) { this@FarAuto.follower.setMaxPower(0.6) }
+            }
         }
     }
-    private lateinit var firstBalls: PathChain
-    private val scoreFirstBalls = pathChain {
-        pathLinearHeading(endTime = 0.8) {
-            +firstBallPose
-            +scorePose
-        }
+    private val firstBalls by initPathChain {
+        pathLinearHeading(scorePose, mirrorAlliance(Pose(rawScorePose.x, rawFirstBallPose.y)), firstBallPositionPose)
+        pathToPose(firstBallPose)
     }
+    private val scoreFirstBalls by initPathChain { pathLinearHeading(firstBallPose, scorePose, endTime = 0.8) }
 
-    private val leavePathChain = pathChain {
-        pathConstantHeading(if (isMirrored) PI else -PI) {
-            +scorePose
-            +mirrorAlliance(Pose(rawScorePose.x + if (isMirrored) 10.0 else 10.0, rawScorePose.y))
-        }
+    private val leavePathChain by initPathChain {
+        val leavePose = mirrorAlliance(Pose(rawScorePose.x + 10.0, rawScorePose.y))
+        pathConstantHeading(if (isMirrored) PI else -PI, scorePose, leavePose)
     }
 
     override fun init() {
-        follower = opModeGraph.follower
-        telemetry = opModeGraph.telemetry
-        sorter = opModeGraph.sorter.apply { position = 0.5 }
-        intake = opModeGraph.intake
-        shooter = opModeGraph.shooter.apply { angleDegrees = 0.0 }
-        limelight = opModeGraph.limelight
-        follower.setStartingPose(startPose)
-        limelight.pipelineSwitch(0)
-        limelight.start()
+        super.init()
 
         patternJob = opModeScope.launch {
             while (isActive) {
@@ -139,44 +113,6 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
                 FtcDashboard.getInstance().sendTelemetryPacket(packet)
             }
             .launchIn(opModeScope + Dispatchers.IO)
-
-        cornerPath = pathChain(follower, decelerationType = PathChain.DecelerationType.NONE) {
-            pathLinearHeading {
-                +scorePose
-                +cornerBallPreposition
-                callbacks { parametricCallback(0.6) { follower.setMaxPower(0.6) } }
-            }
-//            path(
-//                interpolator = HeadingInterpolator.piecewise(
-//                    HeadingInterpolator.PiecewiseNode(
-//                        0.0,
-//                        0.6,
-//                        HeadingInterpolator.constant(cornerBallPreposition.heading)
-//                    ),
-//                    HeadingInterpolator.PiecewiseNode(
-//                        0.6, 1.0, HeadingInterpolator.linear(
-//                            cornerBallPreposition.heading,
-//                            cornerBallPose.heading
-//                        )
-//                    )
-//                )
-//            ) {
-//                +cornerBallPreposition
-//                +cornerBallPose
-//                callbacks { addCallback { follower.setMaxPower(0.7) } }
-//            }
-        }
-        firstBalls = pathChain(follower) {
-            pathLinearHeading(endTime = 0.8) {
-                +scorePose
-                +mirrorAlliance(Pose(rawScorePose.x, rawFirstBallPose.y))
-                +firstBallPositionPose
-            }
-            pathLinearHeading {
-                +firstBallPositionPose
-                +firstBallPose
-            }
-        }
     }
 
     override fun init_loop() {
