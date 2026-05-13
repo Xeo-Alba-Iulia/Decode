@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.opmode
 
 import android.util.Log
 import com.acmerobotics.dashboard.FtcDashboard
-import com.acmerobotics.dashboard.config.Config
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
@@ -29,7 +28,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
-@Config
 abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: Int) : CoroutineOpMode() {
 
     constructor(alliance: Alliance, limelightPipeline: Int) : this(alliance == Alliance.RED, limelightPipeline)
@@ -65,12 +63,8 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     private val restartCameraMutex = Mutex()
 
     companion object {
-        @JvmField
-        var SORTER_POSITION_MULTIPLIER = -0.02
-        @JvmField
-        var TURET_OFFSET_ADJUSTMENT_STEP = 1
-
-        const val TAG = "TeleOp"
+        const val SORTER_POSITION_MULTIPLIER = -0.02
+        const val TURET_OFFSET_ADJUSTMENT_STEP = 1
     }
 
     override fun init() {

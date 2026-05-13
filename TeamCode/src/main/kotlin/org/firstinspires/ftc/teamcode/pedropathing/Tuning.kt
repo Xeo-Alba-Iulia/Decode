@@ -62,6 +62,7 @@ fun stopRobot(follower: Follower) {
 }
 
 @MapKey(unwrapValue = false)
+@Retention(AnnotationRetention.SOURCE)
 annotation class TuningOpModeKey(val folder: String, val name: String)
 
 @ContributesIntoMap(HardwareScope::class)

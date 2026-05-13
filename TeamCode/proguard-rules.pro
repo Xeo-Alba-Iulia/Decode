@@ -1,21 +1,28 @@
--keep @com.qualcomm.robotcore.eventloop.opmode.Autonomous class **
--keep @com.qualcomm.robotcore.eventloop.opmode.TeleOp class **
+-keepattributes RuntimeVisibleAnnotations
+-keep @interface com.acmerobotics.dashboard.config.Config
+-keep @interface com.qualcomm.robotcore.eventloop.opmode.*
+-keep @interface org.firstinspires.ftc.ftccommon.external.*
 
--keepclassmembers class ** {
-    @org.firstinspires.ftc.ftccommon.external.OnCreate <methods>;
+-keep,allowoptimization @com.qualcomm.robotcore.eventloop.opmode.Autonomous class **
+-keep,allowoptimization @com.qualcomm.robotcore.eventloop.opmode.TeleOp class **
+
+-keepclasseswithmembers,allowobfuscation,allowoptimization class ** {
+    @org.firstinspires.ftc.ftccommon.external.* <methods>;
 }
--keepclassmembers class ** {
-    @org.firstinspires.ftc.ftccommon.external.OnCreateEventLoop <methods>;
+-keepclasseswithmembers,allowobfuscation,allowoptimization class ** {
+    @com.qualcomm.robotcore.eventloop.opmode.OpModeRegistrar <methods>;
 }
--keepclassmembers class ** {
-    @org.firstinspires.ftc.ftccommon.external.OnCreateMenu <methods>;
+
+-keepnames @com.acmerobotics.dashboard.config.Config class ** {
+    public static !final <fields>;
 }
--keepclassmembers class ** {
-    @org.firstinspires.ftc.ftccommon.external.OnDestroy <methods>;
-}
--keepclassmembers class ** {
-    @org.firstinspires.ftc.ftccommon.external.WebHandlerRegistrar <methods>;
-}
+
+-optimizationpasses 10
+-overloadaggressively
+-repackageclasses 'o'
+-allowaccessmodification
+
+-whyareyoukeeping class org.firstinspires.ftc.vision.VisionPortal
 
 -dontwarn javax.xml.stream.XMLInputFactory
 -dontwarn javax.xml.stream.XMLStreamReader
