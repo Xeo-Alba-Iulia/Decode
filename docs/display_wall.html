@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team Xeo Programming Display Wall</title>
+  <style>
+    :root {
+      --ink: #141414;
+      --muted: #5f6168;
+      --paper: #f8f6f0;
+      --panel: #ffffff;
+      --line: #d9d4c8;
+      --red: #e33f36;
+      --green: #1e9b62;
+      --blue: #1d68d8;
+      --yellow: #f2bd2e;
+      --dark: #20232a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #e8e4da;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .wall {
+      width: min(100vw, 150vh, 1800px);
+      aspect-ratio: 3 / 2;
+      background:
+        linear-gradient(90deg, rgba(20, 20, 20, .04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(20, 20, 20, .04) 1px, transparent 1px),
+        var(--paper);
+      background-size: 32px 32px;
+      padding: 2%;
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      grid-template-rows: 1.22fr .78fr;
+      gap: 1.4%;
+      overflow: hidden;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, .92);
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(36, 32, 24, .1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-top: 5px solid var(--red);
+      pointer-events: none;
+    }
+
+    .dsl {
+      padding: 3.2% 3.5% 3%;
+    }
+
+    .dsl-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .dsl h1 {
+      max-width: 22ch;
+      font-size: clamp(22px, 2.75vmin, 46px);
+      line-height: .98;
+    }
+
+    .qr-card {
+      width: clamp(66px, 7.5vmin, 112px);
+      color: var(--muted);
+      text-decoration: none;
+      text-align: center;
+      font-size: clamp(7px, .56vmin, 10px);
+      line-height: 1.1;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .qr-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      margin-bottom: 4px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: white;
+      padding: 4px;
+    }
+
+    .strategy {
+      padding: 3% 3.5%;
+    }
+
+    .systems {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+      display: grid;
+      grid-template-rows: auto repeat(3, 1fr);
+      gap: 1.2%;
+      padding: 3% 3.2%;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--red);
+      font-size: clamp(8px, .72vmin, 12px);
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 17ch;
+      font-size: clamp(28px, 3.9vmin, 62px);
+      line-height: .95;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: clamp(19px, 2.2vmin, 36px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h3 {
+      font-size: clamp(14px, 1.35vmin, 22px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin-top: 10px;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: clamp(10px, .9vmin, 15px);
+      line-height: 1.25;
+      font-weight: 650;
+    }
+
+    .code-ad {
+      margin-top: 12px;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      background: #0d1117;
+      color: #e6edf3;
+      overflow: hidden;
+    }
+
+    .code-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 11px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
+      color: #7d8590;
+      font-size: clamp(8px, .7vmin, 11px);
+      font-weight: 800;
+    }
+
+    pre {
+      margin: 0;
+      padding: 8px 10px 10px;
+      white-space: pre-wrap;
+      color: #e6edf3;
+      font: 800 clamp(8px, .68vmin, 12px) / 1.18 "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .keyword {
+      color: #ff7b72;
+    }
+
+    .type {
+      color: #ffa657;
+    }
+
+    .function {
+      color: #d2a8ff;
+    }
+
+    .number {
+      color: #79c0ff;
+    }
+
+    .property {
+      color: #a5d6ff;
+    }
+
+    .dsl-points {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .benefits {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .benefits-title {
+      margin-top: 10px;
+      font-size: clamp(10px, .82vmin, 14px);
+      line-height: 1.1;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .benefit {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfaf6;
+      padding: 9px 10px;
+    }
+
+    .benefit strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: clamp(9px, .76vmin, 13px);
+    }
+
+    .benefit span {
+      display: block;
+      color: var(--muted);
+      font-size: clamp(8px, .64vmin, 11px);
+      line-height: 1.18;
+      font-weight: 650;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      background: #fbfaf6;
+      min-height: 58px;
+    }
+
+    .mini strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: clamp(10px, .82vmin, 14px);
+    }
+
+    .mini span {
+      color: var(--muted);
+      font-size: clamp(8px, .68vmin, 12px);
+      line-height: 1.18;
+      font-weight: 650;
+    }
+
+    .strategy-grid {
+      height: calc(100% - 34px);
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 10px;
+    }
+
+    .field {
+      position: relative;
+      min-height: 0;
+      border: 2px dashed rgba(32, 35, 42, .65);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(32, 35, 42, .08) 25%, transparent 25%),
+        linear-gradient(225deg, rgba(32, 35, 42, .08) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(32, 35, 42, .08) 25%, transparent 25%),
+        linear-gradient(315deg, rgba(32, 35, 42, .08) 25%, #f3f1e9 25%);
+      background-position: 14px 0, 14px 0, 0 0, 0 0;
+      background-size: 28px 28px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .placeholder-label {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      z-index: 2;
+      border: 1px dashed rgba(20, 20, 20, .55);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, .72);
+      padding: 4px 7px;
+      color: var(--dark);
+      font-size: clamp(8px, .62vmin, 10px);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .strategy-placeholder {
+      width: 78%;
+      border: 2px solid rgba(32, 35, 42, .75);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .78);
+      padding: 14px 16px;
+      text-align: center;
+      font-size: clamp(11px, .9vmin, 16px);
+      line-height: 1.22;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .strategy-placeholder span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: clamp(8px, .62vmin, 11px);
+      font-weight: 750;
+      text-transform: none;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .stat {
+      min-height: 0;
+      border-left: 5px solid var(--red);
+      border-radius: 8px;
+      background: #fbfaf6;
+      padding: 8px 10px;
+      display: grid;
+      align-content: center;
+    }
+
+    .stat:nth-child(2) {
+      border-left-color: var(--blue);
+    }
+
+    .stat:nth-child(3) {
+      border-left-color: var(--green);
+    }
+
+    .stat:nth-child(4) {
+      border-left-color: var(--yellow);
+    }
+
+    .value {
+      font-size: clamp(19px, 2.8vmin, 44px);
+      line-height: .9;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .label {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: clamp(8px, .68vmin, 12px);
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .system-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 7px;
+      border-bottom: 2px solid var(--dark);
+    }
+
+    .tag {
+      border: 2px solid var(--dark);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: clamp(8px, .62vmin, 10px);
+      font-weight: 950;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .system-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: stretch;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfaf6;
+      padding: 9px;
+      min-height: 0;
+    }
+
+    .diagram {
+      aspect-ratio: 1 / 1;
+      height: 100%;
+      width: auto;
+      align-self: stretch;
+      justify-self: start;
+      border-radius: 8px;
+      background: #eef0ef;
+      border: 2px solid var(--dark);
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .diagram .placeholder-label {
+      left: 8px;
+      top: 8px;
+      font-size: clamp(7px, .52vmin, 9px);
+    }
+
+    .drive-vis {
+      display: grid;
+      place-items: center;
+    }
+
+    .chassis {
+      width: 54%;
+      aspect-ratio: 1.15;
+      border-radius: 8px;
+      border: 3px solid var(--dark);
+      background: #ffffff;
+      position: relative;
+      transform: rotate(-8deg);
+    }
+
+    .wheel {
+      position: absolute;
+      width: 18%;
+      height: 32%;
+      background: var(--blue);
+      border-radius: 999px;
+      border: 2px solid var(--dark);
+    }
+
+    .wheel:nth-child(1) { left: -13%; top: 12%; }
+    .wheel:nth-child(2) { right: -13%; top: 12%; }
+    .wheel:nth-child(3) { left: -13%; bottom: 12%; }
+    .wheel:nth-child(4) { right: -13%; bottom: 12%; }
+
+    .pin {
+      position: absolute;
+      width: 18%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--red);
+      left: 41%;
+      top: 41%;
+    }
+
+    .sorter-vis {
+      display: grid;
+      place-items: center;
+    }
+
+    .disc {
+      width: 56%;
+      aspect-ratio: 1;
+      border: 3px solid var(--dark);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, var(--dark) 0 10%, transparent 10%),
+        conic-gradient(var(--red) 0 33%, var(--green) 33% 66%, var(--yellow) 66% 100%);
+      position: relative;
+      box-shadow: inset 0 0 0 8px rgba(255, 255, 255, .75);
+    }
+
+    .sensor {
+      position: absolute;
+      width: 24%;
+      height: 12%;
+      right: -8%;
+      top: 44%;
+      border-radius: 4px;
+      background: var(--blue);
+      border: 2px solid var(--dark);
+    }
+
+    .shooter-vis {
+      display: grid;
+      place-items: center;
+    }
+
+    .turret {
+      width: 56%;
+      height: 28%;
+      border: 3px solid var(--dark);
+      border-radius: 999px 10px 10px 999px;
+      background: #fff;
+      position: relative;
+      transform: rotate(-18deg);
+    }
+
+    .turret::before {
+      content: "";
+      position: absolute;
+      width: 34%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--red);
+      border: 3px solid var(--dark);
+      left: -8%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .turret::after {
+      content: "";
+      position: absolute;
+      width: 45%;
+      height: 10px;
+      right: -42%;
+      top: 50%;
+      background: var(--yellow);
+      transform: translateY(-50%);
+      box-shadow: 22px 0 0 var(--yellow), 44px 0 0 var(--yellow);
+    }
+
+    .system-copy {
+      display: grid;
+      align-content: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .system-copy p {
+      color: var(--muted);
+      font-size: clamp(9px, .72vmin, 13px);
+      line-height: 1.22;
+      font-weight: 650;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      background: var(--dark);
+      color: white;
+      padding: 3px 7px;
+      font-size: clamp(8px, .6vmin, 10px);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .wall {
+        width: 100vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wall" aria-label="Team Xeo programming display wall">
+    <section class="panel dsl" aria-labelledby="dsl-title">
+      <div class="dsl-header">
+        <div>
+          <p class="eyebrow">Open-source motion language</p>
+          <h1 id="dsl-title">Pedro Pathing DSL</h1>
+          <p class="lead">A Kotlin layer over PedroPathing that lets us write autonomous paths like a readable route instead of wiring points manually.</p>
+        </div>
+        <a class="qr-card" href="https://github.com/Xeo-Alba-Iulia/PedroPathingDSL/" aria-label="Open PedroPathingDSL GitHub repository">
+          <img alt="QR code for PedroPathingDSL GitHub repository" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&amp;margin=1&amp;data=https%3A%2F%2Fgithub.com%2FXeo-Alba-Iulia%2FPedroPathingDSL%2F">
+          GitHub repo
+        </a>
+      </div>
+
+      <div class="code-ad" aria-label="PedroPathingDSL example">
+        <div class="code-top">
+          <span>autonomous.kt</span>
+          <span>Kotlin</span>
+        </div>
+        <pre><span class="keyword">val</span> collectGateBalls = <span class="function">pathChain</span> {
+  <span class="function">path</span>(scorePose, <span class="type">Pose</span>(<span class="number">40.0</span>, <span class="number">62.0</span>), hitGatePose)
+  <span class="function">pathToPose</span>(gatePose)
+}
+
+follower.<span class="function">followAndIntake</span>(intake, sorter, <span class="property">timeout</span> = <span class="number">4</span>.seconds) {
+  <span class="function">followSuspend</span>(collectGateBalls)
+  <span class="function">holdSuspend</span>(gatePose, <span class="number">2</span>.seconds)
+}</pre>
+      </div>
+
+      <div class="dsl-points">
+        <div class="mini">
+          <strong>5 lines</strong>
+          <span>instead of 20+ lines for the same point sequence</span>
+        </div>
+        <div class="mini">
+          <strong>Reactive</strong>
+          <span>movement can stop as soon as intake is full</span>
+        </div>
+        <div class="mini">
+          <strong>Reusable</strong>
+          <span>shared paths mirror between Red and Blue autos</span>
+        </div>
+      </div>
+
+      <p class="benefits-title">Why our DSL + coroutines improves standard PedroPathing</p>
+      <div class="benefits" aria-label="Benefits of PedroPathingDSL with coroutines">
+        <div class="benefit">
+          <strong>Declarative routes</strong>
+          <span>Paths read as movement intent instead of manual Pedro point setup and object wiring.</span>
+        </div>
+        <div class="benefit">
+          <strong>Coroutine cancellation</strong>
+          <span>`followAndIntake` can stop the active path immediately when sensors report that collection is complete.</span>
+        </div>
+        <div class="benefit">
+          <strong>Parallel mechanisms</strong>
+          <span>Drive, intake, shooter calculations, and sorter timing run together without blocking driver response.</span>
+        </div>
+        <div class="benefit">
+          <strong>Cleaner autonomous</strong>
+          <span>Autos become linear sequences like move, wait, collect, and shoot instead of large state machines.</span>
+        </div>
+        <div class="benefit">
+          <strong>Defensive hold</strong>
+          <span>`holdSuspend` uses Pedro vectors to resist pushes while scoring tasks continue in the background.</span>
+        </div>
+        <div class="benefit">
+          <strong>Fast tuning</strong>
+          <span>Callback timing, path velocity, and cycle count can be adjusted quickly between matches.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel strategy" aria-labelledby="strategy-title">
+      <p class="eyebrow">Match strategy</p>
+      <h2 id="strategy-title">Choose the lane. Keep the cycles moving.</h2>
+
+      <div class="strategy-grid">
+        <div class="field" aria-label="Autonomous and cycle route diagram">
+          <span class="placeholder-label">replace with portfolio graphic</span>
+          <div class="strategy-placeholder">
+            Auto strategy graphic
+            <span>Use the Close / Far / Solo autonomous route diagram from the portfolio.</span>
+          </div>
+        </div>
+
+        <div class="stats" aria-label="Strategy statistics">
+          <div class="stat">
+            <div class="value">5-7s</div>
+            <div class="label">current cycle time</div>
+          </div>
+          <div class="stat">
+            <div class="value">0.4s</div>
+            <div class="label">rapid 3-artifact shot</div>
+          </div>
+          <div class="stat">
+            <div class="value">48</div>
+            <div class="label">average TeleOp artifacts</div>
+          </div>
+          <div class="stat">
+            <div class="value">TBD</div>
+            <div class="label">solo points per game</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel systems" aria-labelledby="systems-title">
+      <div class="system-title">
+        <div>
+          <p class="eyebrow">Last version logic</p>
+          <h2 id="systems-title">Three main systems</h2>
+        </div>
+        <span class="tag">current robot</span>
+      </div>
+
+      <article class="system-card">
+        <div class="diagram drive-vis" aria-hidden="true">
+          <span class="placeholder-label">drive render</span>
+          <div class="chassis">
+            <span class="wheel"></span>
+            <span class="wheel"></span>
+            <span class="wheel"></span>
+            <span class="wheel"></span>
+            <span class="pin"></span>
+          </div>
+        </div>
+        <div class="system-copy">
+          <h3>Drive</h3>
+          <p>Four mecanum motors use GoBilda Pinpoint localization and PedroPathing follower control in both Autonomous and TeleOp.</p>
+          <p>The driver can switch between field-centric movement and robot-centric movement depending on match pressure.</p>
+          <div class="chips">
+            <span class="chip">Pinpoint</span>
+            <span class="chip">Pedro follower</span>
+            <span class="chip">field-centric</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="system-card">
+        <div class="diagram sorter-vis" aria-hidden="true">
+          <span class="placeholder-label">sorter render</span>
+          <div class="disc">
+            <span class="sensor"></span>
+          </div>
+        </div>
+        <div class="system-copy">
+          <h3>Sorter</h3>
+          <p>The v4 sorter uses side color sensors for per-slot validation and the Axon servo load wire for automatic jam detection.</p>
+          <p>Before shooting, software computes every valid slot position and chooses the closest path to minimize rotation time.</p>
+          <div class="chips">
+            <span class="chip">3 slots</span>
+            <span class="chip">color sensors</span>
+            <span class="chip">jam response</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="system-card">
+        <div class="diagram shooter-vis" aria-hidden="true">
+          <span class="placeholder-label">shooter render</span>
+          <div class="turret"></div>
+        </div>
+        <div class="system-copy">
+          <h3>Shooter</h3>
+          <p>The v4 shooter computes trajectory from current flywheel velocity, then dynamically adjusts the hood angle instead of waiting for full speed recovery.</p>
+          <p>Camera and odometry both estimate turret angle and range, so the robot can recover alignment after contact.</p>
+          <div class="chips">
+            <span class="chip">PID + FF</span>
+            <span class="chip">AprilTags</span>
+            <span class="chip">AutoShoot</span>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
