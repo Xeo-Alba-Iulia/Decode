@@ -299,6 +299,7 @@ Intake versions:
 - **v1** - Basic roller motor tied to a button input.
 - **v2** - Added rollers at the sorter input to retain artifacts that the sorter's centrifugal force would otherwise eject.
 - **v3** - Added two side bumpers used to open the gate during the Close cycle.
+- **v4** - Added a small mechanical bias that gives one side of the intake priority over the other. This guides artifacts into a predictable order, preventing multiple artifacts from reaching the same point at the same time and getting stuck. The change improved collection time and reliability while requiring no code changes, because the existing intake logic, sorter detection, and autonomous routines continued to use the same software interface.
 
 ### Sorter
 
@@ -320,9 +321,9 @@ Transfer versions:
 - **v1** - Used a continuous-rotation servo.
 - **v2** - Switched from a servo to a motor for faster operation, with negligible programming changes.
 
-### Parking
+### Removing Parking
 
-The parking mechanism is controlled by a single motor. It controls the endgame tilt mechanism, allowing both alliance robots to be parked. The turret rotates to reposition the center of mass to the rear.
+Removing the parking system reduced robot mass and shortened our cycle time. The lighter robot can complete one additional cycle during a match and now consistently scores 18 artifacts in Close Auto. The old system also kept a motor holding the parking plate in tension for the entire match, draining the battery faster and making late-game shooting less consistent.
 
 ## Shooter Programming
 
