@@ -8,6 +8,7 @@ import org.firstinspires.ftc.teamcode.ArtefactType
 import org.firstinspires.ftc.teamcode.constrainedDouble
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
+import org.firstinspires.ftc.teamcode.shooter.ShooterConfig
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
@@ -56,7 +57,7 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         limelight?.latestResult?.takeIf { it.isValid }?.let {
             val pose = it.fiducialResults.single().targetPoseCameraSpace.position
-            val distance = sqrt(pose.x.pow(2) + pose.z.pow(2))
+            val distance = sqrt(pose.x.pow(2) + pose.z.pow(2)) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
             telemetry.addData("Distance", distance)
             if (gamepad1.triangleWasPressed())
                 shooter.angleDegrees -= it.tx

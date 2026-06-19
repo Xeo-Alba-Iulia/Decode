@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.shooter
 
 import android.util.Log
+import com.acmerobotics.dashboard.config.Config
 import com.pedropathing.geometry.Pose
 import com.pedropathing.math.MathFunctions
 import com.qualcomm.robotcore.util.RobotLog
@@ -14,8 +15,16 @@ import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+
+@Config
+object ShooterConfig {
+    @JvmField
+    var SHOOTER_BACK_OFFSET_INCHES = 2.0
+}
 
 interface Shooter {
     var angleDegrees: Double
@@ -24,15 +33,23 @@ interface Shooter {
     fun shoot(distanceFlow: Flow<Double>): Job
     fun shoot(currentDistance: () -> Double) = shoot(flow { while (true) emit(currentDistance()) })
 
-    data class State(val velocity: Double, val canShoot: Boolean)
+    data class State(val velocity: Double, val canShoot: Boolean, val trajectoryF: Double = Double.NaN)
 }
 
-fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
-    val angle = atan2(
-        targetPose.y - currentPose.y,
-        targetPose.x - currentPose.x
+fun getShooterPose(robotPose: Pose): Pose =
+    Pose(
+        robotPose.x - cos(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
+        robotPose.y - sin(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
+        robotPose.heading
     )
-    val normalizedAngle = MathFunctions.normalizeAngle(currentPose.heading).let {
+
+fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
+    val shooterPose = getShooterPose(currentPose)
+    val angle = atan2(
+        targetPose.y - shooterPose.y,
+        targetPose.x - shooterPose.x
+    )
+    val normalizedAngle = MathFunctions.normalizeAngle(shooterPose.heading).let {
         if (it > PI + angle) it - 2 * PI else it
     }
     val maxSetAngle = ShooterImpl.MAX_TURRET_ANGLE + 20.0

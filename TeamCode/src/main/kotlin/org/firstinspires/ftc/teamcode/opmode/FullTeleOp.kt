@@ -17,8 +17,10 @@ import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.auto.mirrorAlliance
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
+import org.firstinspires.ftc.teamcode.shooter.ShooterConfig
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
+import org.firstinspires.ftc.teamcode.shooter.getShooterPose
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
@@ -173,9 +175,10 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
             }
 
         if (!isOdometryDisabled) {
+            val shooterPose = getShooterPose(follower.pose)
             shooter.alignToPose(follower.pose, goalPose, turretOffset)
             if (distanceTimeMark.hasPassedNow()) {
-                val distance = (hypot(9.0 - follower.pose.x, (144.0 - 9.0) - follower.pose.y)) / 39.37
+                val distance = (hypot(goalPose.x - shooterPose.x, goalPose.y - shooterPose.y)) / 39.37
                 distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
             }
         }
