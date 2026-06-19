@@ -40,17 +40,17 @@ class ShooterImpl(
         const val MAX_TURRET_ANGLE = 90.0
     }
 
-    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 3.01, 3.42)
+    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 2.95,3.32, 3.54)
 
     private val ticksToVelocity = InterpLUT(
-        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2000.0, 2400.0),
-        listOf(5.24, 5.535, 5.8, 6.04, 6.18, 6.68),
+        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2450.0,2570.0, 2750.0),
+        listOf(5.24, 5.535, 5.8, 6.04, 6.18,6.32, 6.68),
         true
     ).createLUT()
 
     private val distanceToTicks = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2300.0, 2400.0),
+        /* output = */ listOf(1460.0, 1580.0, 1680.0, 1780.0, 1850.0, 1980.0, 2600.0,2750.0, 2800.0),
         /* safeMode = */ true
     ).createLUT()
 
@@ -104,7 +104,7 @@ class ShooterImpl(
         repetitions: Int = 4
     ): Double? {
         val g = 9.5
-        val height = 0.8
+        val height = 0.95
         val d = distance
         val v = velocity
         val sin = sin(guess)
