@@ -10,10 +10,9 @@ import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.ShooterConfig
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
+import org.firstinspires.ftc.teamcode.shooter.limelightGroundDistanceMeters
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 @TeleOp(group = "Systems")
 class ShooterOpMode : CoroutineOpMode() {
@@ -23,13 +22,13 @@ class ShooterOpMode : CoroutineOpMode() {
     var limelight: Limelight3A? = null
     var shooterJob: Job? = null
     var velocity by constrainedDouble(1000.0..3000.0, 1500.0)
-    var hood by constrainedDouble(0.0..1.0, 0.5)
+    var hood by constrainedDouble(0.0..1.0, 1.0)
+    var distance = 0.0
 
     override fun init() {
         intake = opModeGraph.intake
         sorter = opModeGraph.sorter.apply { prepareIntake() }
         shooter = opModeGraph.shooter
-        telemetry = opModeGraph.telemetry
         telemetry = opModeGraph.telemetry
         limelight = opModeGraph.limelight.apply { pipelineSwitch(1) }
     }
@@ -48,20 +47,27 @@ class ShooterOpMode : CoroutineOpMode() {
         }
         val diff = gamepad1.right_trigger - gamepad1.left_trigger
         if (diff != 0f)
-            velocity += diff
-        if (gamepad1.left_stick_y != 0f)
-            hood += gamepad1.left_stick_y * (-0.001)
+            velocity += diff * 5.0
         when {
             gamepad1.dpad_right -> shooter.angleDegrees -= 1.0
             gamepad1.dpad_left -> shooter.angleDegrees += 1.0
         }
-        limelight?.latestResult?.takeIf { it.isValid }?.let {
-            val pose = it.fiducialResults.single().targetPoseCameraSpace.position
-            val distance = sqrt(pose.x.pow(2) + pose.z.pow(2)) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
-            telemetry.addData("Distance", distance)
-            if (gamepad1.triangleWasPressed())
-                shooter.angleDegrees -= it.tx
-        }
+
+        val hasFormulaShot = limelight
+            ?.latestResult
+            ?.takeIf { it.isValid }
+            ?.let { result ->
+                val fiducial = result.fiducialResults.singleOrNull() ?: return@let false
+                val pose = fiducial.targetPoseCameraSpace.position
+                distance = limelightGroundDistanceMeters(pose.x, pose.z) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
+                val calculatedHood = shooter.hoodForTicks(distance, velocity)
+                if (calculatedHood != null) {
+                    hood = calculatedHood
+                }
+                if (gamepad1.triangleWasPressed())
+                    shooter.angleDegrees -= result.tx
+                calculatedHood != null
+            } ?: false
 
         when {
             gamepad1.squareWasPressed() -> sorter.isLifting = true
@@ -88,6 +94,8 @@ class ShooterOpMode : CoroutineOpMode() {
         }
 
         telemetry.addData("Hood", hood)
+        telemetry.addData("Distance", distance)
+        telemetry.addData("Formula Shot", hasFormulaShot)
         telemetry.addData("Target Speed", velocity)
         telemetry.addData("Actual speed", shooter.stateFlow.value.velocity)
     }

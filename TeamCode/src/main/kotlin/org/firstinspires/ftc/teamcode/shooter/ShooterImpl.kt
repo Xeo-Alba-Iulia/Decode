@@ -123,6 +123,10 @@ class ShooterImpl(
         }
     }
 
+    fun hoodForTicks(distance: Double, ticksPerSecond: Double): Double? =
+        findLaunchAngle(distance, ticksToVelocity[ticksPerSecond])
+            ?.let { hoodLUT[Math.toDegrees(it)] }
+
     private val hoodFilter = LowPassFilter(0.6, 45.0)
 
     var isUpdatingHood = true
@@ -186,4 +190,3 @@ class ShooterImpl(
             }
         }
 }
-

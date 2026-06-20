@@ -16,7 +16,10 @@ import org.firstinspires.ftc.teamcode.sorter.SorterImpl
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,6 +27,8 @@ import kotlin.time.Duration.Companion.seconds
 object ShooterConfig {
     @JvmField
     var SHOOTER_BACK_OFFSET_INCHES = 2.0
+    @JvmField
+    var APRIL_TAG_HEIGHT_METERS = 0.74
 }
 
 interface Shooter {
@@ -42,6 +47,11 @@ fun getShooterPose(robotPose: Pose): Pose =
         robotPose.y - sin(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
         robotPose.heading
     )
+
+fun limelightGroundDistanceMeters(xMeters: Double, zMeters: Double): Double {
+    val limelightDistance = hypot(xMeters, zMeters)
+    return sqrt(max(0.0, limelightDistance * limelightDistance - ShooterConfig.APRIL_TAG_HEIGHT_METERS * ShooterConfig.APRIL_TAG_HEIGHT_METERS))
+}
 
 fun Shooter.alignToPose(currentPose: Pose, targetPose: Pose, offset: Double = 0.0) {
     val shooterPose = getShooterPose(currentPose)

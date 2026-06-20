@@ -21,12 +21,12 @@ import org.firstinspires.ftc.teamcode.shooter.ShooterConfig
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.getShooterPose
+import org.firstinspires.ftc.teamcode.shooter.limelightGroundDistanceMeters
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.math.max
-import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -170,7 +170,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
             ?.takeIf { it.isValid() && gamepad1.crossWasPressed() }?.let { result ->
                 turretOffset -= result.tx
                 val pos = result.fiducialResults.single().targetPoseCameraSpace.position
-                distanceFlow.value = sqrt(pos.z * pos.z + pos.x * pos.x) + 0.15
+                distanceFlow.value = limelightGroundDistanceMeters(pos.x, pos.z) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
                 distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
             }
 
