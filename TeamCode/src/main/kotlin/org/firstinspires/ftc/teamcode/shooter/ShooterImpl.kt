@@ -43,8 +43,8 @@ class ShooterImpl(
     val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 2.95,3.32, 3.54)
 
     private val ticksToVelocity = InterpLUT(
-        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2550.0,2670.0, 2750.0),
-        listOf(5.24, 5.535, 5.8, 6.04, 6.18,6.32, 6.68),
+        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2450.0,2670.0, 2750.0),
+        listOf(5.24, 5.535, 5.8, 6.04, 6.12,6.22, 6.68),
         true
     ).createLUT()
 
@@ -104,7 +104,7 @@ class ShooterImpl(
         repetitions: Int = 4
     ): Double? {
         val g = 9.5
-        val height = 0.95
+        val height = 0.85
         val d = distance
         val v = velocity
         val sin = sin(guess)
