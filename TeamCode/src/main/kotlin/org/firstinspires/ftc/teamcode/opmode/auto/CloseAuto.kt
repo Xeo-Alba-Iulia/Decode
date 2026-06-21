@@ -53,25 +53,25 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
-    private val goalPose = Pose(5.0, 141.5 - 5.0)
+    private val goalPose = Pose(12.0, 141.5 - 12.0)
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
     private val scorePose = Pose(62.0, 78.0, Math.toRadians(-140.0))
     private val scoreLastBallsPose = Pose(57.0, 111.0)
 
     private val collectBalls1Pose = Pose(12.0, 57.0)
-    private val collectBalls2Pose = Pose(21.0, 84.0)
+    private val collectBalls2Pose = Pose(18.0, 84.0)
 
-    private val gatePose = Pose(14.2, 61.8, Math.toRadians(145.0))
+    private val gatePose = Pose(14.0, 59.5, Math.toRadians(140.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
 
         val collectBalls1 = pathChain { path(scorePose, Pose(39.0, 57.0), collectBalls1Pose) }
-        val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0)) }
+        val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0), collectBalls2Pose) }
         val collectGateBalls = pathChain {
-            val hitGatePose = Pose(24.0, 66.0, PI)
-            path(scorePose, Pose(40.0, 62.0), hitGatePose)
+            val hitGatePose = Pose(23.0, 60.5, PI)
+            path(scorePose, Pose(40.0, 59.0), hitGatePose)
             pathToPose(gatePose)
         }
 
@@ -149,7 +149,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 repeat(3) {
                     follower.followAndIntake(intake, sorter, isDetectingColor = false, timeout = 4.seconds) {
                         followSuspend(paths.collectGateBalls)
-                        holdSuspend(gatePose, 2.seconds)
+                        holdSuspend(gatePose, 3.seconds)
                     }
                     intake.isOuttake = true
                     follower.followSuspendFlow(paths.scoreGateBalls).alignShooterFollowing(4.0).collect()

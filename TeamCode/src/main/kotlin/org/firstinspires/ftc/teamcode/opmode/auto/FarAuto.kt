@@ -91,7 +91,7 @@ abstract class FarAuto(alliance: Alliance) : CoroutineOpMode() {
     private val scoreFirstBalls by initPathChain { pathLinearHeading(firstBallPose, scorePose, endTime = 0.8) }
 
     private val leavePathChain by initPathChain {
-        val leavePose = mirrorAlliance(Pose(rawScorePose.x + 10.0, rawScorePose.y))
+        val leavePose = mirrorAlliance(Pose(rawScorePose.x , rawScorePose.y + 10.0))
         pathConstantHeading(if (isMirrored) PI else -PI, scorePose, leavePose)
     }
 
