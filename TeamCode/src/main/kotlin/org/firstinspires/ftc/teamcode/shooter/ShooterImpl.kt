@@ -40,10 +40,10 @@ class ShooterImpl(
         const val MAX_TURRET_ANGLE = 90.0
     }
 
-    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 2.95,3.32, 3.54)
+    val distances = listOf(0.86, 0.92, 1.4, 1.67, 1.97, 2.3, 2.85,3.12, 3.54)
 
     private val ticksToVelocity = InterpLUT(
-        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2450.0,2670.0, 2750.0),
+        listOf(1600.0, 1760.0, 1853.0, 1940.0, 2580.0,2700.0, 2750.0),
         listOf(5.24, 5.535, 5.8, 6.04, 6.12,6.22, 6.68),
         true
     ).createLUT()
@@ -167,7 +167,7 @@ class ShooterImpl(
                     .launchIn(this + Dispatchers.IO)
                 while (true) {
                     update(distance)
-                    delay(50L)
+                    delay(100L)
                 }
             } finally {
                 setPower(0.0)
@@ -182,7 +182,7 @@ class ShooterImpl(
                     controller.goal = KineticState(velocity = velocityFn())
                     hood = hoodFn()
                     update()
-                    delay(50L)
+                    delay(100L)
                 }
             } finally {
                 setPower(0.0)

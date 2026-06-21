@@ -136,7 +136,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
                             currentShooterJob = shooter.shoot(distanceFlow)
                         intake.isOuttake = true
                         delay(0.5.seconds)
-                        intake.isServoRunning = true
+                        intake.isOuttake = true
                         sorter.prepareFastShoot()
                     }
                     isEmpty && !lastIsEmpty -> intake.isRunning = true

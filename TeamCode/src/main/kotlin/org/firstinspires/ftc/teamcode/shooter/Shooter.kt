@@ -42,11 +42,21 @@ interface Shooter {
 }
 
 fun getShooterPose(robotPose: Pose): Pose =
+    if(robotPose.x - cos(robotPose.heading)<=3.2){
     Pose(
-        robotPose.x - cos(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
-        robotPose.y - sin(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
-        robotPose.heading
-    )
+        robotPose.x - cos(robotPose.heading),
+        robotPose.y - sin(robotPose.heading),
+        robotPose.heading,
+    )}
+    else{
+        Pose(
+            (robotPose.x - cos(robotPose.heading)) - 0.4,
+            robotPose.y - sin(robotPose.heading),
+            robotPose.heading,
+            )
+
+    }
+
 
 fun limelightGroundDistanceMeters(xMeters: Double, zMeters: Double): Double {
     val limelightDistance = hypot(xMeters, zMeters)

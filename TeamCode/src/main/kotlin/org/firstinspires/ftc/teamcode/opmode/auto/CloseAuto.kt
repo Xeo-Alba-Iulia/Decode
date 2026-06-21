@@ -59,10 +59,10 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val scorePose = Pose(62.0, 78.0, Math.toRadians(-140.0))
     private val scoreLastBallsPose = Pose(57.0, 111.0)
 
-    private val collectBalls1Pose = Pose(12.0, 57.0)
+    private val collectBalls1Pose = Pose(12.0, 59.0)
     private val collectBalls2Pose = Pose(18.0, 84.0)
 
-    private val gatePose = Pose(14.0, 59.5, Math.toRadians(140.0))
+    private val gatePose = Pose(12.0, 60.3, Math.toRadians(145.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
@@ -70,7 +70,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         val collectBalls1 = pathChain { path(scorePose, Pose(39.0, 57.0), collectBalls1Pose) }
         val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0), collectBalls2Pose) }
         val collectGateBalls = pathChain {
-            val hitGatePose = Pose(23.0, 60.5, PI)
+            val hitGatePose = Pose(24.0, 61.7,Math.toRadians(145.0) )
             path(scorePose, Pose(40.0, 59.0), hitGatePose)
             pathToPose(gatePose)
         }
