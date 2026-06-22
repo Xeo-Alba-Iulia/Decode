@@ -7,6 +7,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.qualcomm.hardware.limelightvision.Limelight3A
+import dev.zacsweers.metro.DependencyGraph
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -54,8 +55,8 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     protected open val startPose = Pose(60.0, 7.0, PI / 2).mirrorAlliance(isMirrored)
 
     protected open val resetPose = Pose(15.0, 80.0, PI)
-    protected open val goalPose = Pose(5.0, 141.5 - 5.0).mirrorAlliance(isMirrored)
-
+    protected open val actualGoalPose = Pose(0.0, 144.0).mirrorAlliance(isMirrored)
+    protected open var goalPose = actualGoalPose
     val distanceFlow = MutableStateFlow(0.0)
 
     private lateinit var patternList: List<ArtefactType>
@@ -198,6 +199,8 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
             }
         }
 
+        goalPose = if (distanceFlow.value <= 2.8) Pose(actualGoalPose.x, actualGoalPose.y - 5.0) else Pose(actualGoalPose.x + 5.0, actualGoalPose.y)
+
         with(gamepad2) {
             when {
                 crossWasPressed() -> odometrySwitchTimeMark = TimeSource.Monotonic.markNow() + 2.seconds
@@ -268,6 +271,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         }
     }
 
+    @Deprecated("Parking no longer exists or robot")
     private fun handleElevator() {
         if (gamepad1.squareWasPressed())
             if (!startedLifting) {
