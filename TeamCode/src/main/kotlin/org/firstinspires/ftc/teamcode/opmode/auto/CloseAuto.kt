@@ -53,16 +53,16 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
-    private val goalPose = Pose(12.0, 141.5 - 12.0)
+    private val goalPose = Pose(0.0, 144.0 - 2.5)
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
-    private val scorePose = Pose(62.0, 78.0, Math.toRadians(-140.0))
-    private val scoreLastBallsPose = Pose(57.0, 111.0)
+    private val scorePose = Pose(59.0, 78.0, Math.toRadians(-140.0))
+    private val scoreLastBallsPose = Pose(37.0, 80.0)
 
     private val collectBalls1Pose = Pose(12.0, 59.0)
     private val collectBalls2Pose = Pose(17.0, 84.0)
 
-    private val gatePose = Pose(12.0, 59.3, Math.toRadians(145.0))
+    private val gatePose = Pose(12.0, 59.3, Math.toRadians(150.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
@@ -70,7 +70,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         val collectBalls1 = pathChain { path(scorePose, Pose(39.0, 57.0), collectBalls1Pose) }
         val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0), collectBalls2Pose) }
         val collectGateBalls = pathChain {
-            val hitGatePose = Pose(24.0, 61.7,Math.toRadians(145.0) )
+            val hitGatePose = Pose(24.0, 61.7,Math.toRadians(155.0) )
             path(scorePose, Pose(40.0, 58.0), hitGatePose)
             pathToPose(gatePose)
         }
@@ -78,23 +78,26 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         val scorePreload = pathChain {
             val preloadScorePose = Pose(60.0, 78.0, Math.toRadians(-140.0))
             pathLinearHeading(startPose, preloadScorePose, endTime = .75) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.80)
             }
         }
         val scoreBalls1 = pathChain {
             path(collectBalls1Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.875)
             }
         }
         val scoreBalls2 = pathChain {
-            path(collectBalls2Pose, scoreLastBallsPose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.75)
+            path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
+                launchFromCallback(0.65)
             }
         }
         val scoreGateBalls = pathChain {
             path(gatePose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.875)
             }
+        }
+        val park = pathChain {
+            path(scorePose, scoreLastBallsPose, interpolator = HeadingInterpolator.linear(scorePose.heading, 2 * PI / 3))
         }
     }
 
@@ -147,7 +150,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 launchJob.join()
                 shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
                 repeat(3) {
-                    follower.followAndIntake(intake, sorter, isDetectingColor = false, timeout = 4.seconds) {
+                    follower.followAndIntake(intake, sorter, isDetectingColor = false, timeout = 3.75.seconds) {
                         followSuspend(paths.collectGateBalls)
                         holdSuspend(gatePose, 3.seconds)
                     }
@@ -165,6 +168,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 intake.isOuttake = true
                 follower.followSuspendFlow(paths.scoreBalls2).alignShooterFollowing(12.5).collect()
                 launchJob.join()
+                follower.followSuspend(paths.park)
                 requestOpModeStop()
             }
             launchJob = shooter.shoot(distanceFlow)
