@@ -60,9 +60,9 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val scoreLastBallsPose = Pose(57.0, 111.0)
 
     private val collectBalls1Pose = Pose(12.0, 59.0)
-    private val collectBalls2Pose = Pose(18.0, 84.0)
+    private val collectBalls2Pose = Pose(17.0, 84.0)
 
-    private val gatePose = Pose(12.0, 60.3, Math.toRadians(145.0))
+    private val gatePose = Pose(12.0, 59.3, Math.toRadians(145.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
@@ -71,7 +71,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0), collectBalls2Pose) }
         val collectGateBalls = pathChain {
             val hitGatePose = Pose(24.0, 61.7,Math.toRadians(145.0) )
-            path(scorePose, Pose(40.0, 59.0), hitGatePose)
+            path(scorePose, Pose(40.0, 58.0), hitGatePose)
             pathToPose(gatePose)
         }
 
@@ -163,7 +163,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
                 Log.d("Auto", "Fiducial id: $fiducialId")
                 intake.isOuttake = true
-                follower.followSuspendFlow(paths.scoreBalls2).alignShooterFollowing(10.0).collect()
+                follower.followSuspendFlow(paths.scoreBalls2).alignShooterFollowing(12.5).collect()
                 launchJob.join()
                 requestOpModeStop()
             }
