@@ -43,8 +43,8 @@ interface Shooter {
 
 fun getShooterPose(robotPose: Pose): Pose =
     Pose(
-        robotPose.x - cos(robotPose.heading),
-        robotPose.y - sin(robotPose.heading),
+        robotPose.x - cos(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
+        robotPose.y - sin(robotPose.heading) * ShooterConfig.SHOOTER_BACK_OFFSET_INCHES,
         robotPose.heading,
     )
 
