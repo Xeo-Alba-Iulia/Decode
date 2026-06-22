@@ -177,10 +177,10 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         if (!isOdometryDisabled) {
             val shooterPose = getShooterPose(follower.pose)
             shooter.alignToPose(follower.pose, goalPose, turretOffset)
-            if (distanceTimeMark.hasPassedNow()) {
-                val distance = (hypot(goalPose.x - shooterPose.x, goalPose.y - shooterPose.y)) / 39.37
-                distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
-            }
+//            if (distanceTimeMark.hasPassedNow()) {
+//                val distance = (hypot(goalPose.x - shooterPose.x, goalPose.y - shooterPose.y)) / 39.37
+//                distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
+//            }
         }
 
         with(gamepad2) {
