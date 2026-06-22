@@ -52,6 +52,8 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     private var turretOffset = 0.0
 
     protected open val startPose = Pose(60.0, 7.0, PI / 2).mirrorAlliance(isMirrored)
+
+    protected open val resetPose = Pose(15.0, 80.0, PI)
     protected open val goalPose = Pose(5.0, 141.5 - 5.0).mirrorAlliance(isMirrored)
 
     val distanceFlow = MutableStateFlow(0.0)
@@ -61,6 +63,8 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     private var isOdometryDisabled = false
     private var distanceTimeMark = TimeSource.Monotonic.markNow()
     private var odometrySwitchTimeMark: TimeSource.Monotonic.ValueTimeMark? = null
+    private var squareHoldTimeMark: TimeSource.Monotonic.ValueTimeMark? = null
+    private var hasHandledSquareHold = false
     private var isShootingFar = false
     private var wasPrepared = false
 
@@ -162,14 +166,18 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         handleIntake()
         handleSorter()
         handleShooter()
-        handleElevator()
+        handlePoseResetAndCameraMode()
+        //handleElevator()
 
         limelight
             .takeIf { it.isConnected }
             ?.latestResult
-            ?.takeIf { it.isValid() && gamepad1.crossWasPressed() }?.let { result ->
-                turretOffset -= result.tx
-                val pos = result.fiducialResults.single().targetPoseCameraSpace.position
+            ?.takeIf { it.isValid() && (isOdometryDisabled || gamepad1.crossWasPressed()) }?.let { result ->
+                if (isOdometryDisabled)
+                    shooter.angleDegrees -= result.tx
+                else
+                    turretOffset -= result.tx
+                val pos = result.fiducialResults.firstOrNull()?.targetPoseCameraSpace?.position ?: return@let
                 distanceFlow.value = limelightGroundDistanceMeters(pos.x, pos.z) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
                 distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
             }
@@ -177,10 +185,10 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         if (!isOdometryDisabled) {
             val shooterPose = getShooterPose(follower.pose)
             shooter.alignToPose(follower.pose, goalPose, turretOffset)
-//            if (distanceTimeMark.hasPassedNow()) {
-//                val distance = (hypot(goalPose.x - shooterPose.x, goalPose.y - shooterPose.y)) / 39.37
-//                distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
-//            }
+            if (distanceTimeMark.hasPassedNow()) {
+                val distance = (hypot(goalPose.x - shooterPose.x, goalPose.y - shooterPose.y)) / 39.37
+                distanceFlow.value = distance.takeUnless { isShootingFar } ?: max(distance, 3.0)
+            }
         }
 
         with(gamepad2) {
@@ -190,7 +198,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
             }
             if (odometrySwitchTimeMark?.hasPassedNow() == true && cross) {
                 odometrySwitchTimeMark = null
-                isOdometryDisabled = !isOdometryDisabled
+//                isOdometryDisabled = !isOdometryDisabled
             }
 
 //            if (bWasPressed()) {
@@ -216,6 +224,33 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         }
 
         telemetry.addData("Distance", distanceFlow.value)
+    }
+
+    private fun handlePoseResetAndCameraMode() {
+        when {
+            gamepad1.squareWasPressed() -> {
+                squareHoldTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
+                hasHandledSquareHold = false
+            }
+            gamepad1.squareWasReleased() -> {
+                if (!hasHandledSquareHold) {
+                    val pose = follower.pose
+                    val closestResetPose =
+                        if (pose.distanceFrom(startPose) <= pose.distanceFrom(resetPose)) startPose else resetPose
+                    follower.setPose(closestResetPose)
+                    gamepad1.rumble(200)
+                }
+                squareHoldTimeMark = null
+                hasHandledSquareHold = false
+            }
+        }
+
+        if (!hasHandledSquareHold && squareHoldTimeMark?.hasPassedNow() == true && gamepad1.square) {
+            isOdometryDisabled = true
+            isRobotCentric = true
+            hasHandledSquareHold = true
+            gamepad1.rumble(750)
+        }
     }
 
     private fun handleIntake() {
