@@ -169,18 +169,25 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         handlePoseResetAndCameraMode()
         //handleElevator()
 
-        limelight
+        val limelightResult = limelight
             .takeIf { it.isConnected }
             ?.latestResult
-            ?.takeIf { it.isValid() && (isOdometryDisabled || gamepad1.crossWasPressed()) }?.let { result ->
-                if (isOdometryDisabled)
+            ?.takeIf { it.isValid() }
+
+        limelightResult?.let { result ->
+            when {
+                isOdometryDisabled -> {
                     shooter.angleDegrees -= result.tx
-                else
+                    val pos = result.fiducialResults.firstOrNull()?.targetPoseCameraSpace?.position ?: return@let
+                    distanceFlow.value =
+                        limelightGroundDistanceMeters(pos.x, pos.z) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
+                    distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
+                }
+                gamepad1.crossWasPressed() -> {
                     turretOffset -= result.tx
-                val pos = result.fiducialResults.firstOrNull()?.targetPoseCameraSpace?.position ?: return@let
-                distanceFlow.value = limelightGroundDistanceMeters(pos.x, pos.z) + ShooterConfig.SHOOTER_BACK_OFFSET_INCHES / 39.37
-                distanceTimeMark = TimeSource.Monotonic.markNow() + 3.seconds
+                }
             }
+        }
 
         if (!isOdometryDisabled) {
             val shooterPose = getShooterPose(follower.pose)
