@@ -62,7 +62,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val collectBalls1Pose = Pose(12.0, 59.0)
     private val collectBalls2Pose = Pose(17.0, 84.0)
 
-    private val gatePose = Pose(12.0, 59.3, Math.toRadians(150.0))
+    private val gatePose = Pose(12.0, 59.3, Math.toRadians(155.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
@@ -70,7 +70,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         val collectBalls1 = pathChain { path(scorePose, Pose(39.0, 57.0), collectBalls1Pose) }
         val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0), collectBalls2Pose) }
         val collectGateBalls = pathChain {
-            val hitGatePose = Pose(24.0, 61.7,Math.toRadians(155.0) )
+            val hitGatePose = Pose(24.0, 61.7,Math.toRadians(160.0) )
             path(scorePose, Pose(40.0, 58.0), hitGatePose)
             pathToPose(gatePose)
         }
@@ -83,21 +83,21 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         val scoreBalls1 = pathChain {
             path(collectBalls1Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.875)
+                launchFromCallback(0.85)
             }
         }
         val scoreBalls2 = pathChain {
             path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.65)
+                launchFromCallback(0.775)
             }
         }
         val scoreGateBalls = pathChain {
             path(gatePose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.875)
+                launchFromCallback(0.85)
             }
         }
         val park = pathChain {
-            path(scorePose, scoreLastBallsPose, interpolator = HeadingInterpolator.linear(scorePose.heading, 2 * PI / 3))
+            path(scorePose, scoreLastBallsPose, interpolator = HeadingInterpolator.linear(scorePose.heading, 4 * PI / 3))
         }
     }
 
@@ -166,7 +166,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
                 Log.d("Auto", "Fiducial id: $fiducialId")
                 intake.isOuttake = true
-                follower.followSuspendFlow(paths.scoreBalls2).alignShooterFollowing(12.5).collect()
+                follower.followSuspendFlow(paths.scoreBalls2).alignShooterFollowing(5.0).collect()
                 launchJob.join()
                 follower.followSuspend(paths.park)
                 requestOpModeStop()
