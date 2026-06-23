@@ -5,6 +5,7 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.*
 import com.qualcomm.hardware.limelightvision.Limelight3A
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -25,7 +26,6 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.getShooterPose
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
-import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
@@ -60,7 +60,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
     private val scorePose = Pose(57.0, 77.0, Math.toRadians(-140.0))
-    private val scoreLastBallsPose = Pose(37.0, 80.0)
+    private val scoreLastBallsPose = Pose(57.0, 111.0)
 
     private val collectBalls1Pose = Pose(12.0, 59.0)
     private val collectBalls2Pose = Pose(17.0, 84.0)
@@ -90,8 +90,8 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         val scoreBalls2 = pathChain {
-            path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.775, shootPatternOnLaunch = true)
+            path(collectBalls2Pose, scoreLastBallsPose, interpolator = HeadingInterpolator.tangent.reverse()) {
+                launchFromCallback(0.775)
             }
         }
         val scoreGateBalls = pathChain {
@@ -141,19 +141,12 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             sendPacket()
         }
 
-    private fun CallbackBuilderKt.launchFromCallback(
-        parametricValue: Double,
-        shootPatternOnLaunch: Boolean = false
-    ) {
+    private fun CallbackBuilderKt.launchFromCallback(parametricValue: Double) {
         addCallback { sorter.prepareFastShoot() }
         parametricCallback(parametricValue) {
             intake.isServoRunning = true
             launchJob = opModeScope.launch {
-                if (shootPatternOnLaunch && patternList.isNotEmpty()) {
-                    shootPattern(sorter, shooterJob, patternList)
-                } else {
-                    sorter.fastShoot()
-                }
+                sorter.fastShoot()
             }
         }
     }
@@ -197,14 +190,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(paths.collectBalls2)
-                    delay(0.5.seconds)
                 }
-                patternList = runCatching { patternJob.getCompleted() }
-                    .getOrNull()
-                    ?.also { fiducialId = it }
-                    ?.toArtefactList()
-                    ?: emptyList()
-                Log.d("Auto", "Fiducial id: $fiducialId")
                 intake.isOuttake = true
                 if (System.nanoTime() - autoStartTimeNanos >= 28.seconds.inWholeNanoseconds) {
                     requestOpModeStop()
@@ -212,7 +198,6 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
                 follower.followSuspendFlow(paths.scoreBalls2).updateShooterFollowing().collect()
                 launchJob.join()
-                follower.followSuspend(paths.park)
                 requestOpModeStop()
             } finally {
                 shooterJob.cancel()
