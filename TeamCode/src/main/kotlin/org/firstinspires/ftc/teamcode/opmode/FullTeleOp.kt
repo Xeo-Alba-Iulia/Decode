@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.elevator.Elevator
 import org.firstinspires.ftc.teamcode.intake.Intake
 import org.firstinspires.ftc.teamcode.opmode.auto.mirrorAlliance
 import org.firstinspires.ftc.teamcode.pedropathing.drawDebug
+import org.firstinspires.ftc.teamcode.pedropathing.pinpointConstants
 import org.firstinspires.ftc.teamcode.shooter.ShooterImpl
 import org.firstinspires.ftc.teamcode.shooter.ShooterConfig
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
@@ -28,6 +29,7 @@ import org.firstinspires.ftc.teamcode.sorter.Sorter
 import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -52,7 +54,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     private var currentShooterJob: Job? = null
     private var turretOffset = 0.0
 
-    protected open val startPose = Pose(60.0, 7.0, PI / 2).mirrorAlliance(isMirrored)
+    protected open val startPose = Pose(60.0, 8.0, PI / 2).mirrorAlliance(isMirrored)
 
     protected open val resetPose = Pose(15.0, 80.0, PI)
     protected open val actualGoalPose = Pose(0.0, 144.0).mirrorAlliance(isMirrored)
@@ -199,7 +201,11 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
             }
         }
 
-        goalPose = if (distanceFlow.value <= 2.8) Pose(actualGoalPose.x, actualGoalPose.y - 5.0) else Pose(actualGoalPose.x + 5.0, actualGoalPose.y)
+        // goalPose = if (distanceFlow.value <= 2.8) Pose(actualGoalPose.x, actualGoalPose.y - 5.0) else Pose(actualGoalPose.x + 5.0, actualGoalPose.y)
+
+        val dist = distanceFlow.value
+        val flightTime = (dist / romanianSpeedLUT(dist))
+        goalPose = Pose(actualGoalPose.x - follower.velocity.xComponent * flightTime, actualGoalPose.y - follower.velocity.yComponent * flightTime)
 
         with(gamepad2) {
             when {
@@ -234,6 +240,10 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
         }
 
         telemetry.addData("Distance", distanceFlow.value)
+    }
+
+    private fun romanianSpeedLUT(distance: Double): Double {
+        return 0.19856 * distance + 126.62389
     }
 
     private fun handlePoseResetAndCameraMode() {
