@@ -64,7 +64,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val collectBalls1Pose = Pose(12.0, 59.0)
     private val collectBalls2Pose = Pose(17.0, 84.0)
 
-    private val gatePose = Pose(12.0, 59.3, Math.toRadians(155.0))
+    private val gatePose = Pose(12.0, 59.3, Math.toRadians(160.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
@@ -85,17 +85,17 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         val scoreBalls1 = pathChain {
             path(collectBalls1Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.875)
             }
         }
         val scoreBalls2 = pathChain {
             path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.75)
+                launchFromCallback(0.775)
             }
         }
         val scoreGateBalls = pathChain {
             path(gatePose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.875)
             }
         }
         val park = pathChain {
@@ -162,6 +162,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
+        val autoStartTimeNanos = System.nanoTime()
         val patternJob = opModeScope.getFiducialId(limelight)
         opModeScope.launch {
             shooterJob = shooter.shoot(shooterDistanceFlow)
@@ -177,7 +178,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 launchJob.join()
                 shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
                 repeat(3) {
-                    follower.followAndIntake(intake, sorter, isDetectingColor = false, timeout = 3.5.seconds) {
+                    follower.followAndIntake(intake, sorter, isDetectingColor = false, intakeTimeout = 0.75.seconds, firstIntakeTimeout = 3.seconds) {
                         followSuspend(paths.collectGateBalls)
                         holdSuspend(gatePose, 3.seconds)
                     }
@@ -188,10 +189,15 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(paths.collectBalls2)
+                    delay(0.5.seconds)
                 }
                 patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
                 Log.d("Auto", "Fiducial id: $fiducialId")
                 intake.isOuttake = true
+                if (System.nanoTime() - autoStartTimeNanos >= 28.seconds.inWholeNanoseconds) {
+                    requestOpModeStop()
+                    return@launch
+                }
                 follower.followSuspendFlow(paths.scoreBalls2).updateShooterFollowing().collect()
                 launchJob.join()
                 follower.followSuspend(paths.park)
