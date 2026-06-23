@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.getShooterPose
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
+import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
@@ -90,7 +91,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         }
         val scoreBalls2 = pathChain {
             path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.775)
+                launchFromCallback(0.775, shootPatternOnLaunch = true)
             }
         }
         val scoreGateBalls = pathChain {
@@ -140,12 +141,19 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             sendPacket()
         }
 
-    private fun CallbackBuilderKt.launchFromCallback(parametricValue: Double) {
+    private fun CallbackBuilderKt.launchFromCallback(
+        parametricValue: Double,
+        shootPatternOnLaunch: Boolean = false
+    ) {
         addCallback { sorter.prepareFastShoot() }
         parametricCallback(parametricValue) {
             intake.isServoRunning = true
             launchJob = opModeScope.launch {
-                sorter.fastShoot()
+                if (shootPatternOnLaunch && patternList.isNotEmpty()) {
+                    shootPattern(sorter, shooterJob, patternList)
+                } else {
+                    sorter.fastShoot()
+                }
             }
         }
     }
@@ -191,7 +199,11 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                     follower.followSuspend(paths.collectBalls2)
                     delay(0.5.seconds)
                 }
-                patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
+                patternList = runCatching { patternJob.getCompleted() }
+                    .getOrNull()
+                    ?.also { fiducialId = it }
+                    ?.toArtefactList()
+                    ?: emptyList()
                 Log.d("Auto", "Fiducial id: $fiducialId")
                 intake.isOuttake = true
                 if (System.nanoTime() - autoStartTimeNanos >= 28.seconds.inWholeNanoseconds) {

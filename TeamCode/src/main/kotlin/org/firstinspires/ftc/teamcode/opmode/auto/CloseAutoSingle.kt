@@ -5,12 +5,13 @@ import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.*
 import com.qualcomm.hardware.limelightvision.Limelight3A
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.firstinspires.ftc.teamcode.Alliance
@@ -23,10 +24,13 @@ import org.firstinspires.ftc.teamcode.pedropathing.*
 import org.firstinspires.ftc.teamcode.shooter.Shooter
 import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
+import org.firstinspires.ftc.teamcode.shooter.getShooterPose
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
+import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
 import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
+import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -95,12 +99,12 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
         }
         val scoreBalls2 = pathChain {
             path(collectBalls2Pose, scoreLastBallsPose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.75)
+                launchFromCallback(0.75, shootPatternOnLaunch = true)
             }
         }
         val scoreBalls3 = pathChain {
             path(collectBalls3Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.85, shootPatternOnLaunch = true)
             }
         }
         val scoreGateBalls = pathChain {
@@ -113,22 +117,65 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
     private lateinit var paths: Paths
 
     private lateinit var launchJob: Job
+    private lateinit var shooterJob: Job
+    private val shooterDistanceFlow = MutableStateFlow(0.0)
 
     @Volatile
     private var fiducialId = 21
     private var patternList: List<ArtefactType> = emptyList()
 
-    private fun Flow<Pose>.alignShooterFollowing(offset: Double = 0.0) =
-        onEach { pose -> shooter.alignToPose(pose, goalPose, if (isMirrored) -offset else offset); drawRobot(pose); sendPacket() }
+    private fun romanianSpeedLUT(distance: Double): Double {
+        return 0.19856 * distance + 126.62389
+    }
 
-    private fun CallbackBuilderKt.launchFromCallback(parametricValue: Double) {
+    private fun updateShooterUtils(robotPose: Pose) {
+        val distanceMeters = shooterDistanceFlow.value
+        val flightTime = distanceMeters / romanianSpeedLUT(distanceMeters)
+        val currentGoalPose = rawPose(
+            goalPose.x - follower.velocity.xComponent * flightTime,
+            goalPose.y - follower.velocity.yComponent * flightTime,
+        )
+        val shooterPose = getShooterPose(robotPose)
+        shooter.alignToPose(robotPose, currentGoalPose)
+        shooterDistanceFlow.value = hypot(
+            currentGoalPose.x - shooterPose.x,
+            currentGoalPose.y - shooterPose.y,
+        ) / 39.37
+        telemetry.addData("Shooter Distance", shooterDistanceFlow.value)
+    }
+
+    private fun Flow<Pose>.updateShooterFollowing() =
+        onEach { pose ->
+            updateShooterUtils(pose)
+            drawRobot(pose)
+            sendPacket()
+        }
+
+    private fun CallbackBuilderKt.launchFromCallback(
+        parametricValue: Double,
+        shootPatternOnLaunch: Boolean = false
+    ) {
         addCallback { sorter.prepareFastShoot() }
         parametricCallback(parametricValue) {
             intake.isServoRunning = true
             launchJob = opModeScope.launch {
-                sorter.fastShoot()
+                if (shootPatternOnLaunch && patternList.isNotEmpty()) {
+                    shootPattern(sorter, shooterJob, patternList)
+                } else {
+                    sorter.fastShoot()
+                }
             }
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun updatePatternFromJob(patternJob: Deferred<Int>) {
+        patternList = runCatching { patternJob.getCompleted() }
+            .getOrNull()
+            ?.also { fiducialId = it }
+            ?.toArtefactList()
+            ?: emptyList()
+        Log.d("Auto", "Fiducial id: $fiducialId")
     }
 
     override fun init() {
@@ -143,19 +190,19 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun start() {
+        val autoStartTimeNanos = System.nanoTime()
         val patternJob = opModeScope.getFiducialId(limelight)
         opModeScope.launch {
-            val distanceFlow = flow {
-                emit(goalPose.distanceFrom(scorePose) / 39.37 - 0.1)
-                follower.followSuspendFlow(paths.scorePreload).alignShooterFollowing().collect()
+            shooterJob = shooter.shoot(shooterDistanceFlow)
+            try {
+                follower.followSuspendFlow(paths.scorePreload).updateShooterFollowing().collect()
                 launchJob.join()
                 follower.followAndIntake(intake, sorter) {
                     followSuspend(paths.collectBalls1)
                     delay(500.milliseconds)
                 }
-                emit(goalPose.distanceFrom(scorePose) / 39.37)
                 intake.isOuttake = true
-                follower.followSuspendFlow(paths.scoreBalls1).alignShooterFollowing(5.0).collect()
+                follower.followSuspendFlow(paths.scoreBalls1).updateShooterFollowing().collect()
                 launchJob.join()
                 shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
                 repeat(2) {
@@ -164,7 +211,7 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                         holdSuspend(gatePose, 3.seconds)
                     }
                     intake.isOuttake = true
-                    follower.followSuspendFlow(paths.scoreGateBalls).alignShooterFollowing(4.0).collect()
+                    follower.followSuspendFlow(paths.scoreGateBalls).updateShooterFollowing().collect()
                     paths.scoreGateBalls.resetCallbacks()
                     launchJob.join()
                 }
@@ -172,23 +219,29 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(paths.collectBalls3)
                 }
-                patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
-                Log.d("Auto", "Fiducial id: $fiducialId")
+                updatePatternFromJob(patternJob)
                 intake.isOuttake = true
-                follower.followSuspendFlow(paths.scoreBalls3).alignShooterFollowing(10.0).collect()
+                follower.followSuspendFlow(paths.scoreBalls3).updateShooterFollowing().collect()
                 launchJob.join()
+                if (shooterJob.isCancelled) {
+                    shooterJob = shooter.shoot(shooterDistanceFlow)
+                }
 
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(paths.collectBalls2)
                 }
-                patternList = runCatching { patternJob.getCompleted() }.getOrNull()?.toArtefactList() ?: emptyList()
-                Log.d("Auto", "Fiducial id: $fiducialId")
+                updatePatternFromJob(patternJob)
                 intake.isOuttake = true
-                follower.followSuspendFlow(paths.scoreBalls2).alignShooterFollowing(10.0).collect()
+                if (System.nanoTime() - autoStartTimeNanos >= 28.seconds.inWholeNanoseconds) {
+                    requestOpModeStop()
+                    return@launch
+                }
+                follower.followSuspendFlow(paths.scoreBalls2).updateShooterFollowing().collect()
                 launchJob.join()
                 requestOpModeStop()
+            } finally {
+                shooterJob.cancel()
             }
-            launchJob = shooter.shoot(distanceFlow)
         }
     }
 
