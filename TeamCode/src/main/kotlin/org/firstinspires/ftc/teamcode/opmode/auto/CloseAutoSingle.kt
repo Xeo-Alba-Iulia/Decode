@@ -1,11 +1,9 @@
 package org.firstinspires.ftc.teamcode.opmode.auto
 
-import android.util.Log
 import com.pedropathing.follower.Follower
 import com.pedropathing.geometry.Pose
 import com.pedropathing.paths.*
 import com.qualcomm.hardware.limelightvision.Limelight3A
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -26,9 +24,7 @@ import org.firstinspires.ftc.teamcode.shooter.alignToPose
 import org.firstinspires.ftc.teamcode.shooter.fastShoot
 import org.firstinspires.ftc.teamcode.shooter.getShooterPose
 import org.firstinspires.ftc.teamcode.shooter.prepareFastShoot
-import org.firstinspires.ftc.teamcode.shooter.shootPattern
 import org.firstinspires.ftc.teamcode.sorter.Sorter
-import org.firstinspires.ftc.teamcode.toArtefactList
 import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
@@ -57,18 +53,18 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
-    private val goalPose = Pose(12.0, 141.5 - 12.0)
+    private val goalPose = Pose(0.0, 144.0)
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
-    private val scorePose = Pose(62.0, 78.0, Math.toRadians(-140.0))
-    private val scoreLastBallsPose = Pose(57.0, 111.0)
+    private val scorePose = Pose(57.0, 77.0, Math.toRadians(-140.0))
+    private val scoreLastBallsPose = Pose(37.0, 80.0)
 
-    private val collectBalls1Pose = Pose(12.0, 57.0)
-    private val collectBalls2Pose = Pose(18.0, 84.0)
+    private val collectBalls1Pose = Pose(12.0, 59.0)
+    private val collectBalls2Pose = Pose(17.0, 84.0)
 
     private val collectBalls3Pose = Pose(12.0, 36.0)
 
-    private val gatePose = Pose(12.0, 60.3, Math.toRadians(145.0))
+    private val gatePose = Pose(12.0, 59.3, Math.toRadians(160.0))
 
     private inner class Paths {
         private fun pathChain(block: PathBuilderKt.() -> Unit) = follower.pathChain(block = block)
@@ -77,40 +73,42 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
         val collectBalls2 = pathChain { path(scorePose, Pose(39.0, 84.0), collectBalls2Pose) }
 
         val collectBalls3 = pathChain {
-            val collectBalls3ControlPoint = Pose(50.0, 40.5,PI)
-            path(scorePose, Pose(34.0, 36.0, PI), collectBalls3Pose)
+            path(scorePose, Pose(34.0, 30.0, PI), collectBalls3Pose)
         }
         val collectGateBalls = pathChain {
-            val hitGatePose = Pose(24.0, 61.5,Math.toRadians(145.0) )
-            path(scorePose, Pose(40.0, 59.0), hitGatePose)
+            val hitGatePose = Pose(24.0, 61.7, Math.toRadians(160.0))
+            path(scorePose, Pose(40.0, 58.0), hitGatePose)
             pathToPose(gatePose)
         }
 
         val scorePreload = pathChain {
             val preloadScorePose = Pose(60.0, 78.0, Math.toRadians(-140.0))
             pathLinearHeading(startPose, preloadScorePose, endTime = .75) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.8)
             }
         }
         val scoreBalls1 = pathChain {
             path(collectBalls1Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.875)
             }
         }
         val scoreBalls2 = pathChain {
-            path(collectBalls2Pose, scoreLastBallsPose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.75, shootPatternOnLaunch = true)
+            path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
+                launchFromCallback(0.8)
             }
         }
         val scoreBalls3 = pathChain {
-            path(collectBalls3Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85, shootPatternOnLaunch = true)
+            path(collectBalls3Pose, Pose(scorePose.x + 2.0, scorePose.y + 2.0, scorePose.heading), interpolator = HeadingInterpolator.tangent.reverse()) {
+                launchFromCallback(1.0)
             }
         }
         val scoreGateBalls = pathChain {
             path(gatePose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
-                launchFromCallback(0.85)
+                launchFromCallback(0.875)
             }
+        }
+        val park = pathChain {
+            path(scorePose, scoreLastBallsPose, interpolator = HeadingInterpolator.linear(scorePose.heading, 4 * PI / 3))
         }
     }
 
@@ -151,31 +149,14 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
             sendPacket()
         }
 
-    private fun CallbackBuilderKt.launchFromCallback(
-        parametricValue: Double,
-        shootPatternOnLaunch: Boolean = false
-    ) {
+    private fun CallbackBuilderKt.launchFromCallback(parametricValue: Double) {
         addCallback { sorter.prepareFastShoot() }
         parametricCallback(parametricValue) {
             intake.isServoRunning = true
             launchJob = opModeScope.launch {
-                if (shootPatternOnLaunch && patternList.isNotEmpty()) {
-                    shootPattern(sorter, shooterJob, patternList)
-                } else {
-                    sorter.fastShoot()
-                }
+                sorter.fastShoot()
             }
         }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun updatePatternFromJob(patternJob: Deferred<Int>) {
-        patternList = runCatching { patternJob.getCompleted() }
-            .getOrNull()
-            ?.also { fiducialId = it }
-            ?.toArtefactList()
-            ?: emptyList()
-        Log.d("Auto", "Fiducial id: $fiducialId")
     }
 
     override fun init() {
@@ -206,7 +187,7 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                 launchJob.join()
                 shooter.angleDegrees = if (isMirrored) 90.0 else -90.0
                 repeat(2) {
-                    follower.followAndIntake(intake, sorter, isDetectingColor = false, timeout = 4.seconds) {
+                    follower.followAndIntake(intake, sorter, isDetectingColor = false, intakeTimeout = 0.75.seconds, firstIntakeTimeout = 3.seconds) {
                         followSuspend(paths.collectGateBalls)
                         holdSuspend(gatePose, 3.seconds)
                     }
@@ -219,18 +200,13 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(paths.collectBalls3)
                 }
-                updatePatternFromJob(patternJob)
                 intake.isOuttake = true
                 follower.followSuspendFlow(paths.scoreBalls3).updateShooterFollowing().collect()
                 launchJob.join()
-                if (shooterJob.isCancelled) {
-                    shooterJob = shooter.shoot(shooterDistanceFlow)
-                }
 
                 follower.followAndIntake(intake, sorter, isDetectingColor = false) {
                     follower.followSuspend(paths.collectBalls2)
                 }
-                updatePatternFromJob(patternJob)
                 intake.isOuttake = true
                 if (System.nanoTime() - autoStartTimeNanos >= 28.seconds.inWholeNanoseconds) {
                     requestOpModeStop()
@@ -238,6 +214,7 @@ abstract class CloseAutoSingle(alliance: Alliance) : CoroutineOpMode() {
                 }
                 follower.followSuspendFlow(paths.scoreBalls2).updateShooterFollowing().collect()
                 launchJob.join()
+                follower.followSuspend(paths.park)
                 requestOpModeStop()
             } finally {
                 shooterJob.cancel()

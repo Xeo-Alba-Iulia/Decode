@@ -60,7 +60,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
     private val scorePose = Pose(57.0, 77.0, Math.toRadians(-140.0))
-    private val scoreLastBallsPose = Pose(57.0, 111.0)
+    private val scoreLastBallsPose = Pose(37.0, 80.0)
 
     private val collectBalls1Pose = Pose(12.0, 59.0)
     private val collectBalls2Pose = Pose(17.0, 84.0)
@@ -90,7 +90,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
             }
         }
         val scoreBalls2 = pathChain {
-            path(collectBalls2Pose, scoreLastBallsPose, interpolator = HeadingInterpolator.tangent.reverse()) {
+            path(collectBalls2Pose, scorePose, interpolator = HeadingInterpolator.tangent.reverse()) {
                 launchFromCallback(0.775)
             }
         }
@@ -198,6 +198,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
                 }
                 follower.followSuspendFlow(paths.scoreBalls2).updateShooterFollowing().collect()
                 launchJob.join()
+                follower.followSuspend(paths.park)
                 requestOpModeStop()
             } finally {
                 shooterJob.cancel()
