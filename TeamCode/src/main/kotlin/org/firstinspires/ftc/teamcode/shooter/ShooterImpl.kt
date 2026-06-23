@@ -44,7 +44,7 @@ class ShooterImpl(
 
     private val ticksToVelocity = InterpLUT(
         listOf(1000.0, 1260.0, 1553.0, 1640.0, 1850.0, 1970.0, 2150.0),
-        listOf(4.48, 4.68, 5.50, 5.85, 6.27, 6.4, 7.08),
+        listOf(4.48, 4.68, 5.55, 5.85, 6.27, 6.4, 7.08),
         true
     ).createLUT()
 
