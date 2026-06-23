@@ -54,7 +54,7 @@ abstract class FullTeleOp(isMirrored: Boolean, private val limelightPipeline: In
     private var currentShooterJob: Job? = null
     private var turretOffset = 0.0
 
-    protected open val startPose = Pose(60.0, 8.0, PI / 2).mirrorAlliance(isMirrored)
+    protected open val startPose = Pose(59.0, 8.0, PI / 2).mirrorAlliance(isMirrored)
 
     protected open val resetPose = Pose(15.0, 80.0, PI)
     protected open val actualGoalPose = Pose(0.0, 144.0).mirrorAlliance(isMirrored)

@@ -53,7 +53,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
     private val isMirrored = alliance == Alliance.RED
     private fun mirrorAlliance(pose: Pose): Pose = if (isMirrored) pose.mirror() else pose
 
-    private val goalPose = Pose(0.0, 144.0 - 2.5)
+    private val goalPose = Pose(0.0, 144.0)
 
     private val startPose = Pose(19.5, 122.0, Math.toRadians(144.0))
     private val scorePose = Pose(59.0, 78.0, Math.toRadians(-140.0))
@@ -137,7 +137,7 @@ abstract class CloseAuto(alliance: Alliance) : CoroutineOpMode() {
         val patternJob = opModeScope.getFiducialId(limelight)
         opModeScope.launch {
             val distanceFlow = flow {
-                emit(goalPose.distanceFrom(scorePose) / 39.37 - 0.1)
+                emit(goalPose.distanceFrom(scorePose) / 39.37)
                 follower.followSuspendFlow(paths.scorePreload).alignShooterFollowing().collect()
                 launchJob.join()
                 follower.followAndIntake(intake, sorter) {
