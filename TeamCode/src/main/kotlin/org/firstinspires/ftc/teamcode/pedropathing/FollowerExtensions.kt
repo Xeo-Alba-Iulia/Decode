@@ -73,7 +73,8 @@ suspend fun Follower.holdSuspend(pose: Pose, timeout: Duration) {
 }
 
 /**
- * Follow the given path while intaking, and stop when either the path is finished or the timeout is reached.
+ * Follow the given path while intaking, and stop when the path is finished, the timeout is reached,
+ * or no artefact has been intaked before the intake timeout.
  *
  * This is the most general version of followAndIntake, which takes a suspend function as a parameter
  * to allow for maximum flexibility in how the path is followed.
@@ -87,10 +88,13 @@ suspend inline fun Follower.followAndIntake(
     sorter: Sorter,
     isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds,
+    intakeTimeout: Duration = timeout / 2,
+    firstIntakeTimeout: Duration = intakeTimeout * 2,
     crossinline followFunction: suspend Follower.() -> Unit,
 ): Unit =
     coroutineScope {
         intake.isRunning = true
+        var lastIntakeSize = sorter.size
         val intakeJob = launch {
             delay(500L)
             Log.d("Intake", "Intake started, size is: ${sorter.size}")
@@ -105,6 +109,7 @@ suspend inline fun Follower.followAndIntake(
                 .collect {
                     sorter.intake((it as? ArtefactType) ?: PURPLE)
                     val size = sorter.size
+                    lastIntakeSize = size
                     RobotLog.dd("Intake", "Intake $it, sorter now has $size artefacts")
                     if (size != 3) {
                         intake.isRunning = false
@@ -113,9 +118,23 @@ suspend inline fun Follower.followAndIntake(
                     }
                 }
         }
+        val intakeTimeoutJob = launch {
+            var lastSeenSize = lastIntakeSize
+            var nextTimeout = firstIntakeTimeout
+            while (true) {
+                delay(nextTimeout)
+                if (lastIntakeSize == lastSeenSize) {
+                    Log.e(TAG, "Path intake timed out, picked up ${sorter.size} artefacts")
+                    break
+                }
+                lastSeenSize = lastIntakeSize
+                nextTimeout = intakeTimeout
+            }
+        }
         val followerJob = launch { followFunction() }
         select {
             intakeJob.onJoin { Log.d(TAG, "Stopped follow because intake finished") }
+            intakeTimeoutJob.onJoin { Log.e(TAG, "Stopped follow because intake timed out") }
             followerJob.onJoin {
                 Log.e(TAG, "Path finished, only picked up ${sorter.size} artefacts")
             }
@@ -123,6 +142,7 @@ suspend inline fun Follower.followAndIntake(
         }
         followerJob.cancel()
         intakeJob.cancel()
+        intakeTimeoutJob.cancel()
         intake.isServoRunning = true
     }
 
@@ -135,7 +155,9 @@ suspend inline fun Follower.followAndIntake(
     path: PathChain,
     isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds,
-) = followAndIntake(intake, sorter, isDetectingColor, timeout) { followSuspend(path) }
+    intakeTimeout: Duration = timeout / 2,
+    firstIntakeTimeout: Duration = intakeTimeout * 2,
+) = followAndIntake(intake, sorter, isDetectingColor, timeout, intakeTimeout, firstIntakeTimeout) { followSuspend(path) }
 
 /**
  * Deprecated version of followAndIntake that doesn't take a path.
@@ -151,7 +173,9 @@ fun Follower.followAndIntake(
     intake: Intake,
     sorter: Sorter,
     isDetectingColor: Boolean = false,
-    timeout: Duration = 5.seconds
+    timeout: Duration = 5.seconds,
+    intakeTimeout: Duration = timeout / 2,
+    firstIntakeTimeout: Duration = intakeTimeout * 2,
 ): Unit = throw UnsupportedOperationException("No path provided to follow")
 
 /**
@@ -166,7 +190,9 @@ suspend inline fun Follower.followAndIntake(
     vararg paths: PathChain,
     isDetectingColor: Boolean = false,
     timeout: Duration = 5.seconds,
-) = followAndIntake(intake, sorter, isDetectingColor, timeout) {
+    intakeTimeout: Duration = timeout / 2,
+    firstIntakeTimeout: Duration = intakeTimeout * 2,
+) = followAndIntake(intake, sorter, isDetectingColor, timeout, intakeTimeout, firstIntakeTimeout) {
     assert(paths.isNotEmpty())
     paths.forEach { followSuspend(it) }
 }
