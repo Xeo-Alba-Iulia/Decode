@@ -44,13 +44,13 @@ class ShooterImpl(
 
     private val ticksToVelocity = InterpLUT(
         listOf(1000.0, 1260.0, 1553.0, 1640.0, 1850.0, 1970.0, 2150.0),
-        listOf(4.48, 4.68, 5.55, 5.79, 6.27, 6.4, 7.08),
+        listOf(4.48, 4.68, 5.58, 5.79, 6.27, 6.4, 7.08),
         true
     ).createLUT()
 
     private val distanceToTicks = InterpLUT(
         /* input = */ distances,
-        /* output = */ listOf(1360.0, 1380.0, 1480.0, 1530.0, 1575.0, 1700.0, 1950.0, 2150.0, 2200.0),
+        /* output = */ listOf(1360.0, 1380.0, 1480.0, 1550.0, 1600.0, 1700.0, 1950.0, 2150.0, 2200.0),
         /* safeMode = */ true
     ).createLUT()
 
